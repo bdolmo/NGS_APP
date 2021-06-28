@@ -1,0 +1,161 @@
+{% extends "base.html" %}
+
+{% block body %}
+
+<div class="d-flex justify-content-center">
+
+  <div class="container-fluid rounded" style="background-color:white; width:30%"> 
+    <div class = "container mt-3" style="width:100%; float:right;">
+      {% with messages = get_flashed_messages(with_categories=true) %}
+      {% if messages %}
+          {% for category,message in messages %}
+          <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
+              <span>{{ message }}</span>
+              <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+                  <span aria-hidden="true">&times;</span>
+              </button>
+              <br>
+              {% endfor %}                                       
+      </div>
+      {% endif %}
+      {% endwith %}
+  </div>
+  <div class="card border-1 mt-5 "style="background-color:rgb(248, 248, 248);" >
+    <div class="card-header" style="background-color:white;">
+      <img class="card-img-top rounded-circle" style="width:128px;height:128px;" src="{{ current_user.avatar(128) }}">
+      <h2 class="card-title"> Usuari: {{ current_user.username }}</h2>
+    </div>
+
+
+    <div class="card-body" style="background-color:rgb(248, 248, 248);">
+
+        <div class="row" >
+          <div class="col-sm">
+            <p><i class="fas fa-envelope"></i>  {{ current_user.email }} </p>
+            <p ><i class="fas fa-user-tag"></i> <span style="color:white;" class="badge bg-primary">{{ current_user.role }}</span> </p>
+            <p><i class="fas fa-hospital"></i>  {{ current_user.organization }} </p>
+          </div>
+          <div class="col-sm">
+            <p><b>Data de registre:</b>  {{ current_user.registered_on }} </p>
+            <p><b>Últim accés:</b> {{ current_user.last_login }} </p>
+          </div>          
+        </div>
+    </div>
+    <div class="card-footer" >
+
+      <div class="modal fade bd-example-modal-lg" id="edit_profile" tabindex="-1" aria-labelledby="modal_edit_profile" aria-hidden="true">
+        <form method="POST" action="{{ url_for('edit_account', user_id=current_user.id) }}" >
+          {{ form.csrf_token }} 
+
+          <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+              <div class="modal-header" style="background-color:rgb(248, 248, 248);">
+                <h4 class="modal-title" id="modal_edit_profile">Edita el teu perfil</h4>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                  <span aria-hidden="true">&times;</span>
+                </button>
+              </div>
+              <div class="modal-body">
+
+                <div class="row mt-3">
+                  <div class="col-sm">
+                    <h6><b>Nom d'usuari:</b></h6>
+                    <div class="form-group">
+                       {{ form.username(value=current_user.username)}} 
+                    </div>
+                  </div>
+                  <div class="col-sm">
+                    <h6><b>Nova contrassenya:</b></h6>
+                    <div class="form-group">
+                       {{ form.password(value=current_user.password)}} 
+                    </div>
+                  </div>
+                  <div class="col-sm">
+                    <h6><b>Repeteix contrassenya:</b></h6>
+                    <div class="form-group">
+                       {{ form.confirm_password(value=current_user.confirm_password) }} 
+                    </div>
+                  </div>
+                </div>
+                <div class="row mt-3">
+                  <div class="col-sm">
+                    <h6><b>Email:</b></h6>
+                    <div class="form-group">
+                       {{ form.email(value=current_user.email) }} 
+                    </div>
+                  </div>
+                  <div class="col-sm">
+                    <h6><b>Organització:</b></h6>
+                    <div class="form-group">
+                       {{ form.organization(value=current_user.organization) }} 
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <div class="form-group">
+                <div class="col-sm ">
+                  {{ form.submit(class="btn btn-primary") }}
+                </div>
+              </div>               
+            </div>
+          </div>
+        </form>
+      </div>
+      <a class="btn btn-secondary btn-sm" style="color:white;" data-toggle="modal" data-target="#edit_profile"> Edita</a>
+      <a class="btn btn-danger btn-sm float-right" onclick="return confirm('Estàs apunt d\'eliminar aquest compte, vols continuar?');" href="{{ url_for('delete_account', user_id=current_user.id) }}"> Elimina</a>
+    </div>
+  </div>
+  </div>
+</div>
+{% block script %}
+ <script>
+    $(document).ready(function() {
+        $("#submit_analysis").click(function() {
+            // disable button
+            $(this).prop("disabled", true);
+            // add spinner to button
+            $(this).html(
+                `<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Uploading...`
+            );
+        });
+    });
+    $.ajax({
+  xhr: function() {
+    var xhr = new window.XMLHttpRequest();
+
+    xhr.upload.addEventListener("progress", function(evt) {
+      if (evt.lengthComputable) {
+        var percentComplete = evt.loaded / evt.total;
+        percentComplete = parseInt(percentComplete * 100);
+        console.log(percentComplete);
+
+        if (percentComplete === 100) {
+
+        }
+
+      }
+    }, false);
+
+    return xhr;
+  },
+  url: posturlfile,
+  type: "POST",
+  data: JSON.stringify(fileuploaddata),
+  contentType: "application/json",
+  dataType: "json",
+  success: function(result) {
+    console.log(result);
+  }
+});
+
+    //function input_filename() {
+    //    fil_input_label.innerHTML = input.files
+    //};
+
+     function filesize(elem) {
+        document.coocke = `filesize=${elem.files[0].size}`;
+     };
+ </script>
+{% endblock %} 
+
+{% endblock body %}

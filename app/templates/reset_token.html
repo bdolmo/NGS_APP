@@ -1,0 +1,90 @@
+{% extends "base.html" %}
+
+{% block body %}
+
+<div class="d-flex justify-content-center">
+
+  <div class="container-fluid rounded" style="background-color:white; width:30%"> 
+
+  <div class="card border-1 mt-5 "style="background-color:rgb(248, 248, 248);" >
+
+
+    <div class="card-body" style="background-color:rgb(248, 248, 248);">
+      <div class="row">
+        <div class="col-sm ">
+          Contrassenya <br>
+         <div class="input-group mb-3">
+           {{ form.password }}
+         </div>
+        </div>
+        <div class="col-sm ">
+          Verifica contrassenya <br>
+         <div class="input-group mb-3">
+           {{ form.confirm_password }}
+         </div>
+        </div>
+        <div class="form-group">
+         {{ form.submit(class="btn btn-primary") }} 
+        </div>
+        <!-- <div class="col-sm ">
+         Contrassenya <br>
+         {{ form.password }}
+        </div> -->
+      </div>
+    </div>
+
+  </div>
+  </div>
+</div>
+{% block script %}
+ <script>
+    $(document).ready(function() {
+        $("#submit_analysis").click(function() {
+            // disable button
+            $(this).prop("disabled", true);
+            // add spinner to button
+            $(this).html(
+                `<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Uploading...`
+            );
+        });
+    });
+    $.ajax({
+  xhr: function() {
+    var xhr = new window.XMLHttpRequest();
+
+    xhr.upload.addEventListener("progress", function(evt) {
+      if (evt.lengthComputable) {
+        var percentComplete = evt.loaded / evt.total;
+        percentComplete = parseInt(percentComplete * 100);
+        console.log(percentComplete);
+
+        if (percentComplete === 100) {
+
+        }
+
+      }
+    }, false);
+
+    return xhr;
+  },
+  url: posturlfile,
+  type: "POST",
+  data: JSON.stringify(fileuploaddata),
+  contentType: "application/json",
+  dataType: "json",
+  success: function(result) {
+    console.log(result);
+  }
+});
+
+    //function input_filename() {
+    //    fil_input_label.innerHTML = input.files
+    //};
+
+     function filesize(elem) {
+        document.coocke = `filesize=${elem.files[0].size}`;
+     };
+ </script>
+{% endblock %} 
+
+{% endblock body %}

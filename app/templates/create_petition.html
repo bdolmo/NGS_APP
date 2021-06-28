@@ -1,0 +1,289 @@
+{% extends "base.html" %}
+
+{% block body %}
+
+<div class="d-flex justify-content-center pt-3 mt-3 rounded" style="background-color:white; width:100%">
+
+    <div class="container-fluid rounded" style="background-color:white; width:75%">
+      <div class="d-flex justify-content-center">
+        <div class = "row mt-1">
+            {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+            {% for category,message in messages %}
+            <div class="alert alert-{{ category }} alert-dismissible fade show ml-3" role="alert">
+              <span>{{ message }}</span>
+              <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+                <span aria-hidden="true">&times;</span>
+              </button>
+               <br>
+            </div>
+            {% endfor %}
+          {% endif %}
+        {% endwith %}
+        </div>
+      </div>
+        <div class="card card-body border-0" style="background-color:rgb(248, 248, 248);">
+        <h2 class="card-title">Nova petició</h2>
+          <hr style="1px solid black;">
+          <div class="row">
+            <div class="col-sm mt-3">
+              <!-- Button trigger modal -->
+              <h6><b>Opció A:</b> carrega un document word (.docx) de petició de laboratori</h6>
+              <form action="/upload_petition" method="POST" enctype="multipart/form-data" id="petition_form">
+                <div class="input-group mb-3" style="width:90%;">
+                  <div class="input-group-prepend">
+                    <span class="input-group-text"></span>
+                  </div>
+                  <!-- Here is the input file type -->
+                  <div class="custom-file">
+                    <input type="file" name="petition_document" class="button" id="inputPetitionDocument" multiple>
+                    <label class="custom-file-label" id="petition_document" for="inputPetitionDocument">Selecciona un docx</label>
+                  </div>
+                  <button class="btn btn-primary ml-3" type="submit" id="upload_petition" >Envia</button>
+                </div>
+              </form>
+            </div>
+            <div class="col-sm mt-3">
+              <h6><b>Opció B:</b> Afegeix mostres a través de l'aplicació</h6>
+              <button type="button" class="btn btn-outline-primary" data-toggle="modal" data-target="#new_sample">
+                <i class="fas fa-plus-square"></i> mostra
+              </button>
+            </div>
+          </div>
+        </div>
+        <div class="card card-body border-0 mt-3" style="background-color:rgb(248, 248, 248);">
+          <h2 class="card-title">Llista de peticions</h2>
+          <hr>
+          <a class="btn btn-primary" style="width:10%;" data-toggle="collapse" href="#petition_container" role="button" aria-expanded="false" aria-controls="petition_container">
+            Veure llistat
+          </a>
+          <div class="collapse" id="petition_container">
+          <div class="row" id="petition_row">
+            <div class="container-fluid pt-1 rounded mb-3 mt-3" style="width:100%">
+                <table id="petition_table" class="table table-striped table-bordered" style="background-color:white;width:100;font-size:14px;">
+                  <thead>
+                    <tr>
+                      <th>ID</th>
+                      <th>Codi AP</th>
+                      <th>Num. HC</th>
+                      <th>Data Extracció</th>
+                      <th>%Tumoral</th>
+                      <th>Volum residual</th>
+                      <th>Conc. nanodrop</th>
+                      <th>Ratio 260/280 nanodrop</th>
+                      <th>Metge sol·licitant</th>
+                      <th>Unitat de facturació</th>
+                      <th>Accions</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {% for p in petitions %}
+                    <tr>
+                      <td>{{ p.Id }}</td>
+                      <td><b>{{ p.AP_code }}</b></td>
+                      <td><b>{{ p.HC_code }}</b></td>
+                      <td>{{ p.Date }}</td>
+                      <td>{{ p.Tumour_pct }}</td>
+                      <td>{{ p.Volume }}</td>
+                      <td>{{ p.Conc_nanodrop }}</td>
+                      <td>{{ p.Ratio_nanodrop }}</td>
+                      <td>{{ p.Medical_doctor }}</td>
+                      <td>{{ p.Billing_unit }}</td>
+
+                      <td> <a href="" role="button"><i class="fas fa-edit fa-lg" style="color:rgb(109, 106, 106)"></i></a>
+                        <a href="{{ url_for('remove_sample', id=p.Id) }}" role="button"  onclick="return confirm('Vols eliminar aquesta mostra?');">
+                          <i class="fas fa-trash fa-lg" style="color: rgba(209, 20, 20, 0.938)"></i>
+                        </a>
+                      </td>
+                    </tr>
+                   {% endfor %}
+                  </tbody>
+                </table>
+            </div>
+          </div>
+          </div>
+          <div class="modal fade bd-example-modal-lg" id="new_sample" tabindex="-1" aria-labelledby="modal_new_sample" aria-hidden="true">
+            <form action="/create_petition" method="POST" enctype="multipart/form-data" id="create_petition">
+              <div class="modal-dialog modal-lg">
+                <div class="modal-content">
+                  <div class="modal-header" style="background-color:rgb(248, 248, 248);">
+                    <h4 class="modal-title" id="modal_new_sample">Nova mostra</h4>
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                      <span aria-hidden="true">&times;</span>
+                    </button>
+                  </div>
+                  <div class="modal-body">
+                    <div class="row mt-3">
+                      <div class="col-sm">
+                        <h6><b>Data d'extracció</b></h6>
+                        <div class="form-group">
+                          <div id="datepicker" data-provide="datepicker">
+                            <input class="form-control" name="Date" type="date" value="" id="example-date-input">
+                            <div class="input-group-addon">
+                                <span class="glyphicon glyphicon-th"></span>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+
+                      <div class="col-sm ">
+                        <h6><b>Codi d'Anatomia Patològica</b></h6>
+                        <div class="input-group mb-3">
+                          <div class="input-group-prepend">
+                            <span class="input-group-text" id="basic-addon1">Codi AP</span>
+                          </div>
+                          <input type="text" name="AP_code" class="form-control" placeholder="" aria-label="Username" aria-describedby="basic-addon1">
+                        </div>
+                      </div>
+                    </div>
+                    <div class="row mt-3">
+                      <div class="col-sm">
+                        <h6><b>Número d'Història clínica</b></h6>
+                        <div class="input-group mb-3">
+                          <div class="input-group-prepend">
+                            <span class="input-group-text" id="basic-addon1">Num. HC</span>
+                          </div>
+                          <input type="text" name="HC_code" class="form-control" placeholder="" aria-label="Username" aria-describedby="basic-addon1">
+                        </div>
+                      </div>
+                      <div class="col-sm ">
+                        <h6><b>%Tumoral</b></h6>
+                        <select class="custom-select" name="Tumoral_pct" id="inputGroupSelect01">
+                          <option selected>%</option>
+                          <option value="0">0</option>
+                          <option value="5">5</option>
+                          <option value="10">10</option>
+                          <option value="15">15</option>
+                          <option value="20">20</option>
+                          <option value="25">25</option>
+                          <option value="30">30</option>
+                          <option value="35">35</option>
+                          <option value="40">40</option>
+                          <option value="45">45</option>
+                          <option value="50">50</option>
+                          <option value="55">55</option>
+                          <option value="60">60</option>
+                          <option value="65">65</option>
+                          <option value="70">70</option>
+                          <option value="75">75</option>
+                          <option value="80">80</option>
+                          <option value="85">85</option>
+                          <option value="90">90</option>
+                          <option value="95">95</option>
+                          <option value="100">100</option>
+                        </select>
+                      </div>
+                    </div>
+                    <div class="row mt-3">
+                      <div class="col-sm mb-6">
+                        <h6><b>Volum residual (ul)</b></h6>
+                        <input type="text" name="Residual_volume" class="form-control" id="residual_volume"  min="0" max="200">
+                      </div>
+                      <div class="col-sm mb-6">
+                        <h6><b>Avaluació Post tapestation</b></h6>
+
+                        <div class="custom-control custom-radio custom-control-inline">
+                            <div class="custom-control custom-radio custom-control-inline">
+                              <input type="radio" class="custom-control-input" name="tape_postevaluation" value="1" id="yes">
+                              <label class="custom-control-label" for="yes">
+                                  Sí
+                              </label>
+                            </div>
+                        </div>
+                        <div class="custom-control custom-radio custom-control-inline">
+                            <div class="custom-control custom-radio custom-control-inline">
+                              <input type="radio" class="custom-control-input" name="tape_postevaluation" value="2" id="no">
+                              <label class="custom-control-label" for="no">
+                                  No
+                              </label>
+                            </div>
+                        </div>
+                      </div>
+                   </div>
+                    <div class="row mt-3">
+                      <div class="col-sm ">
+                        <h6><b>Concentració Nanodrop</b></h6>
+                        <input type="text" name="Nanodrop_conc" class="form-control" id="nanodrop_conc"  min="0" max="1000">
+                      </div>
+                      <div class="col-sm ">
+                        <h6><b>Ratio 260/280 Nanodrop</b></h6>
+                        <input type="text" name="Nanodrop_ratio" class="form-control" id="nanodrop_ratio"  min="0" max="1000">
+                      </div>
+                    </div>
+                    <div class="row mt-3">
+                      <div class="col-sm ">
+                        <h6><b>Metge sol·licitant</b></h6>
+                        <input type="text" name="Medical_doctor" class="form-control" id="medical_doctor" >
+                      </div>
+                      <div class="col-sm ">
+                        <h6><b>Unitat de facturació</b></h6>
+                        <input type="text" name="Billing_unit" class="form-control" id="billing_unit" >
+                      </div>
+                    </div>
+
+                    </div>
+                    <div class="d-flex justify-content-center align-items-center mt-5">
+                      <button class="btn btn-primary mt-2 mb-2" style="width:15%;" type="submit" id="add_sample">Envia</button>
+                    </div>
+
+                  </div>
+              </div>
+            </form>
+          </div>
+
+        </div>
+      </div>
+  </div>
+</div>
+{% block script %}
+ <script>
+    $(document).ready(function() {
+        $("#submit_analysis").click(function() {
+            // disable button
+            $(this).prop("disabled", true);
+            // add spinner to button
+            $(this).html(
+                `<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Uploading...`
+            );
+        });
+    });
+    $.ajax({
+  xhr: function() {
+    var xhr = new window.XMLHttpRequest();
+
+    xhr.upload.addEventListener("progress", function(evt) {
+      if (evt.lengthComputable) {
+        var percentComplete = evt.loaded / evt.total;
+        percentComplete = parseInt(percentComplete * 100);
+        console.log(percentComplete);
+
+        if (percentComplete === 100) {
+
+        }
+
+      }
+    }, false);
+
+    return xhr;
+  },
+  url: posturlfile,
+  type: "POST",
+  data: JSON.stringify(fileuploaddata),
+  contentType: "application/json",
+  dataType: "json",
+  success: function(result) {
+    console.log(result);
+  }
+});
+
+    //function input_filename() {
+    //    fil_input_label.innerHTML = input.files
+    //};
+
+     function filesize(elem) {
+        document.coocke = `filesize=${elem.files[0].size}`;
+     };
+ </script>
+{% endblock %}
+
+{% endblock body %}

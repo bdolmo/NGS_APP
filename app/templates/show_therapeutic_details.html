@@ -1,0 +1,562 @@
+{% extends "base.html" %}
+
+{% block body %}
+
+
+<!-- <div class="container-fluid rounded" style="background-color:white; width:65%"> -->
+  <div class="d-flex" >
+      <!-- Sidebar -->
+      <div class="bg-light border-right vh-100" id="sidebar-wrapper"style="position:fixed;width:14%;">
+        <div class="list-group list-group-flush">
+          <a href="#General_info" class="list-group-item list-group-item-action bg-light"><i class="fas fa-info-circle"></i> General</a>
+          <a href="#identifiers" class="list-group-item list-group-item-action bg-light"><i class="fas fa-external-link-alt"></i> Identificadors</a>
+          <a href="#frequencies" class="list-group-item list-group-item-action bg-light"><i class="fas fa-globe-europe"></i> Freq. poblacionals</a>
+          <a href="#pubmed" class="list-group-item list-group-item-action bg-light"><i class="fas fa-book"></i> Pubmed</a>
+          <a href="#predictors_missense" class="list-group-item list-group-item-action bg-light"><i class="fas fa-sitemap" style="color:rgb(85, 1, 1);"></i> Predictors missense</a>
+          <a href="#predictors_splicing" class="list-group-item list-group-item-action bg-light"><i class="fas fa-sitemap" style="color:rgb(14, 1, 85);"></i> Predictors splicing</a>
+          <a href="#conservation" class="list-group-item list-group-item-action bg-light"><i class="bi bi-bezier2"></i> Conservació</a>
+          <a href="#igv" class="list-group-item list-group-item-action bg-light"><i class="bi bi-bar-chart-steps"></i> IGV</a>
+        </div>
+      </div>
+
+  <div class="container-fluid" style="background-color:white; width:70%">
+  <nav aria-label="breadcrumb ">
+    <ol class="breadcrumb mt-3">
+      <li class="breadcrumb-item"><a href= "{{url_for('status') }} ">Resultats</a></li>
+
+      <li class="breadcrumb-item"><a href= "{{url_for('show_run_details', run_id=sample_info.run_id) }} ">{{ sample_info.run_id }}</a></li>
+      <li class="breadcrumb-item"><a href= "{{url_for('show_sample_details',run_id=sample_info.run_id, sample=sample_info.lab_id,sample_id=sample_info.id,active='Therapeutic') }} ">{{ sample_info.lab_id }}</a></li>
+      <li class="breadcrumb-item active" aria-current="page"><h5>{{ var_name }}</h5></li>
+    </ol>
+  </nav>
+  <div class="row">
+    <div class="col">
+      <h4>{{ var_name }}</h4>
+    </div>
+  </div>
+  <hr>
+
+  <div class="row" id="General_info">
+    <div class="col">
+      <h5><b><i class="fas fa-angle-right"></i> General</b></h5>
+      <table>
+        <tr>
+          <td style="padding-right:20px;">Gene:</td>
+          <td style="padding-right:20px;">
+            <a href="https://www.genecards.org/cgi-bin/carddisp.pl?gene={{ variant_dict['INFO']['CSQ']['SYMBOL'] }} "><b><i>{{ variant_dict['INFO']['CSQ']['SYMBOL'] }}</i></b></a>
+          </td>
+        </tr>
+        <tr>
+          <td style="padding-right:20px;">Isoforma:</td>
+          <td style="padding-right:20px;">{{ variant_dict['INFO']['CSQ']['Feature']}}</td>
+        </tr>
+        <tr>
+          <td style="padding-right:20px;">Exó:</td>
+          <td style="padding-right:20px;">{{ variant_dict['INFO']['CSQ']['EXON'] }}</td>
+        </tr>
+      </table>
+    </div>
+    <div class="col">
+      <h5><b><i class="fas fa-angle-right"></i> Codis HGVS</b></h5>
+      <table>
+        <tr>
+          <td style="padding-right:20px;">HGVSp:</td>
+          <td style="padding-right:20px;">{{variant_dict['INFO']['CSQ']['HGVSp']}}</td>
+        </tr>
+        <tr>
+          <td style="padding-right:20px;">HGVSc:</td>
+          <td style="padding-right:20px;">{{variant_dict['INFO']['CSQ']['HGVSc']}}</td>
+        </tr>
+        <tr>
+          <td style="padding-right:20px;">HGVSg:</td>
+          <td style="padding-right:20px;">{{variant_dict['INFO']['CSQ']['HGVSg']}}</td>
+        </tr>
+      </table>
+    </div>
+    <div class="col">
+      <h5><b><i class="fas fa-angle-right"></i> Característiques</b></h5>
+      <table>
+        <tr>
+          <td style="padding-right:20px;">Efecte:</td>
+          <td style="padding-right:20px;">{{variant_dict['INFO']['CSQ']['Consequence']}}</td>
+        </tr>
+        <tr>
+          <td style="padding-right:20px;">Localització:</td>
+          <td style="padding-right:20px;">{{variant_dict['INFO']['CSQ']['BIOTYPE']}}</td>
+        </tr>
+        <tr>
+          <td style="padding-right:20px;">ClinVar:</td>
+          <td style="padding-right:20px;">{{ variant_dict['INFO']['CSQ']['CLIN_SIG'] | replace("&", ",") | replace("_", " ") }}</td>
+        </tr>
+      </table>
+    </div>
+  </div>
+  <div class="row mt-4" id="identifiers">
+    <div class="col">
+      <h5><b><i class="fas fa-angle-right"></i> Identificadors</b></h5>
+      <div class="text">
+      {% set list_id = variant_dict['INFO']['CSQ']['Existing_variation'].split(',')  %}
+      {% if list_id|length < 10   %}
+        {% for item in list_id %}
+          <a href="https://www.ncbi.nlm.nih.gov/snp/{{item}}">{{ item }}</a>
+        {% endfor %}
+      {% else %}
+       {% for n in range(1,10) %}
+        <a href="https://www.ncbi.nlm.nih.gov/snp/{{list_id[n]}}">{{ list_id[n] }}</a>
+       {% endfor %}
+       <br>
+       <div class="collapse" id="collapseId">
+          {% for n in range(10,list_id|length) %}
+          <a href="https://www.ncbi.nlm.nih.gov/snp/{{list_id[n]}}">{{ list_id[n] }}</a>
+          {% endfor %}
+       </div>
+       <a class="btn btn-primary" data-toggle="collapse" href="#collapseId" role="button" aria-expanded="false" aria-controls="collapseId">Mostra <i class="fas fa-plus fa-xs"></i></a>
+      {% endif %}
+
+      </div>
+    </div>
+  </div>
+  <div class="row mt-4" id="frequencies">
+    <div class="col">
+      <h5><b><i class="fas fa-angle-right"></i> Freqüències poblacionals</b></h5>
+      <table class="table table-hover table-sm">
+        <thead>
+          <th>gnomAD</th>
+          <th>Allele num.</th>
+          <th>Allele count</th>
+          <th>Allele Freq.</th>
+        </thead>
+        <tbody>
+        <tr>
+          <td style="">African:</td>
+          <td style="">{{variant_dict['INFO']['CSQ']['GNOMAD_AN_afr']}}</td>
+          <td style="">{{variant_dict['INFO']['CSQ']['GNOMAD_AC_afr']}}</td>
+          <td style="">{{variant_dict['INFO']['CSQ']['GNOMAD_AF_afr']}}</td>
+        </tr>
+        <tr>
+          <td style="">American:</td>
+          <td style="">.</td>
+          <td style="">.</td>
+          <td style="">.</td>
+        </tr>
+        <tr>
+          <td style="">Non-Finnish European:</td>
+          <td style="">{{variant_dict['INFO']['CSQ']['GNOMAD_AN_nfe']}}</td>
+          <td style="">{{variant_dict['INFO']['CSQ']['GNOMAD_AC_nfe']}}</td>
+          <td style="">{{variant_dict['INFO']['CSQ']['GNOMAD_AF_nfe']}}</td>
+        </tr>
+        <tr>
+          <td style="">Finnish:</td>
+          <td style="">{{variant_dict['INFO']['CSQ']['GNOMAD_AN_fin']}}</td>
+          <td style="">{{variant_dict['INFO']['CSQ']['GNOMAD_AC_fin']}}</td>
+          <td style="">{{variant_dict['INFO']['CSQ']['GNOMAD_AF_fin']}}</td>
+        </tr>
+        <tr>
+          <td style="">East Asian:</td>
+          <td style="">{{variant_dict['INFO']['CSQ']['GNOMAD_AN_eas']}}</td>
+          <td style="">{{variant_dict['INFO']['CSQ']['GNOMAD_AC_eas']}}</td>
+          <td style="">{{variant_dict['INFO']['CSQ']['GNOMAD_AF_eas']}}</td>
+        </tr>
+        <tr>
+          <td style="">Ashkenazi Jewish:</td>
+          <td style="">{{variant_dict['INFO']['CSQ']['GNOMAD_AN_asj']}}</td>
+          <td style="">{{variant_dict['INFO']['CSQ']['GNOMAD_AC_asj']}}</td>
+          <td style="">{{variant_dict['INFO']['CSQ']['GNOMAD_AF_asj']}}</td>
+        </tr>
+        <tr>
+          <td style="">Other:</td>
+          <td style="">{{variant_dict['INFO']['CSQ']['GNOMAD_AN_oth']}}</td>
+          <td style="">{{variant_dict['INFO']['CSQ']['GNOMAD_AC_oth']}}</td>
+          <td style="">{{variant_dict['INFO']['CSQ']['GNOMAD_AF_oth']}}</td>
+        </tr>
+      </tbody>
+      </table>
+      Max AF: {{variant_dict['INFO']['CSQ']['Max_AF']}} Max AF Pop.: {{ variant_dict['INFO']['CSQ']['Max_AF_Pop'] }}
+    </div>
+    <div class="col">
+      <h5><b>  </b></h5>
+      <br>
+      <table class="table table-hover table-sm">
+        <thead>
+          <th>1000Genomes</th>
+          <th>Allele Num.</th>
+          <th>Allele Count</th>
+          <th>Allele Freq.</th>
+        </thead>
+        <tbody>
+        <tr>
+          <td style="">African:</td>
+          <td style="">{{variant_dict['INFO']['CSQ']['AFR_AN']}}</td>
+          <td style="">{{variant_dict['INFO']['CSQ']['AFR_AC']}}</td>
+          <td style="">{{variant_dict['INFO']['CSQ']['AFR_AF']}}</td>
+        </tr>
+        <tr>
+          <td style="">American:</td>
+          <td style="">{{variant_dict['INFO']['CSQ']['AMR_AN']}}</td>
+          <td style="">{{variant_dict['INFO']['CSQ']['AMR_AC']}}</td>
+          <td style="">{{variant_dict['INFO']['CSQ']['AMR_AF']}}</td>
+        </tr>
+        <tr>
+          <td style="">European:</td>
+          <td style="">{{variant_dict['INFO']['CSQ']['EUR_AN']}}</td>
+          <td style="">{{variant_dict['INFO']['CSQ']['EUR_AC']}}</td>
+          <td style="">{{variant_dict['INFO']['CSQ']['EUR_AF']}}</td>
+        </tr>
+        <tr>
+          <td style="">South Asian:</td>
+          <td style="">{{variant_dict['INFO']['CSQ']['SAS_AN']}}</td>
+          <td style="">{{variant_dict['INFO']['CSQ']['SAS_AC']}}</td>
+          <td style="">{{variant_dict['INFO']['CSQ']['SAS_AF']}}</td>
+        </tr>
+        <tr>
+          <td style="">East Asian:</td>
+          <td style="">{{variant_dict['INFO']['CSQ']['EAS_AN']}}</td>
+          <td style="">{{variant_dict['INFO']['CSQ']['EAS_AC']}}</td>
+          <td style="">{{variant_dict['INFO']['CSQ']['EAS_AF']}}</td>
+        </tr>
+        <tr>
+          <td style="">Other:</td>
+          <td style="">{{variant_dict['INFO']['CSQ']['OTH_AN']}}</td>
+          <td style="">{{variant_dict['INFO']['CSQ']['OTH_AC']}}</td>
+          <td style="">{{variant_dict['INFO']['CSQ']['OTH_AF']}}</td>
+        </tr>
+      </tbody>
+      </table>
+      <br>
+    </div>
+  </div>
+  <div class="row mt-4" id="pubmed">
+    <div class="col">
+      <h5><b><i class="fas fa-angle-right"></i> Pubmed</b></h5>
+      <div class="text">
+      {% set list_pubmed = variant_dict['INFO']['CSQ']['PUBMED'].split('&')  %}
+      {% if list_pubmed|length < 10  %}
+        {% for item in list_pubmed %}
+          <a href="https://pubmed.ncbi.nlm.nih.gov/{{ item }}">{{ item }}</a>
+        {% endfor %}
+      {% else %}
+       {% for n in range(1,10) %}
+        <a href="https://pubmed.ncbi.nlm.nih.gov/{{ list_pubmed[n] }}">{{ list_pubmed[n] }}</a>
+       {% endfor %}
+       <br>
+       <div class="collapse" id="collapsePubmed">
+        {% for n in range(10,list_pubmed|length) %}
+        <a href="https://pubmed.ncbi.nlm.nih.gov/{{ list_pubmed[n] }}">{{ list_pubmed[n] }}</a>
+        {% endfor %}
+       </div>
+      {% endif %}
+      {% set missing = list_pubmed|length - 10 %}
+      {% if missing >= 10 %}
+        <a class="btn btn-primary" data-toggle="collapse" href="#collapsePubmed" role="button" aria-expanded="false" aria-controls="collapsePubmed">Mostra <span class="badge badge-light">{{ missing }}</span></a>
+      {% endif %}
+      </div>
+    </div>
+  </div>
+  <div class="row mt-4" id="predictors_missense">
+    <div class="col">
+      <h5><b><i class="fas fa-angle-right"></i> Predictors In-silico (missense)</b></h5>
+    </div>
+  </div>
+  <div class="row">
+    <div class="col">
+      <div class="d-flex justify-content-start">
+
+        <div class="card mr-1" style="background-color:#f6f6f6">
+          <div class="card-body">
+          <h5 class="card-title"><b>SIFT</b></h5>
+          <hr>
+          {% set sift_score_list =  variant_dict['INFO']['CSQ']['SIFT'].split('&') %}
+          {% set sift_pred_list =  variant_dict['INFO']['CSQ']['SIFT_pred'].split('&') %}
+          <p class="card-text"> Score:  </p>
+          {% for item in sift_score_list %}
+            {% if item != '.' %}
+              {{ item }}
+            {% endif %}
+          {% endfor %}
+          <br>
+          {% for item in sift_pred_list %}
+            {% if item != '.' %}
+              {% if item == 'D' %}
+                <span class="badge badge-pill badge-danger" style="background-color:red">D</span>
+              {% else %}
+                <span class="badge badge-pill badge-secondary" style="background-color:grey">B</span>
+              {% endif %}
+            {% endif %}
+          {% endfor %}
+          </div>
+        </div>
+        <div class="card mr-1" style="background-color:#f6f6f6">
+          <div class="card-body">
+          <h5 class="card-title"><b>Polyphen</b></h5>
+          <hr>
+          {% set polyphen_score_list =  variant_dict['INFO']['CSQ']['Polyphen2_HDIV_score'].split('&') %}
+          {% set polyphen_pred_list =  variant_dict['INFO']['CSQ']['Polyphen2_HDIV_pred'].split('&') %}
+          <p class="card-text"> Score: </p>
+
+          {% for item in polyphen_score_list %}
+            {% if item != '.' %}
+              {{ item }}
+            {% endif %}
+          {% endfor %}
+          <br>
+          {% for item in polyphen_pred_list %}
+            {% if item != '.' %}
+              {% if item == 'D' %}
+                <span class="badge badge-pill badge-danger" style="background-color:red">D</span>
+              {% else %}
+                <span class="badge badge-pill badge-secondary" style="background-color:grey">B</span>
+              {% endif %}
+            {% endif %}
+          {% endfor %}
+          </div>
+        </div>
+
+        <div class="card mr-1" style="background-color:#f6f6f6">
+          <div class="card-body">
+          <h5 class="card-title"><b>PROVEAN</b></h5>
+          <hr>
+          {% set provean_score_list =  variant_dict['INFO']['CSQ']['PROVEAN_score'].split('&') %}
+          {% set provean_pred_list =  variant_dict['INFO']['CSQ']['PROVEAN_pred'].split('&') %}
+          <p class="card-text"> Score: </p>
+
+          {% for item in provean_score_list %}
+            {% if item != '.' %}
+              {{ item }}
+            {% endif %}
+          {% endfor %}
+          <br>
+          {% for item in provean_pred_list %}
+            {% if item != '.' %}
+              {% if item == 'D' %}
+                <span class="badge badge-pill badge-danger" style="background-color:red">D</span>
+              {% else %}
+                <span class="badge badge-pill badge-secondary" style="background-color:grey">B</span>
+              {% endif %}
+            {% endif %}
+          {% endfor %}
+          </div>
+        </div>
+
+        <div class="card mr-1" style="background-color:#f6f6f6">
+          <div class="card-body">
+            <h5 class="card-title"><b>FATHMM</b></h5>
+            <hr>
+            {% set fathmm_score_list =  variant_dict['INFO']['CSQ']['FATHMM_score'].split('&') %}
+            {% set fathmm_pred_list =  variant_dict['INFO']['CSQ']['FATHMM_pred'].split('&') %}
+            <p class="card-text"> Score: </p>
+            {% for item in fathmm_score_list %}
+              {% if item != '.' %}
+                {{ item }}
+              {% endif %}
+            {% endfor %}
+            <br>
+            {% for item in fathmm_pred_list %}
+              {% if item != '.' %}
+                {% if item == 'D' %}
+                  <span class="badge badge-pill badge-danger" style="background-color:red">D</span>
+                {% else %}
+                  <span class="badge badge-pill badge-secondary" style="background-color:grey">B</span>
+                {% endif %}
+              {% endif %}
+            {% endfor %}
+
+          </div>
+        </div>
+        <div class="card mr-1" style="background-color:#f6f6f6">
+          <div class="card-body">
+          <h5 class="card-title"><b>MutationTaster</b></h5>
+          <hr>
+
+          {% set mutationtaster_score_list =  variant_dict['INFO']['CSQ']['MutationTaster_score'].split('&') %}
+          {% set mutationtaster_pred_list =  variant_dict['INFO']['CSQ']['MutationTaster_pred'].split('&') %}
+          <p class="card-text"> Score: </p>
+          {% for item in mutationtaster_score_list %}
+            {% if item != '.' %}
+              {{ item }}
+            {% endif %}
+          {% endfor %}
+          <br>
+          {% for item in mutationtaster_pred_list %}
+            {% if item != '.' %}
+              {% if item == 'D' %}
+                <span class="badge badge-pill badge-danger" style="background-color:red">D</span>
+              {% else %}
+                <span class="badge badge-pill badge-secondary" style="background-color:grey">N</span>
+              {% endif %}
+            {% endif %}
+          {% endfor %}
+          </div>
+        </div>
+        <div class="card mr-1" style="background-color:#f6f6f6">
+          <div class="card-body">
+          <h5 class="card-title"><b>REVEL</b></h5>
+          <hr>
+          <p class="card-text"> Score: </p>
+          {{ variant_dict['INFO']['CSQ']['REVEL_score'] }}
+          <br>
+          {% if variant_dict['INFO']['CSQ']['REVEL_score'] | float  > 0.5 %}
+            <span class="badge badge-pill badge-danger" style="background-color:red">D</span>
+          {% else %}
+            {% if variant_dict['INFO']['CSQ']['REVEL_score'] != '.' %}
+            <span class="badge badge-pill badge-danger" style="background-color:grey">B</span>
+            {% endif %}
+          {% endif %}
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="row mt-4" id="predictors_splicing">
+    <div class="col">
+      <h5><b><i class="fas fa-angle-right"></i> Predictors In-silico (splicing)</b></h5>
+    </div>
+  </div>
+  <div class="row mt-4">
+    <div class="col">
+      <div class="d-flex justify-content-start">
+        <div class="card mr-1" style="background-color:#f6f6f6">
+          <div class="card-body">
+          <h5 class="card-title"><b>spliceAI</b></h5>
+          <hr>
+          <table>
+            <tbody>
+              <tr>
+                <td>Acceptor gain score:</td><td>{{ variant_dict['INFO']['CSQ']['SpliceAI_pred_DS_AG'] }}</td>
+              </tr>
+              <tr>
+                <td>Acceptor loss score:</td><td>{{ variant_dict['INFO']['CSQ']['SpliceAI_pred_DS_AL'] }}</td>
+              </tr>
+              <tr>
+                <td>Donor gain score:</td><td>{{ variant_dict['INFO']['CSQ']['SpliceAI_pred_DS_DG'] }}</td>
+              </tr>
+              <tr>
+                <td>Donor loss score:</td><td>{{ variant_dict['INFO']['CSQ']['SpliceAI_pred_DS_DL'] }}</td>
+              </tr>
+            </tbody>
+          </table>
+          </div>
+        </div>
+        <div class="card mr-1" style="background-color:#f6f6f6">
+          <div class="card-body">
+            <h5 class="card-title"><b>MaxEntScan</b></h5>
+            <hr>
+            <p class="card-text"> Score: {{ variant_dict['INFO']['CSQ']['MaxEntScan_diff'] }}</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="row mt-4" id="conservation">
+    <div class="col">
+      <h5><b><i class="fas fa-angle-right"></i> Conservació:</b></h5>
+    </div>
+  </div>
+  <div class="row mt-4">
+    <div class="col">
+      <div class="d-flex justify-content-start">
+        <div class="card mr-1" style="background-color:#f6f6f6">
+          <div class="card-body">
+          <h5 class="card-title"><b>PhyloP</b></h5>
+          <hr>
+          <p class="card-text"> Predicció: {{ variant_dict['INFO']['CSQ']['PhyloP']| float|round(2)   }}</p>
+          </div>
+        </div>
+        <div class="card mr-1" style=background-color:#f6f6f6">
+          <div class="card-body">
+          <h5 class="card-title"><b>Phastcons</b></h5>
+          <hr>
+          <p class="card-text"> Predicció: {{ variant_dict['INFO']['CSQ']['Phastcons']| float|round(2) }}</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="row mt-4" id="igv">
+    <div class="col">
+      <h5><b><i class="fas fa-angle-right"></i> IGV</b></h5>
+      <div id='igvDiv' style=""></div>
+    </div>
+  </div>
+  </div>
+</div>
+
+
+{% block script %}
+<script type="text/javascript">
+
+  document.addEventListener("DOMContentLoaded", function () {
+    const options =
+        {
+            locus: "{{ locus }} ",
+            genome: "hg19",
+            tracks:[
+              {
+                type:'alignment',
+                format: 'bam',
+                // url : "{{ sample_info.bam }}" ,
+                // indexURL: "{{ bai }}"
+                url: 'gs://genomics-public-data/platinum-genomes/bam/NA12878_S1.bam',
+                indexURL: 'gs://genomics-public-data/platinum-genomes/bam/NA12878_S1.bam.bai'
+              }
+            ]
+        };
+
+    const igvDiv = document.getElementById('igvDiv');
+
+    igv.createBrowser(igvDiv, options)
+        .then(function (browser) {
+            igv.browser = browser;
+            console.log("Created IGV browser");
+        })
+  });
+
+
+    $(document).ready(function() {
+        $("#submit_analysis").click(function() {
+            // disable button
+            $(this).prop("disabled", true);
+            // add spinner to button
+            $(this).html(
+                `<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Uploading...`
+            );
+        });
+    });
+    $.ajax({
+  xhr: function() {
+    var xhr = new window.XMLHttpRequest();
+
+    xhr.upload.addEventListener("progress", function(evt) {
+      if (evt.lengthComputable) {
+        var percentComplete = evt.loaded / evt.total;
+        percentComplete = parseInt(percentComplete * 100);
+        console.log(percentComplete);
+
+        if (percentComplete === 100) {
+
+        }
+      }
+    }, false);
+
+    return xhr;
+  },
+  url: posturlfile,
+  type: "POST",
+  data: JSON.stringify(fileuploaddata),
+  contentType: "application/json",
+  dataType: "json",
+  success: function(result) {
+    console.log(result);
+  }
+});
+
+    //function input_filename() {
+    //    fil_input_label.innerHTML = input.files
+    //};
+
+     function filesize(elem) {
+        document.coocke = `filesize=${elem.files[0].size}`;
+     };
+ </script>
+{% endblock %}
+
+{% endblock body %}

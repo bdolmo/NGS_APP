@@ -1,0 +1,397 @@
+{% extends "base.html" %}
+
+{% block body %}
+
+<div class="d-flex justify-content-center">
+
+  <div class="container-fluid rounded" style="background-color:white; width:60%">
+    <div class = "container mt-3" style="width:100%; float:right;">
+      {% with messages = get_flashed_messages(with_categories=true) %}
+      {% if messages %}
+          {% for category,message in messages %}
+          <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
+              <span>{{ message }}</span>
+              <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+                  <span aria-hidden="true">&times;</span>
+              </button>
+              <br>
+              {% endfor %}
+          </div>
+      {% endif %}
+      {% endwith %}
+    </div>
+    <div class="card card-body border-0 mt-3" style="background-color:rgb(248, 248, 248);">
+     <form action="{{ url_for('update_panel', panel=panel_info.Panel) }}" method="POST" enctype="multipart/form-data" id="update_panel">
+      <h2 class="card-title">{{ panel_info.Panel }}</h2>
+      <div class=""><small><i>Última modificació: {{ panel_info.Last_modified }}</i></small></div>
+      <hr>
+      <div class="row">
+        <div class="col-3">
+            <div style="width:100%;">
+                <label for="panel_name"><b>Panell:</b></label>
+                <div class="input-group mb-3">
+                    <input type="text" value="{{ panel_info.Panel }}" name="panel_name" class="form-control" ></input>
+                </div>
+            </div>
+        </div>
+        <div class="col-2">
+            <div style="width:100%;">
+                <label for="panel_version"><b>Versió:</b></label>
+                <div class="input-group mb-3">
+                    <input type="text" value="{{ panel_info.Version }}" name="panel_version" class="form-control" ></input>
+                </div>
+            </div>
+        </div>
+        <div class="col-7">
+            <label for="panel_name"><b>Arxiu BED</b></label>
+            <div class="input-group mb-3">
+                <div class="custom-file">
+                    <input oninput="filesize(this);" type="file" name="panel_bed" class="custom-file-input" id="panel_bed" lang="ca">
+                    <label class="custom-file-label" id="panel_label" for="inputGroupFile01">{{ panel_info.Panel_bed }}</label>
+                </div>
+            </div>
+        </div>
+      </div>
+      <hr>
+       <div class="row">
+            <div class="col">
+              <h6><b>Versió del genoma</b></h6>
+              <div class="custom-control custom-radio custom-control-inline">
+                {% if panel_info.Genome_version == "hg19" %}
+                  <div class="custom-control custom-radio custom-control-inline">
+                    <input type="radio" class="custom-control-input" name="genome_version" value="1" id="hg19" checked>
+                    <label class="custom-control-label" for="hg19">
+                        hg19
+                    </label>
+                  </div>
+                {% else %}
+                  <div class="custom-control custom-radio custom-control-inline">
+                    <input type="radio" class="custom-control-input" name="genome_version" value="1" id="hg19">
+                    <label class="custom-control-label" for="hg19">
+                        hg19
+                    </label>
+                  </div>
+                {% endif %}
+                {% if panel_info.Genome_version == "hg38" %}
+                  <div class="custom-control custom-radio custom-control-inline">
+                    <input type="radio" class="custom-control-input" name="genome_version" value="2" id="hg38" checked>
+                    <label class="custom-control-label" for="hg38">
+                        hg38
+                    </label>
+                  </div>
+                {% else %}
+                  <div class="custom-control custom-radio custom-control-inline">
+                    <input type="radio" class="custom-control-input" name="genome_version" value="2" id="hg38">
+                    <label class="custom-control-label" for="hg38">
+                        hg38
+                    </label>
+                  </div>
+                {% endif %}
+              </div>
+
+            </div>
+            <div class="col">
+                <h6><b>Anàlisi de variants</b></h6>
+                {% if panel_info.Variant_call == "Germline" %}
+                <div class="custom-control custom-radio custom-control-inline">
+                    <input type="radio" class="custom-control-input" name="variant_analysis" value="1" id="germline" checked>
+                    <label class="custom-control-label" for="germline">
+                        Germinal
+                    </label>
+                </div>
+                {% else %}
+                <div class="custom-control custom-radio custom-control-inline">
+                    <input type="radio" class="custom-control-input" name="variant_analysis" value="1" id="germline">
+                    <label class="custom-control-label" for="germline">
+                        Germinal
+                    </label>
+                  </div>
+                {% endif %}
+                {% if panel_info.Variant_call == "Somatic" %}
+                <div class="custom-control custom-radio custom-control-inline">
+                    <input type="radio" class="custom-control-input" name="variant_analysis" value="2" id="somatic" checked>
+                    <label class="custom-control-label" for="somatic">
+                        Somàtic
+                    </label>
+                </div>
+                {% else %}
+                <div class="custom-control custom-radio custom-control-inline">
+                    <input type="radio" class="custom-control-input" name="variant_analysis" value="2" id="somatic" checked>
+                    <label class="custom-control-label" for="somatic">
+                        Somàtic
+                    </label>
+                </div>
+                {% endif %}
+            </div>
+            <div class="col">
+                <h6><b>Llengua de l'informe</b></h6>
+                {% if panel_info.Language == "catalan" %}
+                <div class="custom-control custom-radio custom-control-inline">
+                    <input type="radio" class="custom-control-input" name="report_lang" value="1" id="catalan" checked>
+                    <label class="custom-control-label" for="catalan">
+                        Català
+                    </label>
+                </div>
+                {% else %}
+                <div class="custom-control custom-radio custom-control-inline">
+                    <input type="radio" class="custom-control-input" name="report_lang" value="1" id="catalan" >
+                    <label class="custom-control-label" for="catalan">
+                      Català
+                    </label>
+                </div>
+                {% endif %}
+                {% if panel_info.Language == "english" %}
+                <div class="custom-control custom-radio custom-control-inline">
+                    <input type="radio" class="custom-control-input" name="report_lang" value="2" id="english" checked>
+                    <label class="custom-control-label" for="english">
+                        Anglès
+                    </label>
+                </div>
+                {% else %}
+                <div class="custom-control custom-radio custom-control-inline">
+                    <input type="radio" class="custom-control-input" name="report_lang" value="2" id="english">
+                    <label class="custom-control-label" for="english">
+                      Anglès
+                    </label>
+                </div>
+                {% endif %}
+
+            </div>
+       </div>
+       <hr>
+       <div class="row mt-2">
+            <div class="col">
+                <div><b>Relació Gen-Isoforma:</b> mostra, afegeix o edita</div>
+            </div>
+       </div>
+       <div class ="row mt-2">
+        <div class="col">
+            <a class="btn btn-outline-secondary"  data-toggle="collapse" href="#roi_container" role="button" aria-expanded="false" aria-controls="roi_container">
+                Veure llistat
+            </a>
+        </div>
+
+       </div>
+       <div class="collapse" id="roi_container" style="width:100%;">
+            <div class="row mt-2">
+                <div class="col" style="width:90%;">
+                    <table id="roi_table" class="table table-striped table-bordered dt-responsive nowrap" style="width:100%;background-color:white;">
+                        <thead>
+                            <tr>
+                                <th>Gen</th>
+                                <th>ENSG</th>
+                                <th>ENST</th>
+                                <th>Acció</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for roi in roi_info %}
+                            <tr>
+                            <td><b>{{ roi.gene_name }}</b></td>
+                            <td>{{ roi.ensg_id }}</td>
+                            <td>{{ roi.enst_id }}</td>
+
+                            <td> <a type="button" data-target="#edit_{{roi.gene_name}}" data-toggle="modal" ><i class="fas fa-edit fa-sm" style="color:rgb(109, 106, 106)"></i></a>
+                                <a href="" role="button"  onclick="return confirm('Vols eliminar aquesta panell?');">
+                                <i class="fas fa-trash fa-sm" style="color: rgba(209, 20, 20, 0.938)"></i>
+                                </a>
+                            </td>
+
+                            <div class="modal fade bd-example-modal" id="edit_{{roi.gene_name}}" tabindex="-1" aria-labelledby="modal_{{roi.gene_name}}" aria-hidden="true">
+                                <form action="{{ url_for('update_gene_isoform', roi_id=roi.id, panel=panel_info.Panel) }}" method="POST" enctype="multipart/form-data" id="gene_isoform">
+                                  <div class="modal-dialog modal-lg">
+                                    <div class="modal-content">
+                                      <div class="modal-header" style="background-color:rgb(248, 248, 248);">
+                                        <h4 class="modal-title" id="modal_{{roi.gene_name}}">Relació Gen-Isoforma</h4>
+                                        <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                                          <span aria-hidden="true">&times;</span>
+                                        </button>
+                                      </div>
+                                      <div class="modal-body">
+                                        <div class="row mt-3">
+                                            <div class="col-sm">
+                                                <label for="panel_name"><b>Gen:</b></label>
+                                                <div class="input-group mb-3">
+                                                    <input type="text" value="{{ roi.gene_name }}" name="gene_name" class="form-control" ></input>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div class="row mt-3">
+                                            <div class="col-sm">
+                                                <label for="panel_name"><b>ENSG:</b></label>
+                                                <div class="input-group mb-3">
+                                                    <input type="text" value="{{ roi.ensg_id }}" name="ensg" class="form-control" ></input>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div class="row mt-3">
+                                            <div class="col-sm">
+                                                <label for="panel_name"><b>ENST:</b></label>
+                                                <div class="input-group mb-3">
+                                                    <input type="text" value="{{ roi.enst_id }}" name="enst" class="form-control" ></input>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div class ="row mt-3">
+                                            <div class="col">
+                                                <button class="btn btn-primary" type="submit"  href="">Desa canvis</button>
+                                            </div>
+                                        </div>
+                                      </div>
+                                    </div>
+                                </form>
+                            </div>
+
+                            </tr>
+                        {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+       </div>
+       <hr>
+
+       <div class ="row mt-2">
+        <div class="col mb-3">
+            <h6><b>Mètriques QC:</b> estableix els paràmetres mínims de qualitat</h6>
+        </div>
+       </div>
+       <div class ="row mt-2">
+        <div class="col">
+            <label style="color:rgb(78, 78, 78);" for=""><b><i>Call rate a:</i></b></label>
+            <div style="width:100%;">
+                <select class="custom-select" name="call_rate_filter">
+                    <option selected>{{ panel_info.Call_rate_filter }}</option>
+                    <option value="1">1X</option>
+                    <option value="2">10X</option>
+                    <option value="3">20X</option>
+                    <option value="4">30X</option>
+                    <option value="5">100X</option>
+                    <option value="6">200X</option>
+                </select>
+            </div>
+       </div>
+       <div class="col">
+        <label style="color:rgb(78, 78, 78);" for=""><b><i>% de bases</i></b></label>
+        <div class="input-group mb-3">
+            <input type="range" style="margin-left:10px;width:50%;" value="{{ panel_info.Call_rate_perc }}" class="custom-range" name="call_rate_perc" min="0" max="100" oninput="this.nextElementSibling.value = this.value">
+            <input type="text" id="call_rate_perc" value="{{ panel_info.Call_rate_perc }}" style="margin-left:10px;width:15%;">
+        </div>
+        </div>
+       </div>
+
+       <div class ="row mt-2">
+        <div class="col">
+            <label style="color:rgb(78, 78, 78);" for=""><b><i>Exons perduts a:</i></b></label>
+            <div style="width:100%;">
+                <select class="custom-select" name="lost_exons_filter">
+                    <option selected>{{ panel_info.Lost_exons_filter }}</option>
+                    <option value="1">1X</option>
+                    <option value="2">10X</option>
+                    <option value="3">20X</option>
+                    <option value="4">30X</option>
+                    <option value="5">100X</option>
+                    <option value="6">200X</option>
+                </select>
+            </div>
+        </div>
+        <div class="col">
+            <label style="color:rgb(78, 78, 78);" for=""><b><i>% d'exons</i></b></label>
+            <div class="input-group mb-3">
+                <input type="range" style="margin-left:10px;width:50%;" value="{{ panel_info.Lost_exons_perc }}" class="custom-range" name="lost_exons_perc" min="0" max="100" oninput="this.nextElementSibling.value = this.value">
+                <input type="text" id="lost_exons_perc" value="{{ panel_info.Lost_exons_perc }}" style="margin-left:10px;width:15%;">
+            </div>
+         </div>
+       </div>
+
+       <div class ="row mt-2">
+        <div class="col">
+            <div style="width:50%;">
+                <label style="color:rgb(78, 78, 78);" for="panel_name"><b><i>Nº de reads (Millions):</i></b></label>
+                <div class="input-group mb-3">
+                    <input type="text" value="{{ panel_info.Read_num_filter }}" name="number_reads" class="form-control"></input>
+                </div>
+            </div>
+        </div>
+       </div>
+
+        <div class ="row mt-2">
+            <div class="col">
+                <label style="color:rgb(78, 78, 78);" for=""><b><i>% Enrichment</i></b></label>
+                <div class="input-group mb-3">
+                    <input type="range" style="margin-left:10px;width:40%;" value="{{ panel_info.Enrichment_perc_filter }}" class="custom-range" name="enrichment_perc" min="0" max="100" oninput="this.nextElementSibling.value = this.value">
+                    <input type="text" id="enrichment_perc" value="{{ panel_info.Enrichment_perc_filter }}" style="margin-left:10px;width:7%;">
+                </div>
+            </div>
+        </div>
+        <div class ="row mt-2">
+            <div class="col">
+                <button class="btn btn-primary" type="submit"  href="">Desa canvis</button>
+            </div>
+        </div>
+     </form>
+    </div>
+
+
+
+
+</div>
+{% block script %}
+
+ <script>
+    function updateTextInput(val) {
+        document.getElementById('range_selector').value=val;
+    }
+ </script>
+
+ <script>
+    $(document).ready(function() {
+        $("#submit_analysis").click(function() {
+            // disable button
+            $(this).prop("disabled", true);
+            // add spinner to button
+            $(this).html(
+                `<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Uploading...`
+            );
+        });
+    });
+    $.ajax({
+  xhr: function() {
+    var xhr = new window.XMLHttpRequest();
+
+    xhr.upload.addEventListener("progress", function(evt) {
+      if (evt.lengthComputable) {
+        var percentComplete = evt.loaded / evt.total;
+        percentComplete = parseInt(percentComplete * 100);
+        console.log(percentComplete);
+
+        if (percentComplete === 100) {
+
+        }
+
+      }
+    }, false);
+
+    return xhr;
+  },
+  url: posturlfile,
+  type: "POST",
+  data: JSON.stringify(fileuploaddata),
+  contentType: "application/json",
+  dataType: "json",
+  success: function(result) {
+    console.log(result);
+  }
+});
+
+    //function input_filename() {
+    //    fil_input_label.innerHTML = input.files
+    //};
+
+     function filesize(elem) {
+        document.coocke = `filesize=${elem.files[0].size}`;
+     };
+ </script>
+{% endblock %}
+
+{% endblock body %}
