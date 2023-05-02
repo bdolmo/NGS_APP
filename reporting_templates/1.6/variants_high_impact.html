@@ -1,0 +1,160 @@
+<p style="page-break-inside: auto"></p>
+
+
+
+
+{% if relevant_variants|length == 0 %}
+  <div style="margin:0 auto;margin-bottom:5px;position:relative;top:-0.5cm">
+    <p style="font-size:14px;"><b> VARIANTS AMB EVIDÈNCIA CLÍNICA O POTENCIALMENT PATOGÈNIQUES</b></p>
+    <p style="font-size:12px;"> No s'han detectat variants amb evidència clínica o potencialment patogèniques</p>
+  </div>
+{% else %}
+<div style="margin:0 auto;margin-bottom:5px;position:relative;top:-1cm">
+  <table style="width:100%;margin:0 auto; table-layout: fixed;border:none; border-collapse: collapse;border: none;position:relative;top:30px;" >
+      <caption style="font-size:14px;margin-bottom:5px"><b> VARIANTS AMB EVIDÈNCIA CLÍNICA O POTENCIALMENT PATOGÈNIQUES</b></caption>
+    <tr style="color:black;background-color:#e6e6e6;font-size:12px;padding:0px;margin:0px;border: none;">
+      <th style="padding:5px;color:white;background-color:#123279;font-size:15px;font-family: arial, sans-serif;"> GEN </th>
+      <th style="padding:5px;color:white;background-color:#123279;font-size:15px;font-family: arial, sans-serif;"> VARIANT</th>
+      <th style="padding:5px;color:black;background-color:#dbe9ec;font-size:12px;font-family: arial, sans-serif;"> Detalls</th>
+    </tr>
+
+  {% set ns = namespace (has_been_marked = "") %}
+
+  {% for var in relevant_variants %}
+
+    {% set mark_depth = "" %}
+    {% set mark_vaf = "" %}
+    {% set mark_read_support = "" %}
+
+    {% set accredited = "" %}
+    {% set accreditation_class = "" %}
+    {% set accreditation_class = "PASS" %}
+    {% set var_phrase = "*" %}
+    {% if (var.allele_frequency|float < 0.05) %}
+      {% set var_phrase = var_phrase + " VAF < 5%" %}
+      {% set accreditation_class = "FAIL" %}
+      {% set mark_vaf = "1" %}
+    {% endif %}
+    {% if (var.read_support|int < 4) %}
+      {% set var_phrase = var_phrase + "< 4 reads suportant la variant" %}
+      {% set accreditation_class = "FAIL" %}
+      {% set mark_read_support = "1" %}
+    {% endif %}
+    {% if (var.depth|int < 100) %}
+      {% set var_phrase = var_phrase + "profunditat < 100X" %}
+      {% set accreditation_class = "FAIL" %}
+      {% set mark_depth = "1" %}
+    {% endif %}
+
+    <tr style="background-color:#f0f4f8;border-bottom: 1pt solid lightgrey;">
+      <td style="background-color:white;">
+          <b style="font-size:15px;margin:0px 0px 2px 0px;"><i>{{ var.gene }} </i></b><br>
+          {% if var.enst_id != "." %}
+            <p style="margin:0px;margin:0px 0px 2px 0px;">{{ var.enst_id }}</p>
+          {% endif %}
+          {% if var.exon != "." %}
+            <p style="margin:0px;">Exó: {{ var.exon }}</p>
+          {% endif %}
+          {% if var.intron != "." %}
+            <p style="margin:0px;">Intró: {{ var.intron }}</p>
+          {% endif %}
+      </td>
+      <td style="background-color:white;">
+          <div class="row" style="margin-bottom:0px;">
+            <div class="col" style="width:75%;font-size:11px">
+              {% set hgvsp = var.hgvsp %}
+              {% if var.hgvsp != "." %}
+                {% set hgvsp = hgvsp | replace("p.","p.(") %}
+                {% set hgvsp = hgvsp + ")" %}
+              {% endif %}
+              {% if hgvsp != "." %}
+                <p style="margin:0px;font-size:11px"><b>{{ hgvsp }}</b></p>
+              {% endif %}
+              {% if hgvsc != "." %}
+                <p style="margin:0px;font-size:11px">{{ var.hgvsc }}</p>
+              {% endif %}
+              {% if hgvsg != "." %}
+                <p style="margin:0px;font-size:11px">{{ var.hgvsg }}</p>
+              {% endif %}
+              <p style="margin:0px;font-size:11px">Tipus: {{ var.variant_type }}</p>
+            </div>
+            <div class="col" style="width:25%;">
+              {% set tier_color = "" %}
+              {% if var.tier_catsalut == "1" %}
+                {% set tier_color = "#C41E3A" %}
+              {% endif %}
+              {% if var.tier_catsalut == "2" %}
+                {% set tier_color = "#6B8E23" %}
+              {% endif %}
+              {% if var.tier_catsalut == "3" %}
+                {% set tier_color = "#20B2AA" %}
+              {% endif %}
+              {% if var.tier_catsalut != "None" %}
+              <button style="margin-left:8px;padding:2px;font-size:10px;border-radius:5px;background-color:{{tier_color}};color:white;">
+                  Nivell {{ var.tier_catsalut }}
+              </button>
+              {% endif %}
+            </div>
+          </div>
+          {% if accreditation_class == "FAIL" %}
+          {% endif %}
+      </td>
+      <td>
+          <div class="row" style="margin-bottom:0px;">
+            <div class="col" style="width:45%;font-size:11px">
+              {% set var_depth = var.depth %}
+              {% set var_read_support = var.read_support %}
+              {% if mark_depth %} 
+                {% set var_depth = "<b>"+ var.depth +"*</b>" %}
+              {% endif %}
+              {% if mark_read_support %} 
+                {% set var_read_support = "<b>" + var.read_support + "*</b>" %}
+              {% endif %}
+
+              <p style="margin:0px;">AD/DP: {{ var_read_support }}/{{ var_depth }}</p>
+            </div>
+            <div class="col" style="width:45%;font-size:11px">
+              <p style="margin:0px;">Max AF: {{ var.max_af }}</p>
+            </div>
+          </div>
+          <div class="row" style="margin-bottom:0px;">
+            <div class="col" style="width:45%;font-size:11px">
+              {% set var_vaf = var.allele_frequency %}
+              {% if mark_vaf %} 
+                {% set var_vaf = "<b>" + var.allele_frequency +"*</b>" %}
+              {% endif %}
+              <p style="margin:0px;">VAF: {{ var_vaf }}</p>
+            </div>
+            <div class="col" style="width:45%;font-size:11px">
+              <p style="margin:0px;">Població: {{ var.max_af_pop }}</p>
+            </div>
+          </div>
+          <div class="row" style="margin-bottom:0px;">
+            <div class="col" style="width:100%;font-size:11px">
+              <p style="margin:0px;">Localització/Efecte: {{ var.consequence | replace("&",",") | replace("_"," ") }}</p>
+            </div>
+          </div>
+      </td>
+    </tr>
+    {% if mark_depth or mark_vaf or mark_read_support %}
+    {% set ns.has_been_marked = "1" %}
+    {% endif %}
+  {% endfor %}
+
+  </table>
+  <br>
+    <p style="margin-top:15px;font-size:10px;"><small>
+      <b>AD:</b> número de reads suportant el canvi;
+      <b>DP:</b> profunditat assolida a la posició del canvi;
+      <b>VAF:</b> freqüència al·lèlica de la variant;
+      <b>Max AF:</b> freqüencia de l'al·lel més alta a la població;
+      <b>Població:</b> població a la qual s'ha trobat la Max AF<br>
+      {% if ns.has_been_marked == "1" %}
+        <b>*</b> La variant no compleix els criteris de qualitat establerts (en el cas de que s'indiqui)
+      {% endif %}
+    </small>
+    </p>
+</div>
+{% endif %}
+
+<!-- <p style="page-break-before: always" ></p> -->

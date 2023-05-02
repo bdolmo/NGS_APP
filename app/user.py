@@ -12,7 +12,7 @@ from flask_wtf import FlaskForm, RecaptchaField, Form
 from wtforms import StringField,SubmitField,PasswordField,validators
 from wtforms.validators import InputRequired, Email, DataRequired
 from flask_login import LoginManager, UserMixin, login_user, login_required, logout_user, current_user
-from itsdangerous import TimedJSONWebSignatureSerializer as Serializer
+from itsdangerous.url_safe import URLSafeTimedSerializer as Serializer
 from flask_mail import Message
 db = SQLAlchemy(app)
 
@@ -73,7 +73,7 @@ class User(db.Model, UserMixin):
         digest = md5(self.email.lower().encode('utf-8')).hexdigest()
         return 'https://www.gravatar.com/avatar/{}?d=identicon&s={}'.format(
             digest, size)
-            
+
 @login_manager.user_loader
 def load_user(user_id):
     return User.query.get(int(user_id))
@@ -100,7 +100,7 @@ class ProfileForm(FlaskForm):
   organization =  StringField("Organization", [validators.Length(min=6, max=35)] )
   submit   = SubmitField("Envia")
 
-class LoginForm(Form):
+class LoginForm(FlaskForm):
   username = StringField("Username",[validators.Length(min=4, max=20)] )
   password = PasswordField("Password",[validators.DataRequired(), validators.Length(min=6, max=25)] )
   submit   = SubmitField("Envia")

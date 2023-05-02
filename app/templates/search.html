@@ -1,0 +1,285 @@
+{% extends "base.html" %}
+
+{% block body %}
+
+<div class="d-flex justify-content-center pt-3 mt-3 rounded" style="background-color:white; width:100%">
+
+    <div class="container-fluid rounded" style="background-color:white; width:65%">
+      <div class="d-flex justify-content-center">
+        <div class = "row mt-1">
+            {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+            {% for category,message in messages %}
+            <div class="alert alert-{{ category }} alert-dismissible fade show ml-3" role="alert">
+              <span>{{ message }}</span>
+              <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+                <span aria-hidden="true">&times;</span>
+              </button>
+               <br>
+            </div>
+            {% endfor %}
+          {% endif %}
+        {% endwith %}
+        </div>
+      </div>
+
+      <form action="/advanced_search" method="POST" enctype="multipart/form-data" id="advanced_search">
+        <div class="card card-body border-0" style="background-color:rgb(248, 248, 248);">
+        <h2 class="card-title">Opcions de cerca avançada</h2>
+          <hr style="1px solid black;">
+          <div class="card card-body border-0 m-1"style="background-color:#EDEDED;">
+            <div class="row">
+              <div class="col-sm mt-1">
+                <h6><b>Filtre per mostra:</b></h6>
+              </div>
+            </div>
+            <div class="row">
+              <div class="col-sm">
+                <div class="input-group mt-2 mb-3">
+                  <div class="input-group-prepend">
+                    <span class="input-group-text" id="basic-addon1"><b>Lab ID:</b></span>
+                    <input type="text" value="" name="lab_id" class="form-control" ></input>
+                  </div>
+                </div>
+              </div>
+
+              <div class="col-sm">
+                <div class="input-group mt-2 mb-3">
+                  <div class="input-group-prepend">
+                    <span class="input-group-text" id="basic-addon1"><b>Ext1 ID:</b></span>
+                    <input type="text" value="" name="ext1_id" class="form-control" ></input>
+                  </div>
+                </div>
+              </div>
+              <div class="col-sm">
+                <div class="input-group mt-2 mb-3">
+                  <div class="input-group-prepend">
+                    <span class="input-group-text" id="basic-addon1"><b>Ext2 ID:</b></span>
+                    <input type="text" value="" name="ext2_id" class="form-control" ></input>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div class="row">
+              <div class="col-sm">
+                <div class="input-group mt-2 mb-3">
+                  <div class="input-group-prepend">
+                    <span class="input-group-text" id="basic-addon1"><b>RUN ID:</b></span>
+                    <input type="text" value="" name="run_id" class="form-control" ></input>
+                  </div>
+                </div>
+              </div>
+
+              <div class="col-sm">
+                <div class="input-group">
+                  <div class="form-group">
+
+                    <div id="datepicker" data-provide="datepicker">Data inicial
+                      <input class="form-control" name="initial_date" type="date" value="" id="example-date-input">
+
+                      <div class="input-group-addon">
+                          <span class="glyphicon glyphicon-th"></span>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div class="form-group  ml-3">
+                    <div id="datepicker" data-provide="datepicker">Data final
+                      <input class="form-control" name="final_date" type="date" value="" id="example-date-input">
+                      <div class="input-group-addon">
+                          <span class="glyphicon glyphicon-th"></span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <div class="col-sm">
+              </div>
+            </div>
+         </div>
+
+         <div class="card card-body border-0 m-1"style="background-color:#EDEDED;">
+           <div class="row">
+             <div class="col-sm mt-1">
+               <h6><b>Filtre per Gen:</b></h6>
+             </div>
+           </div>
+           <div class="row">
+             <div class="col-sm">
+               <div class="input-group mt-2 mb-3">
+                 <div class="input-group-prepend">
+                   <span class="input-group-text " id="basic-addon1"><b>Gen:</b></span>
+                   <input type="text" value="" name="gene" class="form-control" ></input>
+                 </div>
+               </div>
+             </div>
+             <div class="col-sm">
+               <div class="input-group mt-2 mb-3">
+                 <div class="input-group-prepend">
+                   <span class="input-group-text " id="basic-addon1"><b>Isoforma:</b></span>
+                   <input type="text" value="" name="isoform" class="form-control" ></input>
+                 </div>
+               </div>
+             </div>
+
+             <div class="col-sm">
+               <!-- <div class="input-group mt-2 mb-3">
+                 <div class="input-group-prepend">
+                   <span class="input-group-text " id="basic-addon1"><b>Exó:</b></span>
+                   <input type="text" value="" name="exon" class="form-control" ></input>
+                 </div>
+               </div> -->
+             </div>
+           </div>
+         </div>
+
+         <div class="card card-body border-0 m-1"style="background-color:#EDEDED;">
+           <div class="row">
+             <div class="col-sm mt-1">
+               <h6><b>Filtre per Variant:</b></h6>
+             </div>
+           </div>
+           SNV/Indels:
+           <div class="row">
+             <div class="col-sm">
+               <div class="input-group mt-2 mb-3">
+                 <div class="input-group-prepend">
+                   <span class="input-group-text " id="basic-addon1"><b>HGVSg:</b></span>
+                   <input type="text" value="" name="hgvsg" class="form-control" ></input>
+                 </div>
+               </div>
+             </div>
+             <div class="col-sm">
+               <div class="input-group mt-2 mb-3">
+                 <div class="input-group-prepend">
+                   <span class="input-group-text " id="basic-addon1"><b>HGVSc:</b></span>
+                   <input type="text" value="" name="hgvsc" class="form-control" ></input>
+                 </div>
+               </div>
+             </div>
+
+             <div class="col-sm">
+               <div class="input-group mt-2 mb-3">
+                 <div class="input-group-prepend">
+                   <span class="input-group-text " id="basic-addon1"><b>HGVSp:</b></span>
+                   <input type="text" value="" name="hgvsp" class="form-control" ></input>
+                 </div>
+               </div>
+             </div>
+           </div>
+           <hr>
+           Altres variants:
+           <div class="col-sm">
+             <div class="custom-control custom-checkbox custom-control-inline">
+                 <div class="custom-control custom-checkbox custom-control-inline">
+                   <input type="checkbox" class="custom-control-input" name="filter_cnv" value="1" id="filter_cnv">
+                   <label class="custom-control-label" for="filter_cnv">
+                       CNV/A
+                   </label>
+                 </div>
+             </div>
+
+             <div class="custom-control custom-checkbox custom-control-inline">
+                 <div class="custom-control custom-checkbox custom-control-inline">
+                   <input type="checkbox" class="custom-control-input" name="filter_sv" value="2" id="filter_sv">
+                   <label class="custom-control-label" for="filter_sv">
+                       SV/Fusions
+                   </label>
+                 </div>
+             </div>
+           </div>
+           <hr>
+           Classificació (var somàtiques)
+
+           <div class="col-sm">
+             <div class="custom-control custom-checkbox custom-control-inline">
+                 <div class="custom-control custom-checkbox custom-control-inline">
+                   <input type="checkbox" class="custom-control-input" name="tier_1" id="tier_1">
+                   <label class="custom-control-label" for="tier_1">
+                       Tier I (Variants accionables)
+                   </label>
+                 </div>
+             </div>
+             <div class="custom-control custom-checkbox custom-control-inline">
+                 <div class="custom-control custom-checkbox custom-control-inline">
+                   <input type="checkbox" class="custom-control-input" name="tier_2"id="tier_2">
+                   <label class="custom-control-label" for="tier_2">
+                       Tier II (Variants d'alt impacte)
+                   </label>
+                 </div>
+             </div>
+             <div class="custom-control custom-checkbox custom-control-inline">
+                 <div class="custom-control custom-checkbox custom-control-inline">
+                   <input type="checkbox" class="custom-control-input" name="tier_3" id="tier_3">
+                   <label class="custom-control-label" for="tier_3">
+                       Tier III (Altres variants rares)
+                   </label>
+                 </div>
+             </div>
+
+           </div>
+         </div>
+         <div class="card card-body border-0 mt-1 mb-4"style="background-color:#EDEDED;">
+           <div class="row">
+             <div class="col-sm">
+               <div class="d-flex justify-content-center align-items-center mt-1">
+                 <button class="btn btn-secondary mt-2 mb-2" style="width:15%;" type="submit" id="add_sample">Acceptar</button>
+               </div>
+             </div>
+           </div>
+         </div>
+        </div>
+      </form>
+</div>
+{% block script %}
+ <script>
+    $(document).ready(function() {
+        $("#submit_analysis").click(function() {
+            // disable button
+            $(this).prop("disabled", true);
+            // add spinner to button
+            $(this).html(
+                `<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Uploading...`
+            );
+        });
+    });
+    $.ajax({
+  xhr: function() {
+    var xhr = new window.XMLHttpRequest();
+
+    xhr.upload.addEventListener("progress", function(evt) {
+      if (evt.lengthComputable) {
+        var percentComplete = evt.loaded / evt.total;
+        percentComplete = parseInt(percentComplete * 100);
+        console.log(percentComplete);
+
+        if (percentComplete === 100) {
+
+        }
+
+      }
+    }, false);
+
+    return xhr;
+  },
+  url: posturlfile,
+  type: "POST",
+  data: JSON.stringify(fileuploaddata),
+  contentType: "application/json",
+  dataType: "json",
+  success: function(result) {
+    console.log(result);
+  }
+});
+
+    //function input_filename() {
+    //    fil_input_label.innerHTML = input.files
+    //};
+
+     function filesize(elem) {
+        document.coocke = `filesize=${elem.files[0].size}`;
+     };
+ </script>
+{% endblock %}
+
+{% endblock body %}

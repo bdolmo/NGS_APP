@@ -2,7 +2,51 @@
 
 {% block body %}
 
-<div class="d-flex" >
+<div class="modal fade bd-example-modal-xl" id="show_igv" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-xl">
+    <div class="modal-content">
+      <div class="modal-header" style="background-color:rgb(248, 248, 248);">
+        <h4 class="modal-title" id="">IGV - </h4>
+        <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+      <div class="modal-body" style="margin:0 auto;">
+          <div id='igvDiv' style="width:100%;"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="modal fade" id="tier_modal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-sm">
+    <div class="modal-content">
+      <div class="modal-header" style="background-color:rgb(248, 248, 248);">
+        <h4 class="modal-title" id="tier_title">Modifica la Tier </h4>
+        <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+      <div class="modal-body" style="">
+        <div id='tierDiv' style="width:100%;">
+          <input type="radio" id="tier_1" name="change_tier[]" value="1">
+          <label for="tier_1">Tier 1</label><br>
+          <input type="radio" id="tier_2" name="change_tier[]" value="2">
+          <label for="tier_2">Tier 2</label><br>
+          <input type="radio" id="tier_3" name="change_tier[]" value="3">
+          <label for="tier_3">Tier 3</label><br>
+          <input type="radio" id="no_tier" name="change_tier[]" value="4">
+          <label for="no_tier">No tier</label><br>
+          <p id="modal_var_id" style="display:none;"></p>
+        </div>
+        <hr>
+        <button id="change_tier_button" style="margin:0px auto;" class="btn btn-primary btn-sm">Accepta</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div id="main_flex" class="d-flex" >
 
 <!-- Sidebar -->
 <div class="bg-light border-right vh-100" id="sidebar-wrapper"style="position:fixed;width:15%;">
@@ -24,7 +68,6 @@
           <ul>
           {% for job in All_jobs %}
             <li> <a href="{{ url_for('show_run_details', run_id=job.Job_id) }}"><b>{{ job.Job_id }}</b></a></li>
-              <!-- <td>{{ job.Date }}</td> -->
           {% endfor %}
          </ul>
         </div>
@@ -34,26 +77,51 @@
     <div href="#" class="list-group-item list-group-item-action bg-light">
       <div class="row">
         <div class="col">
-          <i class="fas fa-list"> </i> <b>Últimes 5 modificacions</b>
+          <i class="fas fa-list"> </i> <b>Últimes 5 accions</b>
         </div>
       </div>
       <div class="row">
         <div class="col">
           <ul>
           {% for change in All_changes_dict %}
-            <li><a style="word-wrap:break-word;">{{ All_changes_dict[change]['action_name'] }} <a href="{{ url_for('redo_action', action_id=change, run_id=sample_info.run_id, sample=sample_info.lab_id, sample_id=sample_info.id, active="General")}}" role="button"><span class="badge badge-secondary"><i class="fas fa-redo"></i></span></a></a></li>
+            {% if All_changes_dict[change]['action_data']['action_json']['origin_action'] == "Create report" %}
+              {% set colour = "" %}
+            {% endif %}
+            {% if All_changes_dict[change]['action_data']['action_json']['origin_action'] == "delete" %}
+              {% set colour = "red" %}
+            {% endif %}
+
+            {% if 'redo' in All_changes_dict[change]['action_data']['action_json'] %}
+              {% if All_changes_dict[change]['action_data']['action_json']['redo'] == True %}
+
+              <li>
+                <a style="word-wrap:break-word;colour:{{colour}};">{{ All_changes_dict[change]['action_name'] }}
+                  <a href="{{ url_for('redo_action', action_id=change, run_id=sample_info.run_id, sample=sample_info.lab_id, sample_id=sample_info.id, active="General")}}" role="button">
+                    <span class="badge badge-secondary"><i class="fas fa-redo"></i></span>
+                  </a>
+                </a>
+              </li>
+              {% else %}
+              <li>
+                <a style="word-wrap:break-word;color:{{colour}};">{{ All_changes_dict[change]['action_name'] }}
+                 <a href="{{ url_for('redo_action', action_id=change, run_id=sample_info.run_id, sample=sample_info.lab_id, sample_id=sample_info.id, active="General")}}" role="button"></a>
+               </a>
+              </li>
+              {% endif %}
+            {% else %}
+              <li>
+                <a style="word-wrap:break-word;">{{ All_changes_dict[change]['action_name'] }}
+                  <a href="{{ url_for('redo_action', action_id=change, run_id=sample_info.run_id, sample=sample_info.lab_id, sample_id=sample_info.id, active="General")}}" role="button">
+                    <span class="badge badge-secondary"><i class="fas fa-redo"></i></span>
+                  </a>
+                </a>
+              </li>
+            {% endif %}
           {% endfor %}
          </ul>
         </div>
      </div>
     </div>
-
-    <!-- <a href="#" class="list-group-item list-group-item-action bg-light"><i class="fas fa-globe-europe"></i> Últims canvis</a>
-    <a href="#" class="list-group-item list-group-item-action bg-light"><i class="fas fa-book"></i> Pubmed</a>
-    <a href="#" class="list-group-item list-group-item-action bg-light"><i class="fas fa-sitemap" style="color:rgb(85, 1, 1);"></i> Predictors missense</a>
-    <a href="#" class="list-group-item list-group-item-action bg-light"><i class="fas fa-sitemap" style="color:rgb(14, 1, 85);"></i> Predictors splicing</a>
-    <a href="#" class="list-group-item list-group-item-action bg-light"><i class="bi bi-bezier2"></i> Conservació</a>
-    <a href="#" class="list-group-item list-group-item-action bg-light"><i class="bi bi-bar-chart-steps"></i> IGV</a> -->
   </div>
 </div>
 
@@ -61,8 +129,8 @@
 
   <nav aria-label="breadcrumb ">
     <ol class="breadcrumb mt-3">
-      <li class="breadcrumb-item"><a href= "{{url_for('status') }} ">Resultats</a></li>
-      <li class="breadcrumb-item"><a href= "{{url_for('show_run_details', run_id=sample_info.run_id) }} ">{{ sample_info.run_id }}</a></li>
+      <li class="breadcrumb-item"><a href="{{ url_for('status') }}">Resultats</a></li>
+      <li class="breadcrumb-item"><a href="{{ url_for('show_run_details', run_id=sample_info.run_id) }}">{{ sample_info.run_id }}</a></li>
       <li class="breadcrumb-item active" aria-current="page"><h5>{{ sample_info.lab_id }}</h5></li>
     </ol>
   </nav>
@@ -78,29 +146,28 @@
     <li class="nav-item">
       <a class="nav-link" id="QC-tab" data-toggle="tab" href="#QC">QC</a>
     </li>
+
+    <li class="nav-item">
+      <a class="nav-link" id="Lost_Exons-tab" data-toggle="tab" href="#Lost_Exons">Exons no coberts</a>
+    </li>
+
     <li class="nav-item">
       {% if active == "Therapeutic" %}
-        <a class="nav-link active" id="Therapeutic-tab" data-toggle="tab" href="#Therapeutic" >Variants accionables</a>
+        <a class="nav-link active" id="Therapeutic-tab" data-toggle="tab" href="#Therapeutic" >Variants d'alt impacte</a>
       {% else %}
-        <a class="nav-link " id="Therapeutic-tab" data-toggle="tab" href="#Therapeutic" >Variants accionables</a>
+        <a class="nav-link" id="Therapeutic-tab" data-toggle="tab" href="#Therapeutic">Variants d'alt impacte</a>
       {% endif %}
     </li>
-    <li class="nav-item">
-      {% if active == "Other" %}
-        <a class="nav-link active" id="Other-tab" data-toggle="tab" href="#Other">Altres variants d'alt impacte</a>
-      {% else %}
-        <a class="nav-link" id="Other-tab" data-toggle="tab" href="#Other">Altres variants d'alt impacte</a>
-      {% endif %}
-    </li>
+
     <li class="nav-item">
       {% if active == "Rare" %}
-        <a class="nav-link active" id="Rare-tab" data-toggle="tab" href="#Rare">Variants rares (VUS)</a>
+        <a class="nav-link active" id="Rare-tab" data-toggle="tab" href="#Rare">Variants VUS</a>
       {% else %}
-        <a class="nav-link" id="Rare-tab" data-toggle="tab" href="#Rare">Variants rares (VUS)</a>
+        <a class="nav-link" id="Rare-tab" data-toggle="tab" href="#Rare">Variants VUS</a>
       {% endif %}
     </li>
     <li class="nav-item">
-      <a class="nav-link" id="CNA-tab" data-toggle="tab" href="#CNA">CNAs</a>
+      <a class="nav-link" id="CNA-tab" data-toggle="tab" href="#CNA">CNA</a>
     </li>
     <li class="nav-item">
       <a class="nav-link" id="Fusion-tab" data-toggle="tab" href="#Fusions">Fusions</a>
@@ -109,135 +176,133 @@
 
   <div class="tab-content">
     {% if active == "General" %}
-      <div class="tab-pane fade show active" id="General" role="tabpanel" aria-labelledby="General-tab">
+    <div class="tab-pane fade show active" id="General" role="tabpanel" aria-labelledby="General-tab">
     {% else %}
-      <div class="tab-pane fade" id="General" role="tabpanel" aria-labelledby="General-tab">
+    <div class="tab-pane fade" id="General" role="tabpanel" aria-labelledby="General-tab">
     {% endif %}
-
-      <div class="card card-body border-0 mt-2" style="outline-bottom: 1px solid grey;background-color:white;">
-        <div class="row" style="font-size:16px;">
-          <div class="col">
-            <h5><i class="fas fa-id-card"></i> Pacient</h5>
-            <hr>
-            <p><b>Lab ID: </b>  {{ sample_info.lab_id }} </p>
-            <p><b>AP ID:  </b>  {{ sample_info.ext1_id }}</p>
-            <p><b>Núm. HC: </b> {{ sample_info.ext2_id }}</p>
-          </div>
-          <div class="col">
-            <h5><i class="fas fa-vials"></i> Mostra</h5>
-            <hr>
-            <p><b>Tipus de mostra:  .</b></p>
-            <p><b>Data de rebuda:</b>  {{ sample_info.extraction_date }}</p>
-            <p><b>Puresa tumoral:</b>  {{ sample_info.tumour_purity }}%</p>
-          </div>
-          <div class="col">
-            <h5><i class="fas fa-hospital"></i> Centre sanitari</h5>
-            <hr>
-            <p><b>Hospital:  .</b></p>
-            <p><b>Metge sol·licitant:</b>  {{ sample_info.physician_name }}</p>
-          </div>
-          <div class="col">
-            <h5><i class="fas fa-server"></i> Anàlisi NGS</h5>
-            <hr>
-            <p><b>Data d'anàlisi:</b>  {{ sample_info.analysis_date }}</p>
-            <p><b>Panell:</b>  {{ sample_info.panel }}</p>
-          </div>
+    <div class="card card-body border-0 mt-2" style="outline-bottom: 1px solid grey;background-color:white;">
+      <div class="row" style="font-size:16px;">
+        <div class="col">
+          <h5><i class="fas fa-id-card"></i> Pacient</h5>
+          <hr>
+          <p><b>Lab ID: </b>  {{ sample_info.lab_id }} </p>
+          <p><b>AP ID: </b>  {{ sample_info.ext1_id }}</p>
+          <p><b>Núm. HC: </b> {{ sample_info.ext2_id }}</p>
+        </div>
+        <div class="col">
+          <h5><i class="fas fa-vials"></i> Mostra</h5>
+          <hr>
+          <p><b>Tipus de mostra: </b>bloc de parafina</p>
+          <p><b>Data de rebuda:</b>  {{ sample_info.extraction_date }}</p>
+          <p><b>Puresa tumoral:</b>  {{ sample_info.tumour_purity }}%</p>
+        </div>
+        <div class="col">
+          <h5><i class="fas fa-hospital"></i> Centre sanitari</h5>
+          <hr>
+          <p><b>Hospital:  .</b></p>
+          <p><b>Metge sol·licitant:</b>  {{ sample_info.physician_name }}</p>
+        </div>
+        <div class="col">
+          <h5><i class="fas fa-server"></i> Anàlisi NGS</h5>
+          <hr>
+          <p><b>Data d'anàlisi:</b>  {{ sample_info.analysis_date }}</p>
+          <p><b>Panell:</b>  {{ sample_info.panel }}</p>
         </div>
       </div>
+    </div>
+    <div class="card border-1 mt-2">
+      <h5 class="card-header">Distribució de variants</h5>
+      <div class=" card-body " style="outline-bottom: 1px solid grey;background-color:white;">
+      <div class = "row">
 
-      <div class="card border-1 mt-2">
-        <h5 class="card-header">Distribució de variants</h5>
-        <div class=" card-body " style="outline-bottom: 1px solid grey;background-color:white;">
-        <div class = "row">
-
-          <div class = "col">
-            <h6>Freq. canvis</h6>
-            <br>
-            <div class="chart" id="bar">
-            <script>
-              var graphs = {{snv_plot | safe}};
-              Plotly.plot('bar',graphs,{});
-            </script>
-            </div>
-          </div>
-
-
-          <!-- <div class = "col">
-            <h6>Tipus de variant</h6>
-            <br>
-            <div class="chart" id="bar">
-            <script>
-              var graphs = {{bar_plot | safe}};
-              Plotly.plot('bar',graphs,{});
-            </script>
-            </div>
-          </div> -->
-          <div class = "col">
-            <h6>VAF</h6>
-            <br>
-            <div class="chart" id="hist">
-            <script>
-              var graphs = {{vaf_plot | safe}};
-              Plotly.plot('hist',graphs,{});
-            </script>
-            </div>
-          </div>
-
-          <div class = "col">
-            <h6>Localització Efecte</h6>
-            <br>
-            <div class="chart" id="pie">
-            <script>
-              var graphs = {{pie_plot | safe}};
-              Plotly.plot('pie',graphs,{});
-            </script>
-            </div>
-          </div>
-
-        </div>
-        </div>
-      </div>
-
-      <div class="card border-1 mt-4">
-        <div class="card">
-          <h5 class="card-header">Perfil de <i> Copy Number</i></h5>
-        <div class="card-body " style="outline-bottom: 1px solid grey;background-color:white;">
-        <div class="chart" id="scatter">
+        <div class = "col">
+          <h6>Freq. canvis</h6>
+          <br>
+          <div class="chart" id="bar">
           <script>
-              var graphs = {{cnv_plot | safe}};
-              Plotly.plot('scatter',graphs,{});
+            var graphs = {{snv_plot | safe}};
+            Plotly.plot('bar',graphs,{});
           </script>
+          </div>
         </div>
+        <div class = "col">
+          <h6>VAF</h6>
+          <br>
+          <div class="chart" id="hist">
+          <script>
+            var graphs = {{vaf_plot | safe}};
+            Plotly.plot('hist',graphs,{});
+          </script>
+          </div>
+        </div>
+
+        <div class = "col">
+          <h6>Localització Efecte</h6>
+          <br>
+          <div class="chart" id="pie">
+          <script>
+            var graphs = {{pie_plot | safe}};
+            Plotly.plot('pie',graphs,{});
+          </script>
+          </div>
         </div>
       </div>
       </div>
     </div>
+    <div class="card border-1 mt-4">
+      <div class="card">
+        <h5 class="card-header">Perfil de <i> Copy Number</i></h5>
+      <div class="card-body " style="outline-bottom: 1px solid grey;background-color:white;">
+      <div class="chart" id="scatter">
+        <script>
+          var graphs = {{cnv_plot | safe}};
+          Plotly.plot('scatter',graphs,{});
+        </script>
+      </div>
+      </div>
+    </div>
+    </div>
+    </div>
     <div class="tab-pane fade" id="QC" role="tabpanel" aria-labelledby="QC-tab">
-
-      <div class="card card-body border-0 mt-2" style="outline-bottom: 1px solid grey;background-color:white;">
+      <div class="card card-body border-0 mt-1" style="outline-bottom: 1px solid grey;background-color:white;">
         <div class="row" style="font-size:16px;">
           <div class="col">
             <h5><b><i class="fas fa-angle-right" style="margin-bottom:15px;"></i> Mètriques Generals</b></h5>
 
             <table class="table table-hover table-sm ">
               <thead>
-                <th>N Reads</th>
-                <th>Cobertura mitja</th>
-                <th>Enrichment (%)</th>
-                <th>Duplicats PCR (%)</th>
-                <th>Call Rate 20X</th>
-                <th>Call Rate 30X</th>
-                <th>Call Rate 100X</th>
+                <tr>
+                    <th colspan="4"></th>
+                    <th colspan="3">Call Rate</th>
+                    <th colspan="3">Exons no coberts</th>
+                </tr>
+                <tr>
+                    <th>N Reads (M)</th>
+                    <th>Reads mapejats (M)</th>
+                    <th>Cobertura mitja</th>
+                    <th>Enrichment (%)</th>
+                    <th>Duplicats PCR (%)</th>
+                    <th>20X</th>
+                    <th>30X</th>
+                    <th>100X</th>
+                    <th>20X</th>
+                    <th>30X</th>
+                    <th>100X</th>
+                </tr>
               </thead>
               <tbody>
                 <tr>
-                  <td style="padding-right:20px;">{{ summary_qc_dict['TOTAL_READS'] }} </td>
-                  <td style="padding-right:20px;">{{ summary_qc_dict['MEAN_COVERAGE'] }}</td>
+                  <td style="padding-right:20px;">{{ summary_qc_dict['TOTAL_READS']|float|round/10e5 }} </td>
+                  <td style="padding-right:20px;">{{ summary_qc_dict['MAPPED_READS']|float|round/10e5 }} ({{ summary_qc_dict['PCT_MAPPED_READS'] }}%)</td>
+                  <td style="padding-right:20px;">{{ summary_qc_dict['MEAN_COVERAGE_TARGET'] }}</td>
                   <td style="padding-right:20px;">{{ summary_qc_dict['ROI_PERCENTAGE'] }}</td>
                   <td style="padding-right:20px;">{{ summary_qc_dict['PCT_PCR_DUPLICATES'] }}</td>
                   <td style="padding-right:20px;">{{ summary_qc_dict['CALL_RATE']['20X'] }}</td>
                   <td style="padding-right:20px;">{{ summary_qc_dict['CALL_RATE']['30X'] }}</td>
                   <td style="padding-right:20px;">{{ summary_qc_dict['CALL_RATE']['100X'] }}</td>
+                  <td style="padding-right:20px;">{{ summary_qc_dict['LOST_EXONS']['total']['20X'] }}</td>
+                  <td style="padding-right:20px;">{{ summary_qc_dict['LOST_EXONS']['total']['30X'] }}</td>
+                  <td style="padding-right:20px;">{{ summary_qc_dict['LOST_EXONS']['total']['100X'] }}</td>
                 </tr>
               </tbody>
             </table>
@@ -246,30 +311,38 @@
         <div class="row mt-3" style="font-size:16px;">
           <div class="col">
           <h5><b><i class="fas fa-angle-right" style="margin-bottom:15px;"></i> Trimming</b></h5>
-
           <table class="table table-hover table-sm ">
             <thead>
-              <th>Long. Read1</th>
-              <th>Long. Read2</th>
+              <th>Long. Read1 (bp)</th>
+              <th>Long. Read2 (bp)</th>
               <th>Reads amb adaptadors</th>
+              <th>Bases totals (M)</th>
+              <th>Bases trimmed (M)</th>
               <th>q20 Rate</th>
               <th>q30 Rate</th>
             </thead>
             <tbody>
               <tr>
+
+                {% set total_bases_before = fastp_dict['summary']['before_filtering']['total_bases'] %}
+                {% set total_bases_after = fastp_dict['summary']['after_filtering']['total_bases'] %}
+                {% set bases_trimmed = total_bases_before-total_bases_after %}
                 <td style="padding-right:20px;">{{ fastp_dict['summary']['after_filtering']['read1_mean_length'] }} </td>
                 <td style="padding-right:20px;">{{ fastp_dict['summary']['after_filtering']['read2_mean_length'] }}</td>
                 <td style="padding-right:20px;">{{ fastp_dict['adapter_cutting']['adapter_trimmed_reads'] }}</td>
-                <td style="padding-right:20px;">{{ 100*fastp_dict['summary']['after_filtering']['q20_rate']|round(3) }}</td>
-                <td style="padding-right:20px;">{{ 100*fastp_dict['summary']['after_filtering']['q30_rate']|round(3)  }}</td>
+                <td style="padding-right:20px;">{{ (total_bases_before/10e6)|round(3) }}</td>
+                <td style="padding-right:20px;">{{ (bases_trimmed/10e6)|round(3) }}</td>
+                <td style="padding-right:20px;">{{ (100*(fastp_dict['summary']['after_filtering']['q20_rate']))|float|round(3) }}</td>
+                <td style="padding-right:20px;">{{ (100*(fastp_dict['summary']['after_filtering']['q30_rate']))|float|round(3) }}</td>
               </tr>
             </tbody>
           </table>
           </div>
         </div>
         <hr>
+
         <div class="row mt-3">
-          <h5><b><i class="fas fa-angle-right" style="margin-left:15px;margin-bottom:15px;"></i> Qualitats per base</b></h5>
+          <h5><b><i class="fas fa-angle-right" style="margin-left:15px;margin-bottom:15px;"></i> Qualitats per posició</b></h5>
         </div>
         <div class="row" style="font-size:16px;">
           <div class="col">
@@ -306,14 +379,58 @@
           </div>
         </div>
       </div>
-
     </div>
-    {% if active == "Therapeutic" %}
-      <div class="tab-pane fade pt-5 show active" id="Therapeutic" role="tabpanel" aria-labelledby="Therapeutic-tab">
-    {% else %}
-    <div class="tab-pane fade pt-5 " id="Therapeutic" role="tabpanel" aria-labelledby="Therapeutic-tab">
-    {% endif %}
+    <div class="tab-pane fade" id="Lost_Exons" role="tabpanel" aria-labelledby="Lost_Exons-tab">
 
+      <div class="card card-body border-0 mt-1" style="outline-bottom: 1px solid grey;background-color:white;">
+        <div class="row" style="font-size:16px;">
+          <div class="col">
+            <h5><b><i class="fas fa-angle-right" style="margin-bottom:15px;"></i> Exons no coberts</b></h5>
+            <div class="table-responsive">
+              <table id="lost_exons_table" class="table table-striped table-bordered wrap" style="width:100%;background-color:white;">
+                <thead>
+                  <th>Coordenades</th>
+                  <th>Probe Group</th>
+                  <th>Gene</th>
+                  <th>Isoforma</th>
+                  <th>N Exó/Roi</th>
+                  <th>20X</th>
+                  <th>30X</th>
+                  <th>100X</th>
+                </thead>
+                <tbody>
+                  {% for roi in summary_qc_dict['LOST_EXONS']['exons'] %}
+                  {% set roi_dict = summary_qc_dict['LOST_EXONS']['exons'][roi] %}
+                  {% if roi_dict['COV_THRESHOLD']['20X']|float == 100 %}
+                    {% set cov20_color = 'white' %}
+                  {% else %}
+                    {% set cov20_color = '#ffb2b2' %}
+
+                  {% endif %}
+                  <tr>
+                    <td style="padding-right:20px;">{{ roi_dict['CHROMOSOME'] }}:{{ roi_dict['START'] }}-{{ roi_dict['END'] }} </td>
+                    <td style="padding-right:20px;">{{ roi_dict['PROBE_GROUP'] }}</td>
+                    <td style="padding-right:20px;"><a href="https://www.genecards.org/cgi-bin/carddisp.pl?gene={{roi_dict['GENE_NAME']}} "><i>{{ roi_dict['GENE_NAME'] }}</i></a></td>
+                    <td style="padding-right:20px;">{{ roi_dict['ENST_ID'] }}</td>
+                    <td style="padding-right:20px;">{{ roi_dict['EXON_NUMBER'] }}</td>
+                    <td style="padding-right:20px;background-color:{{cov20_color}}">{{ roi_dict['COV_THRESHOLD']['20X'] }}</td>
+                    <td style="padding-right:20px;">{{ roi_dict['COV_THRESHOLD']['30X'] }}</td>
+                    <td style="padding-right:20px;">{{ roi_dict['COV_THRESHOLD']['100X'] }}</td>
+                  </tr>
+                  {% endfor %}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    {% if active == "Therapeutic" %}
+    <div class="tab-pane fade pt-2 show active" id="Therapeutic" role="tabpanel" aria-labelledby="Therapeutic-tab">
+    {% else %}
+    <div class="tab-pane fade pt-2 " id="Therapeutic" role="tabpanel" aria-labelledby="Therapeutic-tab">
+    {% endif %}
         <div class="d-flex justify-content-center">
           <div class = "row mt-1">
               {% with messages = get_flashed_messages(with_categories=true) %}
@@ -331,833 +448,267 @@
           {% endwith %}
           </div>
         </div>
-        <div>
-          Variants amb suport a tractament específic anotat a través següents fonts: <a href="https://civicdb.org/home">CIViC</a>, <a href="http://www.kobic.re.kr/chimerdb/">chimerKB</a>
+
+        <div id="message_div" class="alert alert-success alert-dismissible fade show w-50" role="alert" style="margin:0 auto;display:none;">
+            <span id="message_span"></span>
+            <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+                <span aria-hidden="true">&times;</span>
+            </button>
+            <br>
         </div>
-        <br>
 
-        <a type="button" class="btn btn-info btn-sm" href="#filter_therapeutic_variants" data-toggle="collapse" aria-expanded="false" aria-controls="filter_other_variants" data-target="#filter_therapeutic_variants" role="button">
-          <i class="fas fa-filter" style="color:white;"> </i> Filtres
-        </a>
-
-        <div class="collapse mt-1 mb-3 p-2" id="filter_therapeutic_variants" style="background-color:rgb(248, 248, 248);">
-          <form action="{{ url_for('apply_variant_filters', run_id=sample_info.run_id, sample=sample_info.lab_id, sample_id=sample_info.id, variant_class='therapeutic' )}}" method="POST" enctype="multipart/form-data" id="form_filter_variants">
-            <div class ="row mt-2">
-                <div class="col">
-                    <label style="color:rgb(78, 78, 78);" for=""><b><i>VAF mínim (0-1)</i></b></label>
-                    <div class="input-group mb-3">
-                      <div class="input-group mb-3">
-                          <input type="number" step="0.001" max="1" min="0" value="" name="vaf_perc" class="form-control" placeholder="0.02"></input>
-                      </div>
-                    </div>
-                </div>
-                <div class="col">
-                  <label style="color:rgb(78, 78, 78);" for="min_depth"><b><i>Profunditat mínima </i></b></label>
-                  <div class="input-group mb-3">
-                      <input type="number" value="" step="1" max="5000" min="0" name="min_depth" class="form-control"placeholder="20" ></input>
-                  </div>
-                </div>
-                <div class="col">
-                    <label style="color:rgb(78, 78, 78);" for="min_read_support"><b><i>Read support mínim</i></b></label>
-                    <div class="input-group mb-3">
-                        <input type="number" value="" step="1" max="5000" min="0" name="min_read_support" class="form-control" placeholder="2"></input>
-                    </div>
-                </div>
-              <div class="col">
-                <div class="d-flex justify-content-center align-items-center mt-1">
-                  <div class ="row">
-                    <div class="col">
-                      <div class="custom-control custom-checkbox custom-control-inline">
-                        <input type="checkbox" class="custom-control-input" name="snv_check" value="1" id="snv" checked>
-                        <label class="custom-control-label" for="snv">
-                            SNV/MNV
-                        </label>
-                      </div>
-                      <div class="custom-control custom-checkbox custom-control-inline">
-                        <input type="checkbox" class="custom-control-input" name="indel_check" value="2" id="indels" checked>
-                        <label class="custom-control-label" for="indels">
-                            Indels
-                        </label>
-                     </div>
-                      <div class="custom-control custom-checkbox custom-control-inline">
-                        <input type="checkbox" class="custom-control-input" name="sv_check" value="3" id="fusions">
-                        <label class="custom-control-label" for="fusions">
-                            Fusions/SV
-                        </label>
-                      </div>
-                    </div>
-                 </div>
-                </div>
-              </div>
-                <div class="col">
-                  <div class="d-flex justify-content-center align-items-center">
-                      <button class="btn btn-secondary" type="submit"  href="">Aplica</button>
-                  </div>
-                </div>
-            </div>
+        <div style="margin-top:15px;background-color:#e8f4f8;width:29%;padding:10px;">
+          <form id="report_form">
+            <input type="hidden" id="run_id" name="run_id" value="{{ sample_info.run_id }}">
+            <input type="hidden" id="sample" name="sample" value="{{ sample_info.lab_id }}">
+            <input type="hidden" id="sample_id" name="sample_id" value="{{ sample_info.lab_id }}">
+            <input style="display:inline;" type="checkbox" id="substitute_report" name="substitute_report">
+            <label style="display:inline;" for="substitute_report"> Marcar com a informe de substitució</label>
+            <br>
+            <input style="display:inline;" type="checkbox" id="lowqual_sample" name="lowqual_sample">
+            <label style="display:inline;" for="lowqual_sample"> La mostra no compleix els criteris mínims de qualitat </label>
+            <br>
+            <button type="submit" id="report_button" class="btn btn-secondary btn-sm mt-2">
+              <i class="fas fa-file-alt" style="color:white;"> </i> Generar informe
+            </button>
           </form>
         </div>
-
         <hr>
-        <div style="margin-bottom:15px;">
-          <!-- <button type="button" class="btn btn-sm" style="color:black;outline-color:lightgrey;background-color: rgba(211, 211, 211, 0.74);">Desar canvis</button> -->
-          <a type="button" id="create_report1" onclick="modal();" href="{{ url_for('generate_report',run_id=sample_info.run_id,sample=sample_info.lab_id, sample_id=sample_info.id,active="Therapeutic" ) }}" class="btn btn-secondary btn-sm">
-            <i class="fas fa-file-alt" style="color:white;"> </i> Generar informe
-          </a>
-        </div>
 
         <div class="table-responsive">
-        <table id="therapeutic_table" class="table table-striped table-bordered dt-responsive wrap" style="width:100%;background-color:white;">
-          <thead>
+          <table id="therapeutic_table" class="table table-sm table-striped table-bordered dt-responsive wrap" style="width:100%;background-color:white;">
+            <div id="delete_multiple_button" style="margin-bottom:15px;display:none;">
+              <hr>
+              <a type="button" type="submit" id="" class="btn btn-light btn-sm" style="background-color:#FFEBCD;">
+                <i class="fas fa-trash"></i> Elimina selecció
+              </a>
+            </div>
+            <thead>
               <tr>
+                  <th></th>
                   <th>Accions</th>
                   <th>Gen</th>
                   <th>Variant</th>
                   <th>Altres</th>
-                  <th>Teràpies</th>
-                  <th>Malalties</th>
               </tr>
-          </thead>
-          <tbody>
-          {% for var in therapeutic_variants %}
-          <tr>
-          <td>
-            <div class="row">
-              <div class="col">
-                {% if (var.variant_type == "Amplification" or var.variant_type == "Loss" or var.variant_type == "SV") %}
+            </thead>
+            <tbody>
+            {% for var in relevant_variants %}
+            <tr>
+            <td>
+              <input type="checkbox" id="check_var_{{ var.hgvsg }}" name="check_therapeutic_variant"/>
+            </td>
+            <td>
+              <div class="row">
+                <div class="col">
+                  {% if (var.variant_type == "Amplification" or var.variant_type == "Loss" or var.variant_type == "SV") %}
                   <a class="btn btn-outline-primary btn-sm disabled" href="">
                     <i class="fas fa-plus-circle fa"></i> Info
                   </a>
-                {% else %}
+                  {% else %}
                   <a class="btn btn-outline-primary btn-sm" href="{{ url_for('show_therapeutic_details', sample=sample_info.lab_id, entry_id=var.id, var_classification=var.classification) }} ">
                     <i class="fas fa-plus-circle fa"></i> Info
                   </a>
-                {% endif %}
+                  {% endif %}
+                </div>
+                <div class="col">
+                  <a data-toggle="modal" data-target="#edit_report_{{var.id}}" role="button">
+                    <i class="fas fa-edit" style="color:rgb(109, 106, 106)"></i><small></small>
+                  </a>
+                  <a class="" href="{{ url_for('remove_variant', run_id=sample_info.run_id, sample=sample_info.lab_id, sample_id=sample_info.id, var_id=var.id, var_classification=var.classification) }}" onclick="return confirm('Segur que vols eliminar aquesta Variant?');" method="POST" enctype="multipart/form-data" id="update_therapeutic_variant"><i class="fas fa-trash" style="color: rgba(209, 20, 20, 0.938)"></i><small></small></a>
+
+                  {% set var_json = var.var_json  %}
+                  <a onclick='showIgvVariant({{ var_json }});' role="button">
+                    <div>
+                      <i class="fas fa-image fa" style="border-radius:3px;margin:0px;padding:2px;color:white;background-color:#0d98ba"></i> <small><b>IGV</b></small
+                    </div>
+                  </a>
+                </div>
               </div>
-              <div class="col">
-                <a data-toggle="modal" data-target="#edit_report_{{var.id}}" role="button">
-                  <i class="fas fa-edit" style="color:rgb(109, 106, 106)"></i><small></small>
-                </a>
-                <a class="" href="{{ url_for('remove_variant', run_id=sample_info.run_id, sample=sample_info.lab_id, sample_id=sample_info.id, var_id=var.id, var_classification=var.classification) }}" onclick="return confirm('Segur que vols eliminar aquesta Variant?');" method="POST" enctype="multipart/form-data" id="update_therapeutic_variant"><i class="fas fa-trash" style="color: rgba(209, 20, 20, 0.938)"></i><small></small></a>
-                <a data-toggle="modal" data-target="#show_igv{{var.id}}" role="button">
-                  <div >
-                    <i class="fas fa-image fa" style="border-radius:3px;margin:0px;padding:2px;color:white;background-color:#0d98ba"></i> <small><b>IGV</b></small>
-                  </div>
-                </a>
-                <div class="modal fade bd-example-modal-lg" id="show_igv{{var.id}}" tabindex="-1" aria-labelledby="modal_show_igv{{var.id}}" aria-hidden="true">
+
+              <div class="modal fade bd-example-modal-lg" id="edit_report_{{var.id}}" tabindex="-1" aria-labelledby="modal_edit_report_{{var.id}}" aria-hidden="true">
+                <form action="{{ url_for('update_therapeutic_variant', run_id=sample_info.run_id, sample=sample_info.lab_id, sample_id=sample_info.id, var_id=var.id, var_classification=var.classification) }}" method="POST" enctype="multipart/form-data" id="update_therapeutic_variant">
                   <div class="modal-dialog modal-lg">
                     <div class="modal-content">
                       <div class="modal-header" style="background-color:rgb(248, 248, 248);">
-                        <h4 class="modal-title" id="modal_show_igv">IGV - {{ var.hgvsg }} </h4>
+                        <h4 class="modal-title" id="modal_new_sample">Edita la variant {{ var.hgvsg }} </h4>
                         <button type="button" class="close" data-dismiss="modal" aria-label="Close">
                           <span aria-hidden="true">&times;</span>
                         </button>
                       </div>
                       <div class="modal-body">
-                        {% set igv_image_basename = sample_info.lab_id ~ "_" ~ var.hgvsg  ~ ".png"  %}
-                        {% set list1 = igv_image_basename.split('>') %}
-                        {% set igv_image = list1[0]  %}
-                        {% set testvar = "/static/IGV_SNAPSHOTS/" ~ sample_info.run_id ~ "/" ~ sample_info.lab_id ~ "/" ~ igv_image_basename %}
-                        <!-- {% set full_igv_image= vcf_folder ~ "/" ~ igv_image %} -->
-                        {% set static_path   = "/static/" ~ igv_image_basename %}
-                        <img src="{{ static_path }}" class="img-fluid" alt="{{ testvar }}">
+                        <div class="row">
+                          <div class="col-sm">
+                            <h6><b>Afegeix a la <i>Blacklist</i></b></h6>
+                          </div>
+                        </div>
+                        <div class="row">
+                          <div class="col-sm">
+                            <div class="custom-control custom-checkbox">
+                              {% if var.blacklist == "yes" %}
+                              <input type="checkbox" style="background-color:green;" name="blacklist_check" value="blacklist" class="custom-control-input" id="blacklist_check_therapeutic_{{var.id}}" checked>
+                              {% else %}
+                              <input type="checkbox" style="background-color:green;" name="blacklist_check" value="blacklist" class="custom-control-input" id="blacklist_check_therapeutic_{{var.id}}">
+                              {% endif %}
+                              <label class="custom-control-label" for="blacklist_check_therapeutic_{{var.id}}">
+                            </div>
+                          </div>
+                        </div>
+
+                        </div>
+                        <div class="d-flex justify-content-center align-items-center mt-5">
+                          <button class="btn btn-primary mt-2 mb-2" style="width:15%;" type="submit" id="edit_therapeutic">Desa canvis</button>
+                        </div>
                       </div>
-                    </div>
+                  </div>
+                </form>
+              </div>
+            </td>
+            <td>
+                <div class="row">
+                  <div class="col">
+                    {% if (var.variant_type == "Amplification" or var.variant_type == "Loss" or var.variant_type == "SV") %}
+                     <a><b><i>{{ var.gene }}</i></b></a>
+                    {% else %}
+                      <a href="https://www.genecards.org/cgi-bin/carddisp.pl?gene={{var.gene}} "><b><i>{{ var.gene }}</i></b></a>
+                    {% endif %}
                   </div>
                 </div>
-              </div>
-            </div>
-
-            <div class="modal fade bd-example-modal-lg" id="edit_report_{{var.id}}" tabindex="-1" aria-labelledby="modal_edit_report_{{var.id}}" aria-hidden="true">
-              <form action="{{ url_for('update_therapeutic_variant', run_id=sample_info.run_id, sample=sample_info.lab_id, sample_id=sample_info.id, var_id=var.id, var_classification=var.classification) }}" method="POST" enctype="multipart/form-data" id="update_therapeutic_variant">
-                <div class="modal-dialog modal-lg">
-                  <div class="modal-content">
-                    <div class="modal-header" style="background-color:rgb(248, 248, 248);">
-                      <h4 class="modal-title" id="modal_new_sample">Edita la variant {{ var.hgvsg }} </h4>
-                      <button type="button" class="close" data-dismiss="modal" aria-label="Close">
-                        <span aria-hidden="true">&times;</span>
-                      </button>
-                    </div>
-                    <div class="modal-body">
-                      <div class="row mt-3 mb-3">
-                        <div class="col">
-                          <h6><b>Categoria</b></h6>
-                          <div class="custom-control custom-radio custom-control-inline">
-                            <input type="radio" class="custom-control-input" name="variant_category" value="1" id="actionable_variant_{{var.id}}" checked>
-                            <label class="custom-control-label" for="actionable_variant_{{var.id}}">
-                              Accionable
-                            </label>
-                          </div>
-                          <div class="custom-control custom-radio custom-control-inline">
-                            <input type="radio" class="custom-control-input" name="variant_category" value="2" id="other_variant_{{var.id}}">
-                            <label class="custom-control-label" for="other_variant_{{var.id}}">
-                              Altres variants d'alt impacte
-                            </label>
-                          </div>
-                          <div class="custom-control custom-radio custom-control-inline">
-                            <input type="radio" class="custom-control-input" name="variant_category" value="3" id="rare_variant_{{var.id}}">
-                            <label class="custom-control-label" for="rare_variant_{{var.id}}">
-                              Rares (VUS)
-                            </label>
-                          </div>
-                        </div>
-                      </div>
-                      <hr>
-                      <div class="row mt-4">
-                        <div class="col-sm ">
-                          <h6><b>Teràpies</b></h6>
-                          <div class="input-group mb-3">
-                            <div class="input-group-prepend">
-                              <span class="input-group-text" id="basic-addon1"></span>
-                            </div>
-                            <textarea type="text" name="therapies" class="form-control" placeholder="" aria-label="Username" aria-describedby="basic-addon1">{{ var.therapies }}</textarea>
-                          </div>
-                        </div>
-                      </div>
-                      <div class="row mt-3">
-                        <div class="col-sm">
-                          <h6><b>Malalties</b></h6>
-                          <div class="input-group mb-3">
-                            <div class="input-group-prepend">
-                              <span class="input-group-text" id="basic-addon1"></span>
-                            </div>
-                            <textarea type="text" name="diseases" class="form-control" placeholder="" aria-label="Username" aria-describedby="basic-addon1">{{ var.tumor_type }}</textarea>
-                          </div>
-                        </div>
-                      </div>
-                      <hr>
-
-                      <div class="row">
-                        <div class="col-sm">
-                          <h6><b>Blacklist:</b></h6>
-                        </div>
-                      </div>
-                      <div class="row">
-                        <div class="col-sm">
-                          <div class="custom-control custom-checkbox">
-                            {% if var.blacklist == "yes" %}
-                            <input type="checkbox" style="background-color:green;" name="blacklist_check" value="blacklist" class="custom-control-input" id="blacklist_check_therapeutic_{{var.id}}" checked>
-                            {% else %}
-                            <input type="checkbox" style="background-color:green;" name="blacklist_check" value="blacklist" class="custom-control-input" id="blacklist_check_therapeutic_{{var.id}}">
-                            {% endif %}
-                            <label class="custom-control-label" for="blacklist_check_therapeutic_{{var.id}}">
-
-                          </div>
-                        </div>
-                      </div>
-
-                      <div class="row mt-1">
-                        <div class="col-sm">
-                          <h6><b>Status de validació:</b></h6>
-                        </div>
-                      </div>
-
-                      <div class="row">
-                        <div class="col-sm">
-                          <div class="custom-control custom-checkbox">
-                            {% if var.validated_bioinfo == "yes" %}
-                            <input type="checkbox" name="bioinfo_check" value="bioinfo" class="custom-control-input" id="bioinfo_check_therapeutic_{{var.id}}" checked>
-                            {% else %}
-                            <input type="checkbox" style="background-color:green;" name="bioinfo_check" value="bioinfo" class="custom-control-input" id="bioinfo_check_therapeutic_{{var.id}}">
-                            {% endif %}
-                            <label class="custom-control-label" for="bioinfo_check_therapeutic_{{var.id}}">
-                              Qualitat NGS
-                            </label>
-                          </div>
-                        </div>
-                        <div class="col-sm">
-                          <div class="custom-control custom-checkbox">
-                            {%  if var.validated_assessor == "yes" %}
-                              <input type="checkbox" name="assessor_check" value="assessor" class="custom-control-input" id="assessor_check_therapeutic_{{var.id}}" checked>
-                            {% else %}
-                              <input type="checkbox" name="assessor_check" value="assessor" class="custom-control-input" id="assessor_check_therapeutic_{{var.id}}">
-                            {% endif %}
-                            <label class="custom-control-label" for="assessor_check_therapeutic_{{var.id}}">
-                              Classificació Clínica
-                            </label>
-                          </div>
-                        </div>
-                      </div>
-
-                      </div>
-                      <div class="d-flex justify-content-center align-items-center mt-5">
-                        <button class="btn btn-primary mt-2 mb-2" style="width:15%;" type="submit" id="edit_therapeutic">Desa canvis</button>
-                      </div>
-                    </div>
+                <div class="row">
+                  <div class="col">
+                    <i>{{ var.enst_id }}</i>
+                  </div>
                 </div>
-              </form>
-            </div>
-            <hr>
-            <div class="row">
-              <div class="col-sm">
-                <small><b>Status de validació:</b></small>
-              </div>
-            </div>
-            {%  if (var.validated_bioinfo == "no" and var.validated_assessor == "no") %}
-            <small>Qualitat:</small> <span class="badge badge-warning">
-              Pendent
-            </span>
-            <br>
-            <small>Classificació:</small><span class="badge badge-warning">
-              Pendent
-            </span>
-            {% endif %}</h6>
-            {%  if (var.validated_bioinfo == "yes" and var.validated_assessor == "no") %}
-            <small>Qualitat:</small>
-            <span class="badge badge-warning">
-              Pendent
-            </span>
-            {% endif %}</h6>
-            {%  if (var.validated_bioinfo == "no" and var.validated_assessor == "yes") %}
-            <small>Qualitat:</small>
-            <span class="badge badge-warning">
-              Pendent
-            </span>
-            {% endif %}</h6>
-
-            {%  if (var.validated_bioinfo == "yes" and var.validated_assessor == "yes") %}
-            <span class="badge badge-success badge-sm">
-              Completa
-            </span>
-            {% endif %}</h6>
-            <!-- <div class="row">
-              <div class="col">
-                    <div class="custom-control custom-checkbox">
-                      {% if var.validated_bioinfo == "yes" %}
-                        <input type="checkbox" name="bioinfoCheck" value="bioinfo" class="custom-control-input" id="bioinfoCheck" checked>
-                      {% else %}
-                        <input type="checkbox" name="bioinfoCheck" value="bioinfo" class="custom-control-input" id="bioinfoCheck">
-                      {% endif %}
-                      <label class="custom-control-label" for="bioinfoCheck">
-                        NGS-Qualitat
-                      </label>
-                    </div>
-              </div>
-            </div>
-            <div class="row">
-              <div class="col">
-                <div class="custom-control custom-checkbox">
-                  {%  if var.validated_assessor == "yes" %}
-                    <input type="checkbox" name="assessorCheck" value="assessor" class="custom-control-input" id="assessorCheck" checked>
-                  {% else %}
-                    <input type="checkbox" name="assessorCheck" value="assessor" class="custom-control-input" id="assessorCheck">
-                  {% endif %}
-                  <label class="custom-control-label" for="assessorCheck">
-                    Classificació
-                  </label>
-                </div>
-              </div>
-            </div> -->
-
-          </td>
-          <td>
-              <div class="row">
-                <div class="col">
-                  {% if (var.variant_type == "Amplification" or var.variant_type == "Loss" or var.variant_type == "SV") %}
-                   <a><b><i>{{ var.gene }}</i></b></a>
-                  {% else %}
-                  <a href="https://www.genecards.org/cgi-bin/carddisp.pl?gene={{var.gene}} "><b><i>{{ var.gene }}</i></b></a>
-                  {% endif %}
+                <br>
+                {% if var.exon != '.' %}
+                  <b>Exó: </b>{{ var.exon }}
+                {% else %}
+                  <b>Intró: </b>{{ var.intron }}
+                {% endif %}
+              </td>
+              <td style="max-width:350px;">
+                <div class="row">
+                  <div class="col" id="{{ var.id }}" style="display:inline-block;" >
+                    <span ><b>{{ var.hgvsp }}</b>
+                    {% if var.tier_catsalut == "1" %}
+                      <span class="badge badge-pill badge-danger">
+                        Tier 1
+                        <a onclick="loadTierModal(this);" class="link-light">
+                         <i class="fas fa-edit" style="color:white;"></i>
+                        </a>
+                      </span>
+                    {% elif var.tier_catsalut == "2" %}
+                      <span class="badge badge-pill badge-success">
+                        Tier 2
+                        <a onclick="loadTierModal(this);" class="link-light">
+                         <i class="fas fa-edit" style="color:white;"></i>
+                        </a>
+                      </span>
+                    {% elif var.tier_catsalut == "3" %}
+                      <span class="badge badge-pill badge-info">
+                        Tier 3
+                        <a onclick="loadTierModal(this);" class="link-light">
+                         <i class="fas fa-edit" style="color:white;"></i>
+                        </a>
+                      </span>
+                    {% else %}
+                      <span class="badge badge-pill badge-secondary">
+                        No tier
+                        <a onclick="loadTierModal(this);" class="link-light">
+                         <i class="fas fa-edit" style="color:white;"></i>
+                        </a>
+                      </span>
+                    {% endif %}
+                    </span>
+                  </div>
 
                 </div>
-              </div>
-              <div class="row">
-                <div class="col">
-                  <i>{{ var.enst_id }}</i>
+                <div class="row">
+                  <div class="col">
+                    {{ var.hgvsg }}
+                  </div>
                 </div>
-              </div>
-              <br>
-                <b>Exó: </b>{{ var.exon }}
-            </td>
-            <td>
-              <div class="row">
-                <div class="col">
-                  <b>{{ var.hgvsp }}</b>
+                <div class="row mb-2">
+                  <div class="col">
+                    {{ var.hgvsc }}
+                  </div>
                 </div>
-              </div>
-              <div class="row">
-                <div class="col">
-                  {{ var.hgvsg }}
+                <div class="row">
+                  <div class="col">
+                    <b> Tipus: </b> {{ var.variant_type }}
+                  </div>
                 </div>
-              </div>
-              <div class="row mb-2">
-                <div class="col">
-                  {{ var.hgvsc }}
+                <p class="text-truncate"><b> Localització/Efecte: </b> {{ var.consequence }}</p>
+                {% if (var.blacklist == "yes") %}
+                <div class="row">
+                  <div class="col">
+                    <span class="badge badge-dark">
+                      BLACKLIST
+                    </span>
+                  </div>
                 </div>
-              </div>
-              <div class="row">
-                <div class="col">
-                  <b> Tipus: </b> {{ var.variant_type }}
+                {% else %}
+                <div class="row">
+                  <div class="col">
+                  </div>
                 </div>
-              </div>
-              <b> Localització/Efecte: </b> {{ var.consequence }}
-              {% if (var.blacklist == "yes") %}
-              <span class="badge badge-dark">
-                BLACKLIST
-              </span>
-              {% endif %}
-
-            </td>
-            <td>
-              <div class="row">
-                <div class="col">
-                  {% if (var.variant_type == "Amplification" or var.variant_type == "Loss") %}
-                    <b>CN:</b> {{ var.allele_frequency }}
-                  {% else %}
-                    <b>VAF:</b> {{ var.allele_frequency }}
-                  {% endif %}
-                </div>
-              </div>
-              <div class="row">
-                <div class="col">
-                  <b>Read support:</b> {{ var.read_support }}
-                </div>
-              </div>
-              <div class="row">
-                <div class="col">
-                  <b>Profunditat: </b>{{ var.depth }}
-                </div>
-              </div>
-              <div class="row">
-                <div class="col">
-                  <b>Max Pop AF: </b>{{ var.max_pop_af }}
-                </div>
-              </div>
-              <div class="row">
-                <div class="col">
-                  <b>Max AF: </b>{{ var.max_af }}
-                </div>
-              </div>
-              <div class="row">
-                <div class="col">
-                  <b>Freq. DB: </b>{{ var.db_detected_number }} / {{ var.db_sample_count }}  {{ var.db_detected_freq |float | round(3) }}
-                </div>
-              </div>
-
-            </td>
-            <td style="word-wrap:break-word;overflow-wrap:break-word;">
-              {% set list_therapies = var.therapies.split(',')  %}
-              {% if list_therapies|length < 10   %}
-                {% for item in list_therapies %}
-                  {{ item }}
-                {% endfor %}
-              {% else %}
-               {% for n in range(1,5) %}
-                {{ list_therapies[n] }},
-               {% endfor %}
-               <br>
-               <div class="collapse" id="collapseTherapies">
-                {% for n in range(5,list_therapies|length) %}
-                  {{ list_therapies[n] }},
-                {% endfor %}
-               </div>
-               <a class="btn btn-primary btn-sm" data-toggle="collapse" href="#collapseTherapies" role="button" aria-expanded="false" aria-controls="collapseTherapies">Mostra <span class="badge badge-light"></span></a>
-              {% endif %}
+               {% endif %}
 
               </td>
-            <td style="word-wrap:break-word;overflow-wrap:break-word;">{{ var.tumor_type }}</td>
-          </tr>
-          {% endfor %}
-          </tbody>
-        </table>
+              <td>
+                <div class="row">
+                  <div class="col">
+                    {% if (var.variant_type == "Amplification" or var.variant_type == "Loss") %}
+                      <b>CN:</b> {{ var.allele_frequency }}
+                    {% else %}
+                      <b>VAF:</b> {{ var.allele_frequency }}
+                    {% endif %}
+                  </div>
+                </div>
+                <div class="row">
+                  <div class="col">
+                    <b>Read support:</b> {{ var.read_support }}
+                  </div>
+                </div>
+                <div class="row">
+                  <div class="col">
+                    <b>Profunditat: </b>{{ var.depth }}
+                  </div>
+                </div>
+                <div class="row">
+                  <div class="col">
+                    <b>Max Pop AF: </b>{{ var.max_pop_af }}
+                  </div>
+                </div>
+                <div class="row">
+                  <div class="col">
+                    <b>Max AF: </b>{{ var.max_af }}
+                  </div>
+                </div>
+                <div class="row">
+                  <div class="col">
+                    {% set var_db_freq = (100*(var.db_detected_number/var.db_sample_count))|float| round(2) %}
+                    <b>Freq. DB: </b>{{ var_db_freq }}% {{ var.db_detected_number }}/{{ var.db_sample_count }}
+                  </div>
+                </div>
+              </td>
+            </tr>
+            {% endfor %}
+            </tbody>
+          </table>
         </div>
     </div>
-    {% if active == "Other" %}
-      <div class="tab-pane fade pt-5 show active" id="Other" role="tabpanel" aria-labelledby="Other-tab">
-    {% else %}
-      <div class="tab-pane fade pt-5" id="Other" role="tabpanel" aria-labelledby="Other-tab">
-    {% endif %}
 
-    <div class="d-flex justify-content-center">
-      <div class = "row mt-1">
-          {% with messages = get_flashed_messages(with_categories=true) %}
-          {% if messages %}
-          {% for category,message in messages %}
-          <div class="alert alert-{{ category }} alert-dismissible fade show ml-3" role="alert">
-            <span>{{ message }}</span>
-            <button type="button" class="close" data-dismiss="alert" aria-label="Close">
-              <span aria-hidden="true">&times;</span>
-            </button>
-            <br>
-          </div>
-          {% endfor %}
-        {% endif %}
-      {% endwith %}
-      </div>
-    </div>
-
-      <div>
-        Altres variants rares d'alt impacte: frameshifts, stop codons, splicing, variants missense categoritzades com a patogèniques o possiblement patogèniques a  <a href="https://www.ncbi.nlm.nih.gov/clinvar/">ClinVar</a>
-      </div>
-      <br>
-
-      <a class="btn btn-sm btn-info" data-toggle="collapse" href="#filter_other_variants" role="button" aria-expanded="false" aria-controls="filter_other_variants">
-        <i class="fas fa-filter" style="color:white;"></i>Filtres
-      </a>
-
-      <div class="collapse mt-1 mb-3 p-2" id="filter_other_variants" style="background-color:rgb(248, 248, 248);">
-        <form action="{{ url_for('apply_variant_filters', run_id=sample_info.run_id, sample=sample_info.lab_id, sample_id=sample_info.id, variant_class='other' )}}" method="POST" enctype="multipart/form-data" id="form_filter_variants">
-          <div class ="row mt-2">
-              <div class="col">
-                  <label style="color:rgb(78, 78, 78);" for=""><b><i>VAF mínim (0-1)</i></b></label>
-                  <div class="input-group mb-3">
-                    <input type="number" step="0.001" max="1" min="0" value="" name="vaf_perc" class="form-control" placeholder="0.02" ></input>
-
-                  </div>
-              </div>
-              <div class="col">
-                <label style="color:rgb(78, 78, 78);" for="min_depth"><b><i>Profunditat mínima </i></b></label>
-                <div class="input-group mb-3">
-                    <input type="number" value="" step="1" max="5000" min="0" name="min_depth" class="form-control" placeholder="20" ></input>
-                </div>
-              </div>
-              <div class="col">
-                  <label style="color:rgb(78, 78, 78);" for="min_read_support"><b><i>Read support mínim</i></b></label>
-                  <div class="input-group mb-3">
-                      <input type="number" value="" step="1" max="5000" min="0" name="min_read_support" class="form-control" placeholder="2"></input>
-                  </div>
-              </div>
-            <div class="col">
-              <div class="d-flex justify-content-center align-items-center mt-1">
-                <div class ="row">
-                  <div class="col">
-                    <div class="custom-control custom-checkbox custom-control-inline">
-                      <input type="checkbox" class="custom-control-input" name="snv_check" value="1" id="snv" checked>
-                      <label class="custom-control-label" for="snv">
-                          SNV/MNV
-                      </label>
-                    </div>
-                    <div class="custom-control custom-checkbox custom-control-inline">
-                      <input type="checkbox" class="custom-control-input" name="indel_check" value="2" id="indels" checked>
-                      <label class="custom-control-label" for="indels">
-                          Indels
-                      </label>
-                   </div>
-                    <div class="custom-control custom-checkbox custom-control-inline">
-                      <input type="checkbox" class="custom-control-input" name="sv_check" value="3" id="fusions">
-                      <label class="custom-control-label" for="fusions">
-                          Fusions/SV
-                      </label>
-                    </div>
-                  </div>
-               </div>
-              </div>
-            </div>
-              <div class="col">
-                <div class="d-flex justify-content-center align-items-center">
-                    <button class="btn btn-secondary" type="submit"  href="">Aplica</button>
-                </div>
-              </div>
-          </div>
-        </form>
-      </div>
-
-      <hr>
-      <div style="margin-bottom:15px;">
-        <!-- <button type="button" class="btn btn-sm" style="color:black;outline-color:lightgrey;background-color: rgba(211, 211, 211, 0.74);">Desar canvis</button> -->
-        <a type="button" id="create_report1" onclick="modal();" href="{{ url_for('generate_report',run_id=sample_info.run_id,sample=sample_info.lab_id, sample_id=sample_info.id,active="Other" ) }}" class="btn btn-secondary btn-sm">
-          <i class="fas fa-file-alt" style="color:white;"> </i> Generar informe</a>
-      </div>
-
-      <table id="others_table" class="table table-striped table-bordered dt-responsive wrap" style="width:100%;background-color:white;">
-        <thead>
-            <tr>
-                <th>Accions</th>
-                <th>Gen</th>
-                <th>Variant</th>
-                <th>Altres</th>
-                <th>Teràpies</th>
-                <th>Malalties</th>
-            </tr>
-        </thead>
-        <tbody>
-        {% for var in other_variants %}
-        <tr>
-        <td>
-          <div class="row">
-            <div class="col">
-              <a class="btn btn-outline-primary btn-sm" href="{{ url_for('show_therapeutic_details', sample=sample_info.lab_id, entry_id=var.id, var_classification=var.classification) }} ">
-                <i class="fas fa-plus-circle fa"></i> Info
-                <!-- <i class="fas fa-plus-circle fa-lg" style="margin-right:20px;color:rgb(31, 139, 211)"></i><small></small> -->
-              </a>
-            </div>
-            <div class="col">
-              <a data-toggle="modal" data-target="#edit_others_report_{{var.id}}" role="button">
-                <i class="fas fa-edit" style="color:rgb(109, 106, 106)"></i><small></small>
-              </a>
-              <a class="" href="{{ url_for('remove_variant', run_id=sample_info.run_id, sample=sample_info.lab_id, sample_id=sample_info.id, var_id=var.id, var_classification=var.classification) }}" method="POST" onclick="return confirm('Segur que vols eliminar aquesta Variant?');" enctype="multipart/form-data" id="update_therapeutic_variant"><i class="fas fa-trash" style="color: rgba(209, 20, 20, 0.938)"></i><small></small></a>
-              <a data-toggle="modal" data-target="#show_igv{{var.id}}" role="button">
-                <div >
-                  <i class="fas fa-image fa" style="border-radius:3px;margin:0px;padding:2px;color:white;background-color:#0d98ba"></i> <small><b>IGV</b></small>
-                </div>
-              </a>
-            </div>
-          </div>
-          <div class="modal fade bd-example-modal-lg" id="show_igv{{var.id}}" tabindex="-1" aria-labelledby="modal_show_igv{{var.id}}" aria-hidden="true">
-            <div class="modal-dialog modal-lg">
-              <div class="modal-content">
-                <div class="modal-header" style="background-color:rgb(248, 248, 248);">
-                  <h4 class="modal-title" id="modal_show_igv">IGV - {{ var.hgvsg }} </h4>
-                  <button type="button" class="close" data-dismiss="modal" aria-label="Close">
-                    <span aria-hidden="true">&times;</span>
-                  </button>
-                </div>
-                <div class="modal-body">
-                  {% set igv_image_basename = sample_info.lab_id ~ "_" ~ var.hgvsg ~ ".png"  %}
-                  {% set list1 = igv_image_basename.split('>') %}
-                  {% set igv_image = list1[0] ~ ".png" %}
-                  {% set static_path   = "/static/" ~ igv_image_basename %}
-
-                  <img src="{{ static_path }}" class="img-fluid" alt="{{ igv_image }}">
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <div class="modal fade bd-example-modal-lg" id="edit_others_report_{{var.id}}" tabindex="-1" aria-labelledby="modal_edit_others_report_{{var.id}}" aria-hidden="true">
-            <form action="{{ url_for('update_therapeutic_variant', run_id=sample_info.run_id, sample=sample_info.lab_id, sample_id=sample_info.id, var_id=var.id, var_classification=var.classification) }}" method="POST" enctype="multipart/form-data" id="update_therapeutic_variant" >
-              <div class="modal-dialog modal-lg">
-                <div class="modal-content">
-                  <div class="modal-header" style="background-color:rgb(248, 248, 248);">
-                    <h4 class="modal-title" id="modal_new_sample">Edita la variant {{ var.hgvsg }} </h4>
-                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
-                      <span aria-hidden="true">&times;</span>
-                    </button>
-                  </div>
-                  <div class="modal-body">
-                    <div class="row mt-3 mb-3">
-                      <div class="col">
-                        <h6><b>Categoria</b></h6>
-                        <div class="custom-control custom-radio custom-control-inline">
-                          <input type="radio" class="custom-control-input" name="variant_category" value="1" id="actionable_variant_other_{{var.id}}">
-                          <label class="custom-control-label" for="actionable_variant_other_{{var.id}}">
-                            Accionable
-                          </label>
-                        </div>
-                        <div class="custom-control custom-radio custom-control-inline">
-                          <input type="radio" class="custom-control-input" name="variant_category" value="2" id="other_variant_other_{{var.id}}" checked>
-                          <label class="custom-control-label" for="other_variant_other_{{var.id}}">
-                            Altres variants d'alt impacte
-                          </label>
-                        </div>
-                        <div class="custom-control custom-radio custom-control-inline">
-                          <input type="radio" class="custom-control-input" name="variant_category" value="3" id="rare_variant_other_{{var.id}}">
-                          <label class="custom-control-label" for="rare_variant_other_{{var.id}}">
-                            Rares (VUS)
-                          </label>
-                        </div>
-                      </div>
-                    </div>
-                    <hr>
-                    <div class="row mt-4">
-                      <div class="col-sm ">
-                        <h6><b>Teràpies</b></h6>
-                        <div class="input-group mb-3">
-                          <div class="input-group-prepend">
-                            <span class="input-group-text" id="basic-addon1"></span>
-                          </div>
-                          <textarea type="text" name="therapies" class="form-control" placeholder="" aria-label="Username" aria-describedby="basic-addon1">{{ var.therapies }}</textarea>
-                        </div>
-                      </div>
-                    </div>
-                    <div class="row mt-3">
-                      <div class="col-sm">
-                        <h6><b>Malalties</b></h6>
-                        <div class="input-group mb-3">
-                          <div class="input-group-prepend">
-                            <span class="input-group-text" id="basic-addon1"></span>
-                          </div>
-                          <textarea type="text" name="diseases" class="form-control" placeholder="" aria-label="Username" aria-describedby="basic-addon1">{{ var.tumor_type }}</textarea>
-                        </div>
-                      </div>
-                    </div>
-                    <hr>
-
-                    <div class="row">
-                      <div class="col-sm">
-                        <h6><b>Blacklist:</b></h6>
-                      </div>
-                    </div>
-                    <div class="row">
-                      <div class="col-sm">
-                        <div class="custom-control custom-checkbox">
-                          {% if var.blacklist == "yes" %}
-                          <input type="checkbox" style="background-color:green;" name="blacklist_check" value="blacklist" class="custom-control-input" id="blacklist_check_other_{{var.id}}" checked>
-                          {% else %}
-                          <input type="checkbox" style="background-color:green;" name="blacklist_check" value="blacklist" class="custom-control-input" id="blacklist_check_other_{{var.id}}">
-                          {% endif %}
-                          <label class="custom-control-label" for="blacklist_check_other_{{var.id}}">
-
-                        </div>
-                      </div>
-                    </div>
-
-                    <div class="row">
-                      <h6><b>Status de validació:</b></h6>
-                    </div>
-                    <div class="row">
-                      <div class="col-sm">
-                        <div class="custom-control custom-checkbox">
-                          {% if var.validated_bioinfo == "yes" %}
-                          <input type="checkbox" name="bioinfo_check" value="bioinfo" class="custom-control-input" id="bioinfo_check_other_{{var.id}}" checked>
-                          {% else %}
-                          <input type="checkbox" style="background-color:green;" name="bioinfo_check" value="bioinfo" class="custom-control-input" id="bioinfo_check_other_{{var.id}}">
-                          {% endif %}
-                          <label class="custom-control-label" for="bioinfo_check_other_{{var.id}}">
-                            Qualitat NGS
-                          </label>
-                        </div>
-                      </div>
-                      <div class="col-sm">
-                        <div class="custom-control custom-checkbox">
-                          {%  if var.validated_assessor == "yes" %}
-                            <input type="checkbox" name="assessor_check" value="assessor" class="custom-control-input" id="assessor_check_other_{{var.id}}" checked>
-                          {% else %}
-                            <input type="checkbox" name="assessor_check" value="assessor" class="custom-control-input" id="assessor_check_other_{{var.id}}">
-                          {% endif %}
-                          <label class="custom-control-label" for="assessor_check_other_{{var.id}}">
-                            Classificació Clínica
-                          </label>
-                        </div>
-                      </div>
-                    </div>
-
-                    </div>
-                    <div class="d-flex justify-content-center align-items-center mt-5">
-                      <button class="btn btn-primary mt-2 mb-2" style="width:15%;" type="submit" id="edit_therapeutic">Desa canvis</button>
-                    </div>
-                  </div>
-              </div>
-            </form>
-          </div>
-          <hr>
-
-          <div class="row">
-            <div class="col-sm">
-              <small><b>Status de validació:</b></small>
-            </div>
-          </div>
-
-            {%  if (var.validated_bioinfo == "no" and var.validated_assessor == "no") %}
-            <small>Qualitat:</small> <span class="badge badge-warning">
-              Pendent
-            </span>
-            <br>
-            <small>Classificació:</small><span class="badge badge-warning">
-              Pendent
-            </span>
-            {% endif %}</h6>
-            {%  if (var.validated_bioinfo == "yes" and var.validated_assessor == "no") %}
-            <small>Qualitat:</small>
-            <span class="badge badge-warning">
-              Pendent
-            </span>
-            {% endif %}</h6>
-            {%  if (var.validated_bioinfo == "no" and var.validated_assessor == "yes") %}
-            <small>Qualitat:</small>
-            <span class="badge badge-warning">
-              Pendent
-            </span>
-            {% endif %}</h6>
-
-            {%  if (var.validated_bioinfo == "yes" and var.validated_assessor == "yes") %}
-            <span class="badge badge-success badge-sm">
-              Completa
-            </span>
-            {% endif %}</h6>
-        </td>
-        <td>
-            <div class="row">
-              <div class="col">
-                 <a href="https://www.genecards.org/cgi-bin/carddisp.pl?gene={{var.gene}} "><b><i>{{ var.gene }}</i></b></a>
-              </div>
-            </div>
-            <div class="row">
-              <div class="col">
-                <i>{{ var.enst_id }}</i>
-              </div>
-            </div>
-            <br>
-            <b>Exó: </b>{{ var.exon }}
-          </td>
-          <td>
-            <div class="row">
-              <div class="col">
-                <b>{{ var.hgvsp }}</b>
-              </div>
-            </div>
-            <div class="row">
-              <div class="col">
-                {{ var.hgvsg }}
-              </div>
-            </div>
-            <div class="row mb-2">
-              <div class="col">
-                {{ var.hgvsc }}
-              </div>
-            </div>
-            <div class="row">
-              <div class="col">
-                <b> Tipus: </b> {{ var.variant_type }}
-              </div>
-            </div>
-            <b> Localització/Efecte: </b> {{ var.consequence }}
-            {% if (var.blacklist == "yes") %}
-            <span class="badge badge-dark">
-              BLACKLIST
-            </span>
-            {% endif %}
-
-          </td>
-          <td>
-            <div class="row">
-              <div class="col">
-                <b>VAF:</b> {{ var.allele_frequency }}
-              </div>
-            </div>
-            <div class="row">
-              <div class="col">
-                <b>Read support:</b> {{ var.read_support }}
-              </div>
-            </div>
-            <div class="row">
-              <div class="col">
-                <b>Profunditat: </b>{{ var.depth }}
-              </div>
-            </div>
-            <div class="row">
-              <div class="col">
-                <b>Max Pop AF: </b>{{ var.max_pop_af }}
-              </div>
-            </div>
-            <div class="row">
-              <div class="col">
-                <b>Max AF: </b>{{ var.max_af }}
-              </div>
-            </div>
-            <div class="row">
-              <div class="col">
-                <b>Freq. DB: </b>{{ var.db_detected_number }} / {{ var.db_sample_count }}  {{ var.db_detected_freq |float | round(3) }}
-              </div>
-            </div>
-          </td>
-          <td>{{ var.therapies }}</td>
-          <td>{{ var.tumor_type }}</td>
-        </tr>
-        {% endfor %}
-        </tbody>
-      </table>
-    </div>
     <div class="tab-pane fade pt-5" id="Rare" role="tabpanel" aria-labelledby="Rare-tab">
-      <table id="rare_table" class="table table-striped table-bordered dt-responsive nowrap" style="width:100%;background-color:white;">
+
+      <table id="rare_table" class="table table-sm table-striped table-bordered dt-responsive nowrap" style="width:100%;background-color:white;">
         <thead>
             <tr>
+                <th></th>
                 <th>Accions</th>
                 <th>Gen</th>
                 <th>Variant</th>
                 <th>Altres</th>
-                <th>Teràpies</th>
-                <th>Malalties</th>
             </tr>
         </thead>
         <tbody>
@@ -1168,47 +719,34 @@
               <div class="col">
                 <a class="btn btn-outline-primary btn-sm" href="{{ url_for('show_therapeutic_details', sample=sample_info.lab_id, entry_id=var.id, var_classification=var.classification) }} ">
                   <i class="fas fa-plus-circle fa"></i> Info
-                  <!-- <i class="fas fa-plus-circle fa-lg" style="margin-right:20px;color:rgb(31, 139, 211)"></i><small></small> -->
                 </a>
               </div>
+            </div>
+
+            <div class="row mt-3">
               <div class="col">
                 <a data-toggle="modal" data-target="#edit_rare_report_{{var.id}}" role="button">
                   <i class="fas fa-edit" style="color:rgb(109, 106, 106)"></i><small></small>
                 </a>
+              </div>
+              <div class="col">
                 <a class="" href="{{ url_for('remove_variant', run_id=sample_info.run_id, sample=sample_info.lab_id, sample_id=sample_info.id, var_id=var.id, var_classification=var.classification) }}" onclick="return confirm('Segur que vols eliminar aquesta variant?');" method="POST" enctype="multipart/form-data" id="update_therapeutic_variant"><i class="fas fa-trash" style="color: rgba(209, 20, 20, 0.938)"></i><small></small></a>
+              </div>
+              <div class="col">
+              </div>
+              <div class="col">
+              </div>
+            </div>
+            <!-- <hr> -->
+            <div class="row mt">
+              <div class="col">
                 <a data-toggle="modal" data-target="#show_igv{{var.id}}" role="button">
                   <div >
                     <i class="fas fa-image fa" style="border-radius:3px;margin:0px;padding:2px;color:white;background-color:#0d98ba"></i> <small><b>IGV</b></small>
                   </div>
                 </a>
-
               </div>
             </div>
-
-            <div class="modal fade bd-example-modal-lg" id="show_igv{{var.id}}" tabindex="-1" aria-labelledby="modal_show_igv{{var.id}}" aria-hidden="true">
-              <div class="modal-dialog modal-lg">
-                <div class="modal-content">
-                  <div class="modal-header" style="background-color:rgb(248, 248, 248);">
-                    <h4 class="modal-title" id="modal_show_igv">IGV - {{ var.hgvsg }} </h4>
-                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
-                      <span aria-hidden="true">&times;</span>
-                    </button>
-                  </div>
-                  <div class="modal-body">
-                    {% set igv_image_basename = sample_info.lab_id ~ "_" ~ var.hgvsg  ~ "." ~ "png"  %}
-                    {% set list1 = igv_image_basename.split('>') %}
-                    {% set igv_image = list1[0]  %}
-                    {% set testvar = "/static/" ~ igv_image_basename %}
-                    <!-- {% set full_igv_image= vcf_folder ~ "/" ~ igv_image %} -->
-                    <!-- {% set static_path   = "/static/IGV_SNAPSHOTS/" ~ igv_image %} -->
-                    {% set static_path   = "/static/" ~ igv_image_basename %}
-
-                    <img src="{{ testvar }}" class="img-fluid" alt="{{ testvar }}">
-                  </div>
-                </div>
-              </div>
-            </div>
-
 
             <div class="modal fade bd-example-modal-lg" id="edit_rare_report_{{var.id}}" tabindex="-1" aria-labelledby="modal_edit_rare_report_{{var.id}}" aria-hidden="true">
               <form action="{{ url_for('update_therapeutic_variant', run_id=sample_info.run_id, sample=sample_info.lab_id, sample_id=sample_info.id, var_id=var.id, var_classification=var.classification) }}" method="POST" enctype="multipart/form-data" id="update_therapeutic_variant">
@@ -1225,45 +763,16 @@
                         <div class="col">
                           <h6><b>Categoria</b></h6>
                           <div class="custom-control custom-radio custom-control-inline">
-                            <input type="radio" class="custom-control-input" name="variant_category" value="1" id="actionable_variant_rare_{{var.id}}">
+                            <input type="radio" class="custom-control-input" name="variant_category" value="2" id="actionable_variant_rare_{{var.id}}">
                             <label class="custom-control-label" for="actionable_variant_rare_{{var.id}}">
-                              Accionable
-                            </label>
-                          </div>
-                          <div class="custom-control custom-radio custom-control-inline">
-                            <input type="radio" class="custom-control-input" name="variant_category" value="2" id="other_variant_rare_{{var.id}}">
-                            <label class="custom-control-label" for="other_variant_rare_{{var.id}}">
-                              Altres variants d'alt impacte
+                              Variants d'alt impacte
                             </label>
                           </div>
                           <div class="custom-control custom-radio custom-control-inline">
                             <input type="radio" class="custom-control-input" name="variant_category" value="3" id="rare_variant_rare_{{var.id}}" checked>
                             <label class="custom-control-label" for="rare_variant_rare_{{var.id}}">
-                              Rares (VUS)
+                              VUS
                             </label>
-                          </div>
-                        </div>
-                      </div>
-                      <hr>
-                      <div class="row mt-4">
-                        <div class="col-sm ">
-                          <h6><b>Teràpies</b></h6>
-                          <div class="input-group mb-3">
-                            <div class="input-group-prepend">
-                              <span class="input-group-text" id="basic-addon1"></span>
-                            </div>
-                            <textarea type="text" name="therapies" class="form-control" placeholder="" aria-label="Username" aria-describedby="basic-addon1">{{ var.therapies }}</textarea>
-                          </div>
-                        </div>
-                      </div>
-                      <div class="row mt-3">
-                        <div class="col-sm">
-                          <h6><b>Malalties</b></h6>
-                          <div class="input-group mb-3">
-                            <div class="input-group-prepend">
-                              <span class="input-group-text" id="basic-addon1"></span>
-                            </div>
-                            <textarea type="text" name="diseases" class="form-control" placeholder="" aria-label="Username" aria-describedby="basic-addon1">{{ var.tumor_type }}</textarea>
                           </div>
                         </div>
                       </div>
@@ -1283,41 +792,9 @@
                             <input type="checkbox" style="background-color:green;" name="blacklist_check" value="blacklist" class="custom-control-input" id="bioinfo_check_rare_{{var.id}}">
                             {% endif %}
                             <label class="custom-control-label" for="bioinfo_check_rare_{{var.id}}">
-
                           </div>
                         </div>
                       </div>
-
-                      <div class="row">
-                        <h7><b>Status de validació:</b></h7>
-                      </div>
-                      <div class="row">
-                        <div class="col-sm">
-                          <div class="custom-control custom-checkbox">
-                            {% if var.validated_bioinfo == "yes" %}
-                            <input type="checkbox" name="bioinfo_check" value="bioinfo" class="custom-control-input" id="bioinfo_check_rare" checked>
-                            {% else %}
-                            <input type="checkbox" style="background-color:green;" name="bioinfo_check" value="bioinfo" class="custom-control-input" id="bioinfo_check_rare_{{var.id}}">
-                            {% endif %}
-                            <label class="custom-control-label" for="bioinfo_check_rare_{{var.id}}">
-                              Qualitat NGS
-                            </label>
-                          </div>
-                        </div>
-                        <div class="col-sm">
-                          <div class="custom-control custom-checkbox">
-                            {%  if var.validated_assessor == "yes" %}
-                              <input type="checkbox" name="assessor_check" value="assessor" class="custom-control-input" id="assessor_check_rare_{{var.id}}" checked>
-                            {% else %}
-                              <input type="checkbox" name="assessor_check" value="assessor" class="custom-control-input" id="assessor_check_rare_{{var.id}}">
-                            {% endif %}
-                            <label class="custom-control-label" for="assessor_check_rare_{{var.id}}">
-                              Classificació Clínica
-                            </label>
-                          </div>
-                        </div>
-                      </div>
-
                       </div>
                       <div class="d-flex justify-content-center align-items-center mt-5">
                         <button class="btn btn-primary mt-2 mb-2" style="width:15%;" type="submit" id="edit_therapeutic">Desa canvis</button>
@@ -1326,42 +803,7 @@
                 </div>
               </form>
             </div>
-            <hr>
-            <div class="row mt-0">
-              <div class="col-sm">
-                <small><b>Status de validació:</b></small>
-              </div>
-            </div>
-              {%  if (var.validated_bioinfo == "no" and var.validated_assessor == "no") %}
-              <small>Qualitat:</small> <span class="badge badge-warning">
-                Pendent
-              </span>
-              <br>
-              <small>Classificació:</small><span class="badge badge-warning">
-                Pendent
-              </span>
-              {% endif %}</h6>
-              {%  if (var.validated_bioinfo == "yes" and var.validated_assessor == "no") %}
-              <small>Qualitat:</small>
-              <span class="badge badge-warning">
-                Pendent
-              </span>
-              {% endif %}</h6>
-              {%  if (var.validated_bioinfo == "no" and var.validated_assessor == "yes") %}
-              <small>Qualitat:</small>
-              <span class="badge badge-warning">
-                Pendent
-              </span>
-              {% endif %}</h6>
-
-              {%  if (var.validated_bioinfo == "yes" and var.validated_assessor == "yes") %}
-              <span class="badge badge-success badge-sm">
-                Completa
-              </span>
-              {% endif %}</h6>
           </td>
-
-
         <td>
             <div class="row">
               <div class="col">
@@ -1374,7 +816,11 @@
               </div>
             </div>
             <br>
-                <b>Exó: </b>{{ var.exon }}
+            {% if var.exon != '.' %}
+              <b>Exó: </b>{{ var.exon }}
+            {% else %}
+              <b>Intró: </b>{{ var.intron }}
+            {% endif %}
           </td>
           <td>
             <div class="row">
@@ -1396,7 +842,7 @@
               <div class="col">
                 <b> Tipus: </b> {{ var.variant_type }}
               </div>
-            </div>b
+            </div>
             <b> Localització/Efecte: </b> {{ var.consequence }}
             {% if (var.blacklist == "yes") %}
             <span class="badge badge-dark">
@@ -1435,7 +881,7 @@
               </div>
             </div>
           </td>
-          <td>{{ var.therapies }}</td>
+          <!-- <td>{{ var.therapies }}</td> -->
           <td>{{ var.tumor_type }}</td>
         </tr>
         {% endfor %}
@@ -1444,12 +890,7 @@
     </div>
     <div class="tab-pane fade pt-5" id="CNA" role="tabpanel" aria-labelledby="CNA-tab">
 
-      <div style="margin-bottom:15px;">
-        <!-- <button type="button" class="btn btn-sm" style="color:black;outline-color:lightgrey;background-color: rgba(211, 211, 211, 0.74);">Desar canvis</button> -->
-        <a type="button" class="btn btn-outline-secondary btn-sm"><i class="fas fa-image"></i> Perfil genòmic</a>
-      </div>
-
-      <table id="cnas_table" class="table table-striped table-bordered dt-responsive nowrap" style="width:100%;background-color:white;">
+      <table id="cnas_table" class="table table-sm table-striped table-bordered dt-responsive nowrap" style="width:100%;background-color:white;">
         <thead>
             <tr>
                 <th>Chr</th>
@@ -1517,11 +958,9 @@
         {% endfor %}
         </tbody>
       </table>
-
     </div>
-
     <div class="tab-pane fade pt-5" id="Fusions" role="tabpanel" aria-labelledby="Fusion-tab">
-      <table id="fusions_table" class="table table-striped table-bordered dt-responsive nowrap" style="width:100%;background-color:white;">
+      <table id="fusions_table" class="table table-sm table-striped table-bordered dt-responsive nowrap" style="width:100%;background-color:white;">
         <thead>
             <tr>
               <th>Chr</th>
@@ -1606,7 +1045,6 @@
                 {{ var.flanking_genes  }}
               </div>
           </td>
-
         </tr>
         {% endfor %}
         </tbody>
@@ -1618,52 +1056,155 @@
 </div>
 
 {% block script %}
- <script>
-    $(document).ready(function() {
-        $("#submit_analysis").click(function() {
-            // disable button
-            $(this).prop("disabled", true);
-            // add spinner to button
-            $(this).html(
-                `<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Uploading...`
-            );
-        });
-    });
-    $.ajax({
-  xhr: function() {
-    var xhr = new window.XMLHttpRequest();
+<script>
 
-    xhr.upload.addEventListener("progress", function(evt) {
-      if (evt.lengthComputable) {
-        var percentComplete = evt.loaded / evt.total;
-        percentComplete = parseInt(percentComplete * 100);
-        console.log(percentComplete);
+  function loadTierModal(event) {
 
-        if (percentComplete === 100) {
+    tier = event.parentElement.innerText;
+    var_id = event.parentElement.parentElement.parentElement.id;
+    tier_modal = document.getElementById("tier_modal");
+    modal_var_id = document.getElementById("modal_var_id").innerText = var_id;
+    document.getElementById("tier_1").checked = false;
+    document.getElementById("tier_2").checked = false;
+    document.getElementById("tier_3").checked = false;
+    document.getElementById("no_tier").checked = false;
 
-        }
-      }
-    }, false);
-
-    return xhr;
-  },
-  url: posturlfile,
-  type: "POST",
-  data: JSON.stringify(fileuploaddata),
-  contentType: "application/json",
-  dataType: "json",
-  success: function(result) {
-    console.log(result);
+    if (tier.includes("1")) {
+       document.getElementById("tier_1").checked = true;
+    }
+    if (tier.includes("2")) {
+      document.getElementById("tier_2").checked = true;
+    }
+    if (tier.includes("3")) {
+      document.getElementById("tier_3").checked = true;
+    }
+    if (tier.includes("3")) {
+      document.getElementById("tier_3").checked = true;
+    }
+    if (tier.includes("No")) {
+      document.getElementById("no_tier").checked = true;
+    }
+    $('#tier_modal').modal('show');
+    console.log(tier);
   }
-});
 
-    //function input_filename() {
-    //    fil_input_label.innerHTML = input.files
-    //};
+  button_tier_modal = document.getElementById("change_tier_button");
+  button_tier_modal.addEventListener("click", modifyTierModal);
+  function modifyTierModal() {
+    let tier = document.querySelector('input[name="change_tier[]"]:checked').value;
+    let modal_var_id = document.getElementById("modal_var_id").innerText;
+    let body_data = {
+      "tier": tier,
+      "var_id": modal_var_id
+    }
 
-     function filesize(elem) {
-        document.coocke = `filesize=${elem.files[0].size}`;
+    fetch('/modify_tier', {
+      method: "POST",
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body:JSON.stringify(body_data)
+    })
+    .then((response) => response.json())
+    .then((data) => {
+      document.getElementById("message_div").style.display = "block";
+      document.getElementById("message_span").innerHTML = data["info"];
+      console.log(data["info"]);
+      $('#tier_modal').modal('hide');
+    });
+  }
+
+
+  function showIgvVariant(locus) {
+    var start = parseInt(locus['POS']) +2;
+    var coordinates = locus['CHROM'] + ':' + start.toString();
+    console.log(coordinates);
+
+    var igvDiv = document.getElementById('igvDiv');
+    igvDiv.innerHTML = "";
+    igv.removeAllBrowsers();
+
+    $('#show_igv').modal('show');
+
+    igvDiv.innerHTML = `<div id="igv_lodader"><span  class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Carregant IGV...</div>`;
+
+    var options =
+      {
+          locus: coordinates,
+          genome: "hg19",
+          showCenterGuide: true,
+          tracks:[
+            {
+              type:'alignment',
+              format: 'bam',
+              url : "{{ url_for('download_sample_bam', run_id=sample_info.run_id, sample=sample_info.lab_id) }}" ,
+              indexURL: "{{ url_for('download_sample_bai', run_id=sample_info.run_id, sample=sample_info.lab_id) }}"
+            }
+          ]
+      };
+      setTimeout(function(){
+        igv.createBrowser(igvDiv, options)
+            .then(function (browser) {
+                document.getElementById('igv_lodader').remove();
+                igv.browser = browser;
+                console.log("Created IGV browser");
+            });
+    }, 3000);
+
+  }
+
+
+  var report_form = document.forms.namedItem("report_form");
+  report_form.addEventListener('submit', generateReport, false);
+
+  function generateReport(event) {
+     report_button = document.getElementById('report_button');
+     report_button.innerHTML = `<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Generant informe...`;
+
+     let formData = new FormData(document.forms.namedItem("report_form"));
+
+     ms = document.getElementById("message_span");
+     if (ms) {
+       ms.innerHTML = "";
+     }
+
+     var request = new XMLHttpRequest();
+     request.open("POST", "/create_somatic_report", true);
+     request.onload = function(oEvent) {
+       if (request.status == 200) {
+         var response_json = JSON.parse(request.responseText);
+         var display_message = response_json.message_text;
+         report_button.innerHTML = `<i class="fas fa-file-alt" style="color:white;"> </i> Generar informe`;
+
+         document.getElementById("message_div").style.display = "block";
+         document.getElementById("message_span").innerHTML = "Nou informe generat correctament!";
+
+       }
+       else {
+         console.log("error")
+       }
      };
+     request.send(formData);
+     event.preventDefault();
+   }
+
+  function selectAllVariants() {
+
+     var check_all_therapeutic = $('#check_all_therapeutic').prop('checked');
+     if (check_all_therapeutic == true) {
+       $('input[name="check_therapeutic_variant"]').each(function() {
+     			this.checked = true;
+     		});
+        $('#delete_multiple_button').show();
+     }
+     else {
+       $('input[name="check_therapeutic_variant"]').each(function() {
+     			this.checked = false;
+     		});
+       $('#delete_multiple_button').hide();
+     }
+   }
+
  </script>
 {% endblock %}
 

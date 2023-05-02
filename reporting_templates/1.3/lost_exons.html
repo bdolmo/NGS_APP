@@ -1,0 +1,41 @@
+
+<table style="width:100%;margin:0 auto;position:relative;top:25px;"">
+  <caption>
+    <div class="row" style="width:100%;margin:0 auto;">
+      <!-- <div class="col" style="width:100%;margin:0px;color:#2c4fa1;"> -->
+        <p style="font-size:15px;font-family: arial, sans-serif;color:#2c4fa1"><img src="fourdot.png" alt="" style="width:16px;height:15px;">
+          <b>EXONS NO COBERTS A 30X</b>
+        </p>
+      <!-- </div> -->
+    </div>
+  </caption>
+  <thead>
+
+  <tr style="color:white;background-color:#365c85;font-size:12px;padding:0px;margin:0px;">
+    <th> Gen</th>
+    <th> Coordenades</th>
+    <th> Exó/Regió</th>
+    <th> 1X</th>
+    <th> 10X</th>
+    <th> 20X</th>
+    <th> 30X</th>
+    <th> 100X</th>
+  </tr>
+  </thead>
+  <tbody>
+    {% for region in lost_exons %}
+      <tr style="background-color:#f0f4f8;padding:5px;">
+        <td style="background-color:#f0f4f8;padding:5px;" ><b><i>{{ region.probe_group }} </i></b></td>
+        <td style="background-color:#f0f4f8;padding:5px;"> {{ region.chromosome }}: {{ region.start }}:{{ region.end }}</td>
+        <td style="background-color:#f0f4f8;padding:5px;">{{ region.exon_number }}<br>
+        <td style="background-color:#f0f4f8;padding:5px;">{{ region.call_rate_1X }} </td>
+        <td style="background-color:#f0f4f8;padding:5px;">{{ region.call_rate_10X }} </td>
+        <td style="background-color:#f0f4f8;padding:5px;">{{ region.call_rate_20X }} </td>
+        <td style="background-color:#f0f4f8;padding:5px;">{{ region.call_rate_30X }} </td>
+        <td style="background-color:#f0f4f8;padding:5px;">{{ region.call_rate_100X }} </td>
+      </tr>
+    {% endfor %}
+  </tbody>
+
+</table>
+<p style="page-break-before: always" ></p>

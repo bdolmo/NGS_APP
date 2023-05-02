@@ -1,4 +1,4 @@
-<meta http-equiv="refresh" content="30">
+<meta http-equiv="refresh" content="60">
 
 {% extends "base.html" %}
 {% block body %}
@@ -10,7 +10,7 @@
     <div class="card mx-auto mt-3" style="width: 75%;background-color:#f6f6f6">
         <div class="card-body">
         <h5 class="card-title"><b>Total Jobs:</b> {{status_dict['Total jobs']}}</h5>
-        <p class="card-text"> <b> Running:</b> {{status_dict['Running']}}  <b>In queue:</b> {{status_dict['In queue']}}  <b> Completed:</b> {{status_dict['Completed']}}  <b> Failed: {{status_dict['Failed']}}</b></p>
+        <p class="card-text"> <b> En progrés:</b> {{status_dict['Running']}}  <b>En cua:</b> {{status_dict['In queue']}}  <b> Completats:</b> {{status_dict['Completed']}}  <b> Fallits: {{status_dict['Failed']}}</b></p>
         </div>
     </div>
    </div>
@@ -43,8 +43,6 @@
                     <th>Panel</th>
                     <th>N Samples</th>
                     <th>Actions</th>
-
-                <!--    <th>Status</th> !-->
                 </tr>
             </thead>
             <tbody>
@@ -52,55 +50,84 @@
                 <tr {% if (job.Status=="queued") %} style="background-color: lightgrey"{% endif %}
                 {% if (job.Status=="finished") %} style="background-color: rgb(220, 252, 227)"{% endif %}
                 {% if (job.Status=="started") %} style="background-color: rgb(189, 235, 253)"{% endif %}
-                {% if (job.Status=="failed") %} style="background-color: rgb(252, 208, 208)"{% endif %}>
-                <td><a href="{{ url_for('show_run_details', run_id=job.Job_id) }}"><b>{{ job.Job_id }}</b></a></td>
+                {% if (job.Status=="failed") %} style="background-color: rgb(252, 208, 208)"{% endif %}
+                {% if (job.Status=="stopped") %} style="background-color: FFFFCC;"{% endif %}>
 
-                <td>{{ job.Queue_id }}</td>
-                <td>{{ job.Date }}</td>
-                <td>{{ job.Analysis }}</td>
-                <td>{{ job.Panel }}</td>
-                <td>{{ job.Samples }}</td>
-                <td style="background-color: #F5F5F5">
+                  {% if (job.Status=="failed") %}
+                    <td ><b>{{ job.Job_id }}</b></td>
+                  {% endif %}
 
-                  {% if (job.Status=="finished") %}
-                  <a href="{{ url_for('remove_job_data', job_id=job.Job_id) }}" role="button"  onclick="return confirm('Segur que vols eliminar aquest RUN?');">
+                  {% if (job.Status=="queued") %}
+                    <td ><b>{{ job.Job_id }}</b></td>
+                  {% endif %}
+
+                  {% if (job.Status=="started") %}
+                    <td ><b>{{ job.Job_id }}</b></td>
+                  {% endif %}
+
+                  {% if (job.Status=="stopped") %}
+                    <td ><b>{{ job.Job_id }}</b></td>
+                  {% endif %}
+
+                  <!-- {% if (job.Status=="scheduled") %}
+                    <td ><b>{{ job.Job_id }}</b></td>
+                  {% endif %} -->
+                  {% if (job.Status=="finished") or (job.Status=="scheduled") %}
+                    {% if (job.Analysis == "Somatic") %}
+                      <td ><a href="{{ url_for('show_run_details', run_id=job.Job_id) }}"><b>{{ job.Job_id }}</b></a></td>
+                    {% elif job.Analysis == "somatic" %}
+                      <td><a href="{{ url_for('show_run_details', run_id=job.Job_id) }}"><b>{{ job.Job_id }}</b></a></td>
+                    {% elif job.Analysis == "Lowpass" %}
+                      <td><a href="{{ url_for('show_run_details', run_id=job.Job_id) }}"><b>{{ job.Job_id }}</b></a></td>
+
+                    {% elif job.Analysis == "germline" %}
+                    <td ><a href="{{ url_for('show_compendium_run', run_id=job.Job_id) }}"><b>{{ job.Job_id }}</b></a></td>
+                    {% endif %}
+                  {% endif %}
+
+                  <td>{{ job.Queue_id }}</td>
+                  <td>{{ job.Date }}</td>
+                  <td>{{ job.Analysis }}</td>
+                  <td>{{ job.Panel }}</td>
+                  <td>{{ job.Samples }}</td>
+                  <td style="background-color: #F5F5F5">
+                  {% if (job.Status=="queued") %}
+                  <a href="{{ url_for('remove_job', queue_id=job.Queue_id, job_id=job.Job_id) }}" role="button" onclick="return confirm('Segur que vols eliminar aquest RUN?');">
                     <i class="fas fa-trash" style="color: red"></i>
                   </a>
                   {% endif %}
-                </td>
+                  {% if (job.Status=="started") %}
+                  <a href="{{ url_for('stop_job', queue_id=job.Queue_id) }}" role="button" onclick="return confirm('Segur que vols aturar aquest RUN?');">
+                    <i class="fas fa-stop-circle" style="color: blue"></i>
+                  </a>
+                  <!-- <a href="{{ url_for('remove_job', queue_id=job.Queue_id, job_id=job.Job_id) }}" role="button" onclick="return confirm('Segur que vols eliminar aquest RUN?');">
+                    <i class="fas fa-trash" style="color: red"></i>
+                  </a> -->
 
-              <!--  {% if (job.Status=="finished")  %}
-                <td>
-                    <button type="button" class="btn btn-success" style="border-radius: 18px;"><b>Finished</b></button>
-                 </td>
-                {% elif (job.Status=="started")  %}
-                <td>
-                    <button type="button" class="btn btn-info">Running</button>
-                    <button type="submit" class="btn" name="cancel_job" >
-                        <i class="fas fa-times" style="color:red"></i>
-                     </button>
-                </td>
-                {% elif (job.Status=="Running")  %}
-                <td>
-                    <button type="button" class="btn btn-info">Running</button>
-                    <button type="submit" class="btn" name="cancel_job" >
-                        <i class="fas fa-times" style="color:red"></i>
-                     </button>
-                </td>
-                {% elif (job.Status=="queued")  %}
-                <td>
-                    <button type="button" class="btn btn-secondary"><b>Queued</b></button>
-                    <button type="submit" class="btn" name="cancel_job">
-                        <i class="fas fa-times" style="color:red"></i>
-                    </button>
-                </td>
-                {% elif (job.Status=="failed")  %}
-                <td>
-                    <button type="button" class="btn btn-error"><b>Failed</b></button>
-                </td>
-                {% endif %}
+                  {% endif %}
+                  {% if (job.Status=="finished") %}
+                    <a href="{{ url_for('remove_job', queue_id=job.Queue_id, job_id=job.Job_id) }}" role="button" onclick="return confirm('Segur que vols eliminar aquest RUN?');">
+                      <i class="fas fa-trash" style="color: red"></i>
+                    </a>
+                  {% endif %}
+                  {% if (job.Status=="failed") %}
+                  <a href="{{ url_for('remove_job', queue_id=job.Queue_id, job_id=job.Job_id) }}" role="button" onclick="return confirm('Segur que vols eliminar aquest RUN?');">
+                    <i class="fas fa-trash" style="color: red"></i>
+                  </a>
+                  {% endif %}
+                  {% if (job.Status=="stopped") %}
+                  <a href="{{ url_for('remove_job', queue_id=job.Queue_id, job_id=job.Job_id) }}" role="button" onclick="return confirm('Segur que vols eliminar aquest RUN?');">
+                    <i class="fas fa-trash" style="color: red"></i>
+                  </a>
+                  {% endif %}
 
-                !-->
+                  {% if (job.Status=="scheduled") %}
+                  <a href="{{ url_for('remove_job', queue_id=job.Queue_id, job_id=job.Job_id) }}" role="button" onclick="return confirm('Segur que vols eliminar aquest RUN?');">
+                    <i class="fas fa-trash" style="color: red"></i>
+                  </a>
+                  {% endif %}
+
+                  </td>
                 </tr>
             {% endfor %}
             </tbody>

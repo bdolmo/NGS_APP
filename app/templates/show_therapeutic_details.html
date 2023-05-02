@@ -5,24 +5,26 @@
 
 <!-- <div class="container-fluid rounded" style="background-color:white; width:65%"> -->
   <div class="d-flex" >
-      <!-- Sidebar -->
-      <div class="bg-light border-right vh-100" id="sidebar-wrapper"style="position:fixed;width:14%;">
-        <div class="list-group list-group-flush">
-          <a href="#General_info" class="list-group-item list-group-item-action bg-light"><i class="fas fa-info-circle"></i> General</a>
-          <a href="#identifiers" class="list-group-item list-group-item-action bg-light"><i class="fas fa-external-link-alt"></i> Identificadors</a>
-          <a href="#frequencies" class="list-group-item list-group-item-action bg-light"><i class="fas fa-globe-europe"></i> Freq. poblacionals</a>
-          <a href="#pubmed" class="list-group-item list-group-item-action bg-light"><i class="fas fa-book"></i> Pubmed</a>
-          <a href="#predictors_missense" class="list-group-item list-group-item-action bg-light"><i class="fas fa-sitemap" style="color:rgb(85, 1, 1);"></i> Predictors missense</a>
-          <a href="#predictors_splicing" class="list-group-item list-group-item-action bg-light"><i class="fas fa-sitemap" style="color:rgb(14, 1, 85);"></i> Predictors splicing</a>
-          <a href="#conservation" class="list-group-item list-group-item-action bg-light"><i class="bi bi-bezier2"></i> Conservació</a>
-          <a href="#igv" class="list-group-item list-group-item-action bg-light"><i class="bi bi-bar-chart-steps"></i> IGV</a>
-        </div>
+    <!-- Sidebar -->
+    <div class="bg-light border-right vh-100" id="sidebar-wrapper"style="position:fixed;width:14%;">
+      <div class="list-group list-group-flush">
+        <a href="#General_info" class="list-group-item list-group-item-action bg-light"><i class="fas fa-info-circle"></i> General</a>
+        <a href="#identifiers" class="list-group-item list-group-item-action bg-light"><i class="fas fa-external-link-alt"></i> Identificadors</a>
+        <a href="#frequencies" class="list-group-item list-group-item-action bg-light"><i class="fas fa-globe-europe"></i> Freq. poblacionals</a>
+        <a href="#clinvar" class="list-group-item list-group-item-action bg-light"><i class="fas fa-book"></i> Clinvar</a>
+        <a href="#civic" class="list-group-item list-group-item-action bg-light"><i class="fas fa-book"></i> Civic</a>
+
+        <a href="#predictors_missense" class="list-group-item list-group-item-action bg-light"><i class="fas fa-sitemap" style="color:rgb(85, 1, 1);"></i> Predictors missense</a>
+        <a href="#predictors_splicing" class="list-group-item list-group-item-action bg-light"><i class="fas fa-sitemap" style="color:rgb(14, 1, 85);"></i> Predictors splicing</a>
+        <a href="#conservation" class="list-group-item list-group-item-action bg-light"><i class="bi bi-bezier2"></i> Conservació</a>
+        <a href="#igv" class="list-group-item list-group-item-action bg-light"><i class="bi bi-bar-chart-steps"></i> IGV</a>
       </div>
+    </div>
 
   <div class="container-fluid" style="background-color:white; width:70%">
   <nav aria-label="breadcrumb ">
     <ol class="breadcrumb mt-3">
-      <li class="breadcrumb-item"><a href= "{{url_for('status') }} ">Resultats</a></li>
+      <li class="breadcrumb-item"><a href= "{{url_for('status') }}">Resultats</a></li>
 
       <li class="breadcrumb-item"><a href= "{{url_for('show_run_details', run_id=sample_info.run_id) }} ">{{ sample_info.run_id }}</a></li>
       <li class="breadcrumb-item"><a href= "{{url_for('show_sample_details',run_id=sample_info.run_id, sample=sample_info.lab_id,sample_id=sample_info.id,active='Therapeutic') }} ">{{ sample_info.lab_id }}</a></li>
@@ -43,16 +45,16 @@
         <tr>
           <td style="padding-right:20px;">Gene:</td>
           <td style="padding-right:20px;">
-            <a href="https://www.genecards.org/cgi-bin/carddisp.pl?gene={{ variant_dict['INFO']['CSQ']['SYMBOL'] }} "><b><i>{{ variant_dict['INFO']['CSQ']['SYMBOL'] }}</i></b></a>
+            <a href="https://www.genecards.org/cgi-bin/carddisp.pl?gene={{ variant_dict['INFO']['CSQ'][0]['SYMBOL'] }} "><b><i>{{ variant_dict['INFO']['CSQ'][0]['SYMBOL'] }}</i></b></a>
           </td>
         </tr>
         <tr>
           <td style="padding-right:20px;">Isoforma:</td>
-          <td style="padding-right:20px;">{{ variant_dict['INFO']['CSQ']['Feature']}}</td>
+          <td style="padding-right:20px;">{{ variant_dict['INFO']['CSQ'][0]['Feature']}}</td>
         </tr>
         <tr>
           <td style="padding-right:20px;">Exó:</td>
-          <td style="padding-right:20px;">{{ variant_dict['INFO']['CSQ']['EXON'] }}</td>
+          <td style="padding-right:20px;">{{ variant_dict['INFO']['CSQ'][0]['EXON'] }}</td>
         </tr>
       </table>
     </div>
@@ -61,15 +63,15 @@
       <table>
         <tr>
           <td style="padding-right:20px;">HGVSp:</td>
-          <td style="padding-right:20px;">{{variant_dict['INFO']['CSQ']['HGVSp']}}</td>
+          <td style="padding-right:20px;">{{variant_dict['INFO']['CSQ'][0]['HGVSp']}}</td>
         </tr>
         <tr>
           <td style="padding-right:20px;">HGVSc:</td>
-          <td style="padding-right:20px;">{{variant_dict['INFO']['CSQ']['HGVSc']}}</td>
+          <td style="padding-right:20px;">{{variant_dict['INFO']['CSQ'][0]['HGVSc']}}</td>
         </tr>
         <tr>
           <td style="padding-right:20px;">HGVSg:</td>
-          <td style="padding-right:20px;">{{variant_dict['INFO']['CSQ']['HGVSg']}}</td>
+          <td style="padding-right:20px;">{{variant_dict['INFO']['CSQ'][0]['HGVSg']}}</td>
         </tr>
       </table>
     </div>
@@ -78,16 +80,16 @@
       <table>
         <tr>
           <td style="padding-right:20px;">Efecte:</td>
-          <td style="padding-right:20px;">{{variant_dict['INFO']['CSQ']['Consequence']}}</td>
+          <td style="padding-right:20px;">{{variant_dict['INFO']['CSQ'][0]['Consequence']}}</td>
         </tr>
         <tr>
           <td style="padding-right:20px;">Localització:</td>
-          <td style="padding-right:20px;">{{variant_dict['INFO']['CSQ']['BIOTYPE']}}</td>
+          <td style="padding-right:20px;">{{variant_dict['INFO']['CSQ'][0]['BIOTYPE']}}</td>
         </tr>
-        <tr>
+        <!-- <tr>
           <td style="padding-right:20px;">ClinVar:</td>
-          <td style="padding-right:20px;">{{ variant_dict['INFO']['CSQ']['CLIN_SIG'] | replace("&", ",") | replace("_", " ") }}</td>
-        </tr>
+          <td style="padding-right:20px;">{{ variant_dict['INFO']['CSQ'][0]['CLIN_SIG'] | replace("&", ",") | replace("_", " ") }}</td>
+        </tr> -->
       </table>
     </div>
   </div>
@@ -95,7 +97,7 @@
     <div class="col">
       <h5><b><i class="fas fa-angle-right"></i> Identificadors</b></h5>
       <div class="text">
-      {% set list_id = variant_dict['INFO']['CSQ']['Existing_variation'].split(',')  %}
+      {% set list_id = variant_dict['INFO']['CSQ'][0]['Existing_variation'].split(',')  %}
       {% if list_id|length < 10   %}
         {% for item in list_id %}
           <a href="https://www.ncbi.nlm.nih.gov/snp/{{item}}">{{ item }}</a>
@@ -129,9 +131,9 @@
         <tbody>
         <tr>
           <td style="">African:</td>
-          <td style="">{{variant_dict['INFO']['CSQ']['GNOMAD_AN_afr']}}</td>
-          <td style="">{{variant_dict['INFO']['CSQ']['GNOMAD_AC_afr']}}</td>
-          <td style="">{{variant_dict['INFO']['CSQ']['GNOMAD_AF_afr']}}</td>
+          <td style="">{{variant_dict['INFO']['CSQ'][0]['GNOMAD_AN_afr']}}</td>
+          <td style="">{{variant_dict['INFO']['CSQ'][0]['GNOMAD_AC_afr']}}</td>
+          <td style="">{{variant_dict['INFO']['CSQ'][0]['GNOMAD_AF_afr']}}</td>
         </tr>
         <tr>
           <td style="">American:</td>
@@ -141,37 +143,37 @@
         </tr>
         <tr>
           <td style="">Non-Finnish European:</td>
-          <td style="">{{variant_dict['INFO']['CSQ']['GNOMAD_AN_nfe']}}</td>
-          <td style="">{{variant_dict['INFO']['CSQ']['GNOMAD_AC_nfe']}}</td>
-          <td style="">{{variant_dict['INFO']['CSQ']['GNOMAD_AF_nfe']}}</td>
+          <td style="">{{variant_dict['INFO']['CSQ'][0]['GNOMAD_AN_nfe']}}</td>
+          <td style="">{{variant_dict['INFO']['CSQ'][0]['GNOMAD_AC_nfe']}}</td>
+          <td style="">{{variant_dict['INFO']['CSQ'][0]['GNOMAD_AF_nfe']}}</td>
         </tr>
         <tr>
           <td style="">Finnish:</td>
-          <td style="">{{variant_dict['INFO']['CSQ']['GNOMAD_AN_fin']}}</td>
-          <td style="">{{variant_dict['INFO']['CSQ']['GNOMAD_AC_fin']}}</td>
-          <td style="">{{variant_dict['INFO']['CSQ']['GNOMAD_AF_fin']}}</td>
+          <td style="">{{variant_dict['INFO']['CSQ'][0]['GNOMAD_AN_fin']}}</td>
+          <td style="">{{variant_dict['INFO']['CSQ'][0]['GNOMAD_AC_fin']}}</td>
+          <td style="">{{variant_dict['INFO']['CSQ'][0]['GNOMAD_AF_fin']}}</td>
         </tr>
         <tr>
           <td style="">East Asian:</td>
-          <td style="">{{variant_dict['INFO']['CSQ']['GNOMAD_AN_eas']}}</td>
-          <td style="">{{variant_dict['INFO']['CSQ']['GNOMAD_AC_eas']}}</td>
-          <td style="">{{variant_dict['INFO']['CSQ']['GNOMAD_AF_eas']}}</td>
+          <td style="">{{variant_dict['INFO']['CSQ'][0]['GNOMAD_AN_eas']}}</td>
+          <td style="">{{variant_dict['INFO']['CSQ'][0]['GNOMAD_AC_eas']}}</td>
+          <td style="">{{variant_dict['INFO']['CSQ'][0]['GNOMAD_AF_eas']}}</td>
         </tr>
         <tr>
           <td style="">Ashkenazi Jewish:</td>
-          <td style="">{{variant_dict['INFO']['CSQ']['GNOMAD_AN_asj']}}</td>
-          <td style="">{{variant_dict['INFO']['CSQ']['GNOMAD_AC_asj']}}</td>
-          <td style="">{{variant_dict['INFO']['CSQ']['GNOMAD_AF_asj']}}</td>
+          <td style="">{{variant_dict['INFO']['CSQ'][0]['GNOMAD_AN_asj']}}</td>
+          <td style="">{{variant_dict['INFO']['CSQ'][0]['GNOMAD_AC_asj']}}</td>
+          <td style="">{{variant_dict['INFO']['CSQ'][0]['GNOMAD_AF_asj']}}</td>
         </tr>
         <tr>
           <td style="">Other:</td>
-          <td style="">{{variant_dict['INFO']['CSQ']['GNOMAD_AN_oth']}}</td>
-          <td style="">{{variant_dict['INFO']['CSQ']['GNOMAD_AC_oth']}}</td>
-          <td style="">{{variant_dict['INFO']['CSQ']['GNOMAD_AF_oth']}}</td>
+          <td style="">{{variant_dict['INFO']['CSQ'][0]['GNOMAD_AN_oth']}}</td>
+          <td style="">{{variant_dict['INFO']['CSQ'][0]['GNOMAD_AC_oth']}}</td>
+          <td style="">{{variant_dict['INFO']['CSQ'][0]['GNOMAD_AF_oth']}}</td>
         </tr>
       </tbody>
       </table>
-      Max AF: {{variant_dict['INFO']['CSQ']['Max_AF']}} Max AF Pop.: {{ variant_dict['INFO']['CSQ']['Max_AF_Pop'] }}
+      Max AF: {{variant_dict['INFO']['CSQ'][0]['Max_AF']}} Max AF Pop.: {{ variant_dict['INFO']['CSQ'][0]['Max_AF_Pop'] }}
     </div>
     <div class="col">
       <h5><b>  </b></h5>
@@ -186,50 +188,50 @@
         <tbody>
         <tr>
           <td style="">African:</td>
-          <td style="">{{variant_dict['INFO']['CSQ']['AFR_AN']}}</td>
-          <td style="">{{variant_dict['INFO']['CSQ']['AFR_AC']}}</td>
-          <td style="">{{variant_dict['INFO']['CSQ']['AFR_AF']}}</td>
+          <td style="">{{variant_dict['INFO']['CSQ'][0]['AFR_AN']}}</td>
+          <td style="">{{variant_dict['INFO']['CSQ'][0]['AFR_AC']}}</td>
+          <td style="">{{variant_dict['INFO']['CSQ'][0]['AFR_AF']}}</td>
         </tr>
         <tr>
           <td style="">American:</td>
-          <td style="">{{variant_dict['INFO']['CSQ']['AMR_AN']}}</td>
-          <td style="">{{variant_dict['INFO']['CSQ']['AMR_AC']}}</td>
-          <td style="">{{variant_dict['INFO']['CSQ']['AMR_AF']}}</td>
+          <td style="">{{variant_dict['INFO']['CSQ'][0]['AMR_AN']}}</td>
+          <td style="">{{variant_dict['INFO']['CSQ'][0]['AMR_AC']}}</td>
+          <td style="">{{variant_dict['INFO']['CSQ'][0]['AMR_AF']}}</td>
         </tr>
         <tr>
           <td style="">European:</td>
-          <td style="">{{variant_dict['INFO']['CSQ']['EUR_AN']}}</td>
-          <td style="">{{variant_dict['INFO']['CSQ']['EUR_AC']}}</td>
-          <td style="">{{variant_dict['INFO']['CSQ']['EUR_AF']}}</td>
+          <td style="">{{variant_dict['INFO']['CSQ'][0]['EUR_AN']}}</td>
+          <td style="">{{variant_dict['INFO']['CSQ'][0]['EUR_AC']}}</td>
+          <td style="">{{variant_dict['INFO']['CSQ'][0]['EUR_AF']}}</td>
         </tr>
         <tr>
           <td style="">South Asian:</td>
-          <td style="">{{variant_dict['INFO']['CSQ']['SAS_AN']}}</td>
-          <td style="">{{variant_dict['INFO']['CSQ']['SAS_AC']}}</td>
-          <td style="">{{variant_dict['INFO']['CSQ']['SAS_AF']}}</td>
+          <td style="">{{variant_dict['INFO']['CSQ'][0]['SAS_AN']}}</td>
+          <td style="">{{variant_dict['INFO']['CSQ'][0]['SAS_AC']}}</td>
+          <td style="">{{variant_dict['INFO']['CSQ'][0]['SAS_AF']}}</td>
         </tr>
         <tr>
           <td style="">East Asian:</td>
-          <td style="">{{variant_dict['INFO']['CSQ']['EAS_AN']}}</td>
-          <td style="">{{variant_dict['INFO']['CSQ']['EAS_AC']}}</td>
-          <td style="">{{variant_dict['INFO']['CSQ']['EAS_AF']}}</td>
+          <td style="">{{variant_dict['INFO']['CSQ'][0]['EAS_AN']}}</td>
+          <td style="">{{variant_dict['INFO']['CSQ'][0]['EAS_AC']}}</td>
+          <td style="">{{variant_dict['INFO']['CSQ'][0]['EAS_AF']}}</td>
         </tr>
         <tr>
           <td style="">Other:</td>
-          <td style="">{{variant_dict['INFO']['CSQ']['OTH_AN']}}</td>
-          <td style="">{{variant_dict['INFO']['CSQ']['OTH_AC']}}</td>
-          <td style="">{{variant_dict['INFO']['CSQ']['OTH_AF']}}</td>
+          <td style="">{{variant_dict['INFO']['CSQ'][0]['OTH_AN']}}</td>
+          <td style="">{{variant_dict['INFO']['CSQ'][0]['OTH_AC']}}</td>
+          <td style="">{{variant_dict['INFO']['CSQ'][0]['OTH_AF']}}</td>
         </tr>
       </tbody>
       </table>
       <br>
     </div>
   </div>
-  <div class="row mt-4" id="pubmed">
+  <!-- <div class="row mt-4" id="pubmed">
     <div class="col">
       <h5><b><i class="fas fa-angle-right"></i> Pubmed</b></h5>
       <div class="text">
-      {% set list_pubmed = variant_dict['INFO']['CSQ']['PUBMED'].split('&')  %}
+      {% set list_pubmed = variant_dict['INFO']['CSQ'][0]['PUBMED'].split('&')  %}
       {% if list_pubmed|length < 10  %}
         {% for item in list_pubmed %}
           <a href="https://pubmed.ncbi.nlm.nih.gov/{{ item }}">{{ item }}</a>
@@ -251,22 +253,141 @@
       {% endif %}
       </div>
     </div>
+  </div> -->
+
+  <div class="row mt-4" id="clinvar">
+    <div class="col">
+      <h5><b><i class="fas fa-angle-right"></i> ClinVar</b></h5>
+         {% if 'clinvar' in myvariant_info %}
+         <table class="table table-hover table-sm" style="font-size:15px">
+           <tr>
+             <th style="padding-right:20px;">Accession:</th>
+             <th style="padding-right:20px;">Clinical Significance:</th>
+             <th style="padding-right:20px;">Conditions:</th>
+             <th style="padding-right:20px;">Review Status:</th>
+           </tr>
+
+          {% if myvariant_info['clinvar']['rcv'] is string %}
+          <tr>
+            {% set item = myvariant_info['clinvar']['rcv'] %}
+            <td> <a href="https://www.ncbi.nlm.nih.gov/clinvar/{{ item['accession'] }}">
+            {{ item['accession'] }}</a><br><small>{{ item['last_evaluated']}}</small></td>
+            {% set color = "" %}
+            {% if "Pathogenic" in item['clinical_significance']%}
+              {% set color = "red" %}
+            {% endif %}
+            {% if item['clinical_significance'] == "Likely pathogenic" %}
+              {% set color = "#ff726f" %}
+            {% endif %}
+            {% if "Uncertain" in item['clinical_significance'] %}
+              {% set color = "grey" %}
+            {% endif %}
+            {% if "Benign" in item['clinical_significance'] %}
+              {% set color = "green" %}
+            {% endif %}
+            <td style="color:{{color}}"> {{ item['clinical_significance'] }}</td>
+            <td> {{ item['conditions']['name'] }}</td>
+            <td> {{ item['review_status'] }}</td>
+          </tr>
+          {% else %}
+           {% if 'rcv' in myvariant_info['clinvar'] %}
+            {% for item in myvariant_info['clinvar']['rcv'] %}
+              {% if item is not mapping %}
+                
+              {% else %}           
+                <tr>
+                  <td> <a href="https://www.ncbi.nlm.nih.gov/clinvar/{{ item['accession'] }}">
+                    {{ item['accession'] }}</a><br><small>{{ item['last_evaluated']}}</small></td>
+                  {% set color = "" %}
+                  {% if "Pathogenic" in item['clinical_significance']%}
+                    {% set color = "red" %}
+                  {% endif %}
+                  {% if item['clinical_significance'] == "Likely pathogenic" %}
+                    {% set color = "#ff726f" %}
+                  {% endif %}
+                  {% if "Uncertain" in item['clinical_significance'] %}
+                    {% set color = "grey" %}
+                  {% endif %}
+                  {% if "Benign" in item['clinical_significance'] %}
+                    {% set color = "green" %}
+                  {% endif %}
+                  <td style="color:{{color}}"> {{ item['clinical_significance'] }}</td>
+                  {% set conditions = "." %}
+                  {% if 'conditions' in item %}
+                    {% if 'name' in item['conditions'] %}
+                      {% set conditions = item['conditions']['name'] %}
+                    {% endif %}
+                  {% endif %}
+                  <td> {{ conditions }}</td>
+                  <td> {{ item['review_status'] }}</td>
+                </tr>
+              {% endif %}
+            {% endfor %}
+           {% endif %}
+          {% endif %}
+          {% else %}
+            <p> No s'han trobat entrades a ClinVar </p>
+          {% endif %}
+      </table>
+    </div>
   </div>
+
+  <div class="row mt-4" id="civic">
+    <div class="col">
+      <h5><b><i class="fas fa-angle-right"></i> CIViC</b></h5>
+     </div>
+  </div>
+
+  <div class="row" id="">
+    
+    <div style="display: flex;flex-wrap: wrap;">
+      {% if variant_dict['INFO']['CIVIC']|length == 0 %}
+        <p style="margin-left:15px;">No s'han trobat resultats</p>
+      {% endif %}
+    {% for civic_item in variant_dict['INFO']['CIVIC'] %}
+      {% set bg_color = "white" %}
+      {% if civic_item['EV_SIGNIFICANCE'] == "Sensitivity/Response" %}
+        {% set bg_color = "#d2f8d2" %}
+      {% elif civic_item['EV_SIGNIFICANCE'] == "Positive" %}
+        {% set bg_color = "white" %}
+      {% elif civic_item['EV_SIGNIFICANCE'] == "Resistance" %}
+        {% set bg_color = "#ffcccb" %}
+      {% else %}
+        {% set bg_color = "lightgrey" %}
+      {% endif %}
+      {% set clinical_trial = "" %}
+      {% if civic_item['EV_CLINICAL_TRIALS'] != "." %}
+        {% set clinical_trial = civic_item['EV_CLINICAL_TRIALS'] %}
+      {% endif %}
+      <div class="col">
+      <div class="card m-1 p-1" style="min-width:140px;max-width:200px;flex: 1 1 160px; background-color:#f6f6f6">
+        <a href="https://civicdb.org/evidence/{{civic_item['EV_ID']}}/summary" style="margin:0px auto;font-size:12px;"lass="badge badge-sm ">EID{{civic_item['EV_ID']}}</a><hr style="margin:0px;">
+        <p style="padding:0px;margin:0 auto;"><span class="badge " style="background-color:{{ bg_color }}">{{ civic_item['EV_SIGNIFICANCE'] | replace("_", " ") }}</span></p>
+        <p style="padding:0px;margin:0 auto;"><small><img src="https://cdn-icons-png.flaticon.com/512/2852/2852868.png" width="20px" height="20px;">{{ civic_item['EV_DISEASE'] | replace("_", " ") }}</small></p>
+        <a href="https://clinicaltrials.gov/ct2/history/{{ clinical_trial }}" style="padding:0px;margin:0 auto;"><small>{{ clinical_trial }}</small></a>
+      </div>
+      </div>
+      {% endfor %}
+   
+  </div>
+  </div>
+
   <div class="row mt-4" id="predictors_missense">
     <div class="col">
       <h5><b><i class="fas fa-angle-right"></i> Predictors In-silico (missense)</b></h5>
     </div>
   </div>
+  
   <div class="row">
     <div class="col">
       <div class="d-flex justify-content-start">
 
-        <div class="card mr-1" style="background-color:#f6f6f6">
+        <!-- <div class="card mr-1" style="background-color:#f6f6f6">
           <div class="card-body">
           <h5 class="card-title"><b>SIFT</b></h5>
           <hr>
-          {% set sift_score_list =  variant_dict['INFO']['CSQ']['SIFT'].split('&') %}
-          {% set sift_pred_list =  variant_dict['INFO']['CSQ']['SIFT_pred'].split('&') %}
+          {% set sift_score_list =  variant_dict['INFO']['CSQ'][0]['SIFT'].split('&') %}
+          {% set sift_pred_list =  variant_dict['INFO']['CSQ'][0]['SIFT_pred'].split('&') %}
           <p class="card-text"> Score:  </p>
           {% for item in sift_score_list %}
             {% if item != '.' %}
@@ -289,8 +410,8 @@
           <div class="card-body">
           <h5 class="card-title"><b>Polyphen</b></h5>
           <hr>
-          {% set polyphen_score_list =  variant_dict['INFO']['CSQ']['Polyphen2_HDIV_score'].split('&') %}
-          {% set polyphen_pred_list =  variant_dict['INFO']['CSQ']['Polyphen2_HDIV_pred'].split('&') %}
+          {% set polyphen_score_list =  variant_dict['INFO']['CSQ'][0]['Polyphen2_HDIV_score'].split('&') %}
+          {% set polyphen_pred_list =  variant_dict['INFO']['CSQ'][0]['Polyphen2_HDIV_pred'].split('&') %}
           <p class="card-text"> Score: </p>
 
           {% for item in polyphen_score_list %}
@@ -315,8 +436,8 @@
           <div class="card-body">
           <h5 class="card-title"><b>PROVEAN</b></h5>
           <hr>
-          {% set provean_score_list =  variant_dict['INFO']['CSQ']['PROVEAN_score'].split('&') %}
-          {% set provean_pred_list =  variant_dict['INFO']['CSQ']['PROVEAN_pred'].split('&') %}
+          {% set provean_score_list =  variant_dict['INFO']['CSQ'][0]['PROVEAN_score'].split('&') %}
+          {% set provean_pred_list =  variant_dict['INFO']['CSQ'][0]['PROVEAN_pred'].split('&') %}
           <p class="card-text"> Score: </p>
 
           {% for item in provean_score_list %}
@@ -335,14 +456,14 @@
             {% endif %}
           {% endfor %}
           </div>
-        </div>
+        </div> -->
 
         <div class="card mr-1" style="background-color:#f6f6f6">
           <div class="card-body">
             <h5 class="card-title"><b>FATHMM</b></h5>
             <hr>
-            {% set fathmm_score_list =  variant_dict['INFO']['CSQ']['FATHMM_score'].split('&') %}
-            {% set fathmm_pred_list =  variant_dict['INFO']['CSQ']['FATHMM_pred'].split('&') %}
+            {% set fathmm_score_list =  variant_dict['INFO']['CSQ'][0]['FATHMM_score'].split('&') %}
+            {% set fathmm_pred_list =  variant_dict['INFO']['CSQ'][0]['FATHMM_pred'].split('&') %}
             <p class="card-text"> Score: </p>
             {% for item in fathmm_score_list %}
               {% if item != '.' %}
@@ -359,7 +480,6 @@
                 {% endif %}
               {% endif %}
             {% endfor %}
-
           </div>
         </div>
         <div class="card mr-1" style="background-color:#f6f6f6">
@@ -367,8 +487,8 @@
           <h5 class="card-title"><b>MutationTaster</b></h5>
           <hr>
 
-          {% set mutationtaster_score_list =  variant_dict['INFO']['CSQ']['MutationTaster_score'].split('&') %}
-          {% set mutationtaster_pred_list =  variant_dict['INFO']['CSQ']['MutationTaster_pred'].split('&') %}
+          {% set mutationtaster_score_list =  variant_dict['INFO']['CSQ'][0]['MutationTaster_score'].split('&') %}
+          {% set mutationtaster_pred_list =  variant_dict['INFO']['CSQ'][0]['MutationTaster_pred'].split('&') %}
           <p class="card-text"> Score: </p>
           {% for item in mutationtaster_score_list %}
             {% if item != '.' %}
@@ -392,12 +512,12 @@
           <h5 class="card-title"><b>REVEL</b></h5>
           <hr>
           <p class="card-text"> Score: </p>
-          {{ variant_dict['INFO']['CSQ']['REVEL_score'] }}
+          {{ variant_dict['INFO']['CSQ'][0]['REVEL_score'] }}
           <br>
-          {% if variant_dict['INFO']['CSQ']['REVEL_score'] | float  > 0.5 %}
+          {% if variant_dict['INFO']['CSQ'][0]['REVEL_score'] | float  > 0.5 %}
             <span class="badge badge-pill badge-danger" style="background-color:red">D</span>
           {% else %}
-            {% if variant_dict['INFO']['CSQ']['REVEL_score'] != '.' %}
+            {% if variant_dict['INFO']['CSQ'][0]['REVEL_score'] != '.' %}
             <span class="badge badge-pill badge-danger" style="background-color:grey">B</span>
             {% endif %}
           {% endif %}
@@ -421,16 +541,16 @@
           <table>
             <tbody>
               <tr>
-                <td>Acceptor gain score:</td><td>{{ variant_dict['INFO']['CSQ']['SpliceAI_pred_DS_AG'] }}</td>
+                <td>Acceptor gain score:</td><td>{{ variant_dict['INFO']['CSQ'][0]['SpliceAI_pred_DS_AG'] }}</td>
               </tr>
               <tr>
-                <td>Acceptor loss score:</td><td>{{ variant_dict['INFO']['CSQ']['SpliceAI_pred_DS_AL'] }}</td>
+                <td>Acceptor loss score:</td><td>{{ variant_dict['INFO']['CSQ'][0]['SpliceAI_pred_DS_AL'] }}</td>
               </tr>
               <tr>
-                <td>Donor gain score:</td><td>{{ variant_dict['INFO']['CSQ']['SpliceAI_pred_DS_DG'] }}</td>
+                <td>Donor gain score:</td><td>{{ variant_dict['INFO']['CSQ'][0]['SpliceAI_pred_DS_DG'] }}</td>
               </tr>
               <tr>
-                <td>Donor loss score:</td><td>{{ variant_dict['INFO']['CSQ']['SpliceAI_pred_DS_DL'] }}</td>
+                <td>Donor loss score:</td><td>{{ variant_dict['INFO']['CSQ'][0]['SpliceAI_pred_DS_DL'] }}</td>
               </tr>
             </tbody>
           </table>
@@ -440,7 +560,7 @@
           <div class="card-body">
             <h5 class="card-title"><b>MaxEntScan</b></h5>
             <hr>
-            <p class="card-text"> Score: {{ variant_dict['INFO']['CSQ']['MaxEntScan_diff'] }}</p>
+            <p class="card-text"> Score: {{ variant_dict['INFO']['CSQ'][0]['MaxEntScan_diff'] }}</p>
           </div>
         </div>
       </div>
@@ -458,14 +578,14 @@
           <div class="card-body">
           <h5 class="card-title"><b>PhyloP</b></h5>
           <hr>
-          <p class="card-text"> Predicció: {{ variant_dict['INFO']['CSQ']['PhyloP']| float|round(2)   }}</p>
+          <p class="card-text"> Predicció: {{ variant_dict['INFO']['CSQ'][0]['PhyloP']| float|round(2) }}</p>
           </div>
         </div>
         <div class="card mr-1" style=background-color:#f6f6f6">
           <div class="card-body">
           <h5 class="card-title"><b>Phastcons</b></h5>
           <hr>
-          <p class="card-text"> Predicció: {{ variant_dict['INFO']['CSQ']['Phastcons']| float|round(2) }}</p>
+          <p class="card-text"> Predicció: {{ variant_dict['INFO']['CSQ'][0]['Phastcons']| float|round(2) }}</p>
           </div>
         </div>
       </div>
@@ -474,12 +594,11 @@
   <div class="row mt-4" id="igv">
     <div class="col">
       <h5><b><i class="fas fa-angle-right"></i> IGV</b></h5>
-      <div id='igvDiv' style=""></div>
+      <div id='igvDiv' style="margin-bottom:100px;"></div>
     </div>
   </div>
   </div>
 </div>
-
 
 {% block script %}
 <script type="text/javascript">
@@ -493,16 +612,15 @@
               {
                 type:'alignment',
                 format: 'bam',
-                // url : "{{ sample_info.bam }}" ,
-                // indexURL: "{{ bai }}"
-                url: 'gs://genomics-public-data/platinum-genomes/bam/NA12878_S1.bam',
-                indexURL: 'gs://genomics-public-data/platinum-genomes/bam/NA12878_S1.bam.bai'
+                url : "{{ url_for('download_sample_bam', run_id=sample_info.run_id, sample=sample_info.lab_id) }}" ,
+                indexURL: "{{ url_for('download_sample_bai', run_id=sample_info.run_id, sample=sample_info.lab_id) }}"
+                // url: 'gs://genomics-public-data/platinum-genomes/bam/NA12878_S1.bam',
+                // indexURL: 'gs://genomics-public-data/platinum-genomes/bam/NA12878_S1.bam.bai'
               }
             ]
         };
 
     const igvDiv = document.getElementById('igvDiv');
-
     igv.createBrowser(igvDiv, options)
         .then(function (browser) {
             igv.browser = browser;
@@ -510,52 +628,6 @@
         })
   });
 
-
-    $(document).ready(function() {
-        $("#submit_analysis").click(function() {
-            // disable button
-            $(this).prop("disabled", true);
-            // add spinner to button
-            $(this).html(
-                `<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Uploading...`
-            );
-        });
-    });
-    $.ajax({
-  xhr: function() {
-    var xhr = new window.XMLHttpRequest();
-
-    xhr.upload.addEventListener("progress", function(evt) {
-      if (evt.lengthComputable) {
-        var percentComplete = evt.loaded / evt.total;
-        percentComplete = parseInt(percentComplete * 100);
-        console.log(percentComplete);
-
-        if (percentComplete === 100) {
-
-        }
-      }
-    }, false);
-
-    return xhr;
-  },
-  url: posturlfile,
-  type: "POST",
-  data: JSON.stringify(fileuploaddata),
-  contentType: "application/json",
-  dataType: "json",
-  success: function(result) {
-    console.log(result);
-  }
-});
-
-    //function input_filename() {
-    //    fil_input_label.innerHTML = input.files
-    //};
-
-     function filesize(elem) {
-        document.coocke = `filesize=${elem.files[0].size}`;
-     };
  </script>
 {% endblock %}
 

@@ -1,0 +1,195 @@
+* {
+  box-sizing: border-box;
+}
+
+.acreditation {
+  border-radius: 50%;
+  background-color: #04AA6D; /* Green */
+  border: none;
+  color: white;
+  padding: 4px;
+  text-align: center;
+  text-decoration: none;
+  display: inline-block;
+  font-size: 8px;
+  margin: 1px;
+}
+
+.acreditation1 {background-color: grey;}
+.acreditation3 {background-color: #04AA6D;}
+.acreditation2 {background-color: #ffbc40;color:black; }
+
+div.header {
+    font-family: arial, sans-serif;
+    position: fixed;
+    text-align: center;
+    top:  -4.5cm;
+    height: 3cm;
+    width:100%;
+    margin-top:10px;
+    margin-bottom:5px;
+    /* background-image: url('img/logo_ugmp.png');
+    background-repeat: no-repeat;
+    background-size: 20% auto; */
+}
+div.footer {
+    font-family: arial, sans-serif;
+    display: block; 
+    text-align: center;
+    position: fixed;
+    right           : 0;
+    bottom          : 0;
+    margin-bottom   : -4cm;
+    height          : 2.8cm;
+    text-align      : center;
+    font-size       : 10px;
+    width : 100%;
+}
+
+div.header-first-page {
+  font-family: arial, sans-serif;
+  position: fixed;
+  text-align: center;
+  top: -4.5cm;
+  height: 3cm;
+  width:100%;
+  margin-top:10px;
+  margin-bottom:4px;
+
+}
+
+div.header-other-pages {
+  font-family: arial, sans-serif;
+  position: fixed;
+  text-align: center;
+  top: -4.5cm;
+  height: 3cm;
+  width:100%;
+  margin-top:10px;
+  margin-bottom:4px;
+
+}
+
+@page :first {
+  @top-center {
+    content: element(header-first-page);
+    font-family: arial, sans-serif;
+    font-family: arial, sans-serif;
+    position: fixed;
+    text-align: center;
+    top: -4.5cm;
+    height: 3cm;
+    width:100%;
+    margin-top:10px;
+    margin-bottom:40px;
+  }
+}
+
+@page :not(:first) {
+  @top-center {
+    content: element(header-other-pages);
+    font-family: arial, sans-serif;
+    font-family: arial, sans-serif;
+    position: fixed;
+    text-align: center;
+    top:  -4.5cm;
+    height: 3cm;
+    width:100%;
+    margin-top:10px;
+    margin-bottom:40px;
+  }
+}
+
+@page {
+  size: A4;
+  margin: 5cm 2cm 3.75cm 2cm;
+  /* margin: 0in 0.44in 0.2in 0.44in; */
+}
+
+@page {
+    @bottom-center { content: element(footer) }
+}
+
+@page {
+  @bottom-center {
+   content: counter(page) " / " counter(pages);
+   position: fixed;
+   right           : 0;
+   bottom          : 0;
+   text-align: center;
+   margin-bottom   : -4cm;
+   height          : 6.5cm;
+   font-size       : 9px;
+   display: block; text-align: center;
+  }
+}
+
+
+
+
+p {
+  font-family: arial, sans-serif;
+}
+
+/* Create two equal columns that floats next to each other */
+.col {
+  float: left;
+  width: 33.3%;
+  padding: 0px;
+  margin: 0px;
+  font-size : 8px;
+  text-align: left;
+  font-family: arial, sans-serif;
+}
+.col-variants {
+  width:100%;
+  font-size:11px;
+  font-family: arial, sans-serif;
+}
+
+.row  {
+  padding: 2px;
+  margin: 0px;
+}
+
+/* Clear floats after the columns */
+.row:after {
+  content: "";
+  display: table;
+  font-size: 6px;
+  clear: both;
+  text-align: left;
+  padding: 0px;
+  margin: 0px;
+}
+
+table {
+  font-family: arial, sans-serif;
+  font-size:10px;
+  border-collapse: collapse;
+  width: 100%;
+  empty-cells: hide;
+  page-break-inside: avoid;
+  border: 1px solid #FFF;
+  display: table;
+}
+
+th {
+  border: 1px solid #FFF;
+  text-align: left;
+  padding: 8px;
+}
+td {
+  border: 1px solid #FFF;
+  text-align: left;
+  padding: 0px;
+  /* page-break-inside: avoid; */
+}
+tr {
+  /* page-break-inside: avoid; */
+}
+
+tr:nth-child(even) {
+  background-color: #dddddd;
+}
+

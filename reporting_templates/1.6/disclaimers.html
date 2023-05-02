@@ -1,0 +1,265 @@
+<div class="row" style="width:100%;margin:0 auto;top:-3.5cm">
+  <div class="col" style="width:100%;margin:0px;color:#2c4fa1;">
+    <p style="font-size:15px;font-family: arial, sans-serif;"><img src="fourdot.png" alt="" style="width:16px;height:15px;">
+      <b>GENS ANALITZATS</b>
+    </p>
+    <p style="font-size:12px;font-family: arial, sans-serif;color:black;text-align: justify;">
+    Aquest panell cobreix les regions codificants (+/-50 bp) dels següents gens: <i> AKT1, AKT3, ALK, APC,
+    BRAF, BRCA1, BRCA2, CDKN2A, CTNNB1, DDR2, EGFR, ERBB2, ERBB3, ERBB4, FGFR1, FGFR2,
+    FGFR3, NF1, HRAS, JAK1, JAK2, KIT, KRAS, MAP2K1, MAP2K2, MET, MYC, NRAS, NTRK1, NTRK2,
+    NTRK3, PDGFRA, PIK3CA (excepte exó 10), POLD1, POLE, PTEN, RB1, RET, ROS1, SLC34A2, SOX2, STK11, TERT,
+    TP53</i>.
+    Addicionalment es cobreixen regions intròniques involucrades en fusions dels següents gens: <i>ALK, BRAF,
+    EGFR, FGFR1, FGFR2, FGFR3, RET, ROS1</i>.
+    </p>
+  </div>
+</div>
+
+<div class="row" style="width:100%;margin:0 auto;">
+  <div class="col" style="width:100%;margin:0px;color:#2c4fa1;">
+    <p style="font-size:15px;font-family: arial, sans-serif;"><img src="fourdot.png" alt="" style="width:16px;height:15px;">
+      <b>METODOLOGIA</b>
+    </p>
+    <p style="font-size:12px;font-family: arial, sans-serif;color:black;text-align: justify;">
+      El mètode d'enriquiment de regions d'interés es basa en el kit de captura hìbrida SureSelectXT
+      HS Target Enrichment System (Agilent Technologies).
+      Les llibreries resultants són multiplexades i seqüenciades en
+      l’instrument MiSeq (Illumina) a partir de la química basada en l’amplificació clonal
+      i la seqüenciació per síntesi.<br><br>
+
+      Les seqüències (reads) crues es preprocessen amb l'eina fastp. Seguidament, s'alineen al genoma humà (hg19)
+      utilitzant l'alineador BWA-MEM. Un cop s'eliminen els duplicats de PCR, les variants puntuals i indels es detecten 
+      mitjançant el Mutect2 i el Lancet. Les CNAs es detecten mitjançant el CNVKit, i les variants estructurals (SV)
+      amb el Manta.<br><br>
+
+      S'informen les variants potencialment rellevants amb una VAF igual o superior al 5%. Les variants de possible interès clínic
+      s'anoten utilitzant bases de dades de variants somàtiques (ClinVar, CIViC, chimerDB, cancer hotspots)
+      i posteriorment s'avaluen pel personal facultatiu adient. L'assignació del nivell o tier es realitza en base a la
+      Instrucció del Servei Català de la Salut / Determinacions del perfil genètic de tumors sòlids en l'adult. No s'informen
+      les variants benignes o potencialment benignes. El llistat de variants de significat incert (VUS) i de regions no cobertes
+      estan disponibles a petició de l'interessat.
+    </p>
+  </div>
+</div>
+
+<!-- <div class="row" style="width:100%;margin:0 auto;">
+  <div class="col" style="width:100%;margin:0px;color:#2c4fa1;">
+    <p style="font-size:15px;font-family: arial, sans-serif;"><img src="fourdot.png" alt="" style="width:16px;height:15px;">
+      <b>PIPELINE BIOINFORMÀTIC</b>
+    </p>
+  </div>
+</div> -->
+
+<div class="row" style="width:90%;margin:0 auto;">
+  <div class="col" style="width:45%;margin:0px;color:black;">
+    <table style="width:70%;font-size:11px;padding:8px;">
+        <tr style="padding:5px;">
+          <td style="background-color:#e6e6e6;padding:8px;"><b>Versió pipeline</b></td>
+          <td style="background-color:#f0f4f8;padding:8px;">{{ pipeline_details['pipeline_version']}}</td>
+        </tr>
+        <tr>
+          <td style="background-color:#e6e6e6;padding:8px;"><b>Versió genoma</b></td>
+          <td style="background-color:#f0f4f8;padding:8px;">{{ pipeline_details['genome_version'] }}</td>
+        </tr>
+        <tr>
+          <td style="background-color:#e6e6e6;padding:8px;"><b>Versió panell</b></td>
+          <td style="background-color:#f0f4f8;padding:8px;">v1</td>
+        </tr>
+
+    </table>
+  <br>
+  <br>
+  <p style="font-size:13px;width:90%;margin:0;"><b>Software third-party</b></p>
+  <hr style="margin:0px;border-width:1px;background-color:black;color:black;width:90%;">
+  <table style="width:90%;color:black;font-size:11px;padding:8px;">
+      <tr>
+        <td style="background-color:#e6e6e6;padding:8px;"><b>fastp</b></td>
+        <td style="background-color:#f0f4f8;padding:8px;">{{ pipeline_details['fastp_version']}}</td>
+      </tr>
+      <tr>
+        <td style="background-color:#e6e6e6;padding:8px;"><b>samtools</b></td>
+        <td style="background-color:#f0f4f8;padding:8px;">{{ pipeline_details['samtools_version'] }}</td>
+      </tr>
+      <tr>
+        <td style="background-color:#e6e6e6;padding:8px;"><b>bwa</b></td>
+        <td style="background-color:#f0f4f8;padding:8px;">{{ pipeline_details['bwa_version'] }}</td>
+      </tr>
+      <tr>
+        <td style="background-color:#e6e6e6;padding:8px;"><b>GATK</b></td>
+        <td style="background-color:#f0f4f8;padding:8px;">{{ pipeline_details['gatk_version'] }}</td>
+      </tr>
+            <tr>
+        <td style="background-color:#e6e6e6;padding:8px;"><b>Lancet</b></td>
+        <td style="background-color:#f0f4f8;padding:8px;">1.1.0</td>
+      </tr>
+      
+      <tr>
+        <td style="background-color:#e6e6e6;padding:8px;"><b>Manta</b></td>
+        <td style="background-color:#f0f4f8;padding:8px;">{{ pipeline_details['manta_version'] }}</td>
+      </tr>
+      <tr>
+        <td style="background-color:#e6e6e6;padding:8px;"><b>CNVkit</b></td>
+        <td style="background-color:#f0f4f8;padding:8px;">{{ pipeline_details['cnvkit_version'] }}</td>
+      </tr>
+  </table>
+  </div>
+
+  <div class="col" style="width:45%;margin:0px;color:#2c4fa1;">
+    <br>
+    <p style="font-size:13px;width:90%;margin:0 auto;color:black;"><b>Annotació de variants</b></p>
+    <hr style="margin:0px auto;border-width:1px;background-color:black;color:black;width:90%;margin:0 auto;">
+
+    <table style="width:90%;margin:0 auto;color:black;font-size:11px;padding:8px;">
+        <tr>
+          <td style="background-color:#e6e6e6;padding:8px;"><b>Variant Effect Predictor (VEP)</b></td>
+          <td style="background-color:#f0f4f8;padding:8px;">{{ pipeline_details['vep_version']}}</td>
+        </tr>
+        <tr>
+          <td style="background-color:#e6e6e6;padding:8px;"><b>1000Genomes</b></td>
+          <td style="background-color:#f0f4f8;padding:8px;">{{ pipeline_details['thousand_genomes_version'] }}</td>
+        </tr>
+        <tr>
+          <td style="background-color:#e6e6e6;padding:8px;"><b>GnomAD</b></td>
+          <td style="background-color:#f0f4f8;padding:8px;">{{ pipeline_details['gnomad_version'] }}</td>
+        </tr>
+        <tr>
+          <td style="background-color:#e6e6e6;padding:8px;"><b>dbNSFP</b></td>
+          <td style="background-color:#f0f4f8;padding:8px;">{{ pipeline_details['dbnsfp_version'] }}</td>
+        </tr>
+        <tr>
+          <td style="background-color:#e6e6e6;padding:8px;"><b>dbscSNV</b></td>
+          <td style="background-color:#f0f4f8;padding:8px;">{{ pipeline_details['dbscsnv_version'] }}</td>
+        </tr>
+        <tr>
+          <td style="background-color:#e6e6e6;padding:8px;"><b>CIViC</b></td>
+          <td style="background-color:#f0f4f8;padding:8px;">{{ pipeline_details['civic_version'] }}</td>
+        </tr>
+        <tr>
+          <td style="background-color:#e6e6e6;padding:8px;"><b>Cancer Hotspots</b></td>
+          <td style="background-color:#f0f4f8;padding:8px;">v2</td>
+        </tr>
+        <tr>
+          <td style="background-color:#e6e6e6;padding:8px;"><b>ChimerDB</b></td>
+          <td style="background-color:#f0f4f8;padding:8px;">{{ pipeline_details['chimerkb_version'] }}</td>
+        </tr>
+        <tr>
+          <td style="background-color:#e6e6e6;padding:8px;"><b>CatSalut: Determinacions del perfil genètic de tumors sòlids de l’adult</b></td>
+          <td style="background-color:#f0f4f8;padding:8px;">v2</td>
+        </tr>
+
+    </table>
+  </div>
+
+  <div class="col" style="width:49%;margin:0px;color:#2c4fa1;">
+
+  </div>
+</div>
+
+
+
+<p style="page-break-before: always" ></p>
+
+<div class="row" style="width:100%;margin:0 auto;">
+  <div class="col" style="width:100%;margin:0px;color:#2c4fa1;">
+    <p style="font-size:15px;font-family: arial, sans-serif;"><img src="fourdot.png" alt="" style="width:16px;height:15px;">
+      <b>LIMITACIONS I CONSIDERACIONS</b>
+    </p>
+    <ul style="font-size:12px;font-family: arial, sans-serif;color:black;text-align: justify;">
+      <li>
+        Existeixen regions del genoma a les quals no es poden determinar amb exactitud els canvis en la seva seqüència (regions repetitives, homopolímers i regions riques en GC).
+      </li>
+      <li>
+        Poden existir variants reals en la mostra que no s'hagin informat per estar sota el llindar de sensibilitat establert.
+      </li>
+      <li>
+        L'estudi s'ha dut a terme a partir de mostra tumoral i no s'han realitzat estudis específics per a descartar o confirmar si les alteracions trobades són de tipus somàtic o germinal.
+      </li>
+      <li>
+        El tipus i qualitat de la mostra influeixen en la determinació de CNAs. Els CNAs reportats són només indicatius i no estan validats. No podem assegurar la detecció de CNAs en mostres amb poca representació tumoral.
+      </li>
+      <li>
+        La interpretació de les variants es basa en el coneixement disponible en el moment de l'emissió d'aquest informe. La possible aparició de noves evidències científiques podrien modificar aquesta interpretació en el futur.
+      </li>
+    </ul>
+  </div>
+</div>
+
+<div class="row" style="width:100%;margin:0 auto;">
+  <div class="col" style="width:100%;margin:0px;color:#2c4fa1;">
+    <p style="font-size:15px;font-family: arial, sans-serif;"><img src="fourdot.png" alt="" style="width:16px;height:15px;">
+      <b>DISPOSICIONS LEGALS</b>
+    </p>
+    <p style="font-size:12px;font-family: arial, sans-serif;color:black;text-align: justify;">
+      La Unitat de Diagnòstic Mol·lecular i Medicina Personalitzada recull la seva petició d’estudi genètic assumint que el consentiment informat ha estat
+      degudament presentat per l’entitat competent de manera clara, transparent i explícita, en compliment de la
+      disposició addicional dissetena de la LOPDGDD 3/2018 essent acceptada per l’interessat.
+      Les mostres biològiques i informació associada que ha estat cedida a la
+      Unitat de Diagnòstic Mol·lecular i Medicina Personalitzada es custodiaran
+      i conservaran fins a la seva extinció seguint el que estableix la Llei 14/2007 d’Investigació Biomèdica.
+    </p>
+  </div>
+</div>
+
+<div class="row" style="width:100%;margin:0 auto;">
+  <div class="col" style="width:100%;margin:0px;color:#2c4fa1;">
+    <p style="font-size:15px;font-family: arial, sans-serif;"><img src="fourdot.png" alt="" style="width:16px;height:15px;">
+      <b>CERTIFICACIÓ</b>
+    </p>
+    <p style="font-size:12px;font-family: arial, sans-serif;color:black;text-align: justify;">
+      L'activitat del laboratori està sota el sistema general de qualitat ISO9001:2015.
+    </p>
+  </div>
+</div>
+<br>
+<br>
+<div class="row" style="width:100%;margin:0 auto;">
+  <div class="col" style="width:50%;">
+    <div class="row" style="width:100%;margin:0 auto;">
+      <p style="color:black;font-size:12px;font-family: arial, sans-serif;"><b>Validat per:</b></p>
+
+      <div class="col" style="width:45%;">
+        <p style="color:black;font-size:12px;font-family: arial, sans-serif;">Dra. Gisela Mir<p>
+        <!-- <img src="firma_gloria.png" alt="" style="width:60px;height:55px;"> -->
+      </div>
+
+      <div class="col" style="width:45%;">
+        <p style="color:black;font-size:12px;font-family: arial, sans-serif;">Dra. Glòria Oliveras<p>
+        <p style="margin:0px;color:black;font-size:12px;font-family: arial, sans-serif;">21706-C<p>
+        <!-- <img src="firma_gloria.png" alt="" style="width:60px;height:55px;"> -->
+      </div>
+      <p style="margin-top:5px;color:black;font-size:12px;font-family: arial, sans-serif;">Girona, {{ sample_info.last_report_emission_date }}</p>
+    </div>
+  </div>
+  <div class="col" style="width:50%;">
+    <div class="row" style="width:100%;margin:0 auto;">
+      <p style="color:black;font-size:12px;font-family: arial, sans-serif;"><b>Autoritza l'emissió:</b></p>
+      <div class="col" style="width:50%;">
+        <p style="color:black;font-size:12px;font-family: arial, sans-serif;">Dr. Eugeni Lòpez<p>
+        <p style="margin:0px;color:black;font-size:12px;font-family: arial, sans-serif;">11703364<p>
+
+        <!-- <img src="firma_eugeni.png" alt="" style="width:60px;height:55px;"> -->
+      </div>
+      <div class="col" style="width:50%;">
+        <p style="color:black;font-size:12px;font-family: arial, sans-serif;">Dra. Carmen Vázquez<p>
+        <p style="margin:0px;color:black;font-size:12px;font-family: arial, sans-serif;">11706865<p>
+        <!-- <img src="firma_carmen.png" alt="" style="width:60px;height:55px;"> -->
+      </div>
+    </div>
+
+    <div class="row" style="width:100%;margin:0 auto;">
+      <div class="col" style="width:50%;">
+        <p style="color:black;font-size:12px;font-family: arial, sans-serif;">Dra. Begoña Fuertes<p>
+        <p style="margin:0px;color:black;font-size:12px;font-family: arial, sans-serif;">11707302<p>
+
+        <!-- <img src="firma_eugeni.png" alt="" style="width:60px;height:55px;"> -->
+      </div>
+      <div class="col" style="width:50%;">
+        <p style="color:black;font-size:12px;font-family: arial, sans-serif;">Dra. Laura Ferrazza<p>
+        <p style="margin:0px;color:black;font-size:12px;font-family: arial, sans-serif;">11707535<p>
+        <!-- <img src="firma_carmen.png" alt="" style="width:60px;height:55px;"> -->
+      </div>
+    </div>
+      <p style="margin-top:5px;color:black;font-size:12px;font-family: arial, sans-serif;">Girona, {{ sample_info.last_report_emission_date }}</p>
+
+  </div>
+</div>

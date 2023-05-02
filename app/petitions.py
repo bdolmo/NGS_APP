@@ -1,63 +1,22 @@
-from app import app
-
+from app import app, db
+import os
+import time
+import re
 from flask import Flask
-from flask import request, render_template, url_for, redirect, flash
+from flask import request, render_template, url_for, redirect, flash, send_from_directory, make_response, jsonify
 from flask_wtf import FlaskForm
 import sqlite3
 from flask_login import LoginManager, UserMixin, login_user, login_required, logout_user, current_user
-
 from flask_sqlalchemy import SQLAlchemy
 from flask_sslify import SSLify
 from collections import defaultdict
 import redis
-from rq import Queue, cancel_job
-import os
-import time
 from datetime import date
-from command import background_task
 import pandas as pd
 import docx
-import re
+from app.models import Petition, SampleTable
 
-# @app.route('/cancel_redis_job')
-# def cancel_redis_job(job_id):
-#     if request.method == 'POST':
-#         if request.form['cancel_job']:
-#             queue_id = request.form['cancel_job']
-#             cancel_job(queue_id)
-
-db = SQLAlchemy(app)
-
-class Petition(db.Model):
-    __tablename__ = 'PETITIONS'
-    Id             = db.Column(db.Integer(), primary_key=True, autoincrement=True)
-    Petition_id    = db.Column(db.String(20))
-    User_id        = db.Column(db.String(20))
-    Date           = db.Column(db.String(20))
-    AP_code        = db.Column(db.String(20))
-    HC_code        = db.Column(db.String(20))
-    Tumour_pct     = db.Column(db.String(20))
-    Volume         = db.Column(db.String(20))
-    Conc_nanodrop  = db.Column(db.String(20))
-    Ratio_nanodrop = db.Column(db.String(20))
-    Tape_postevaluation = db.Column(db.String(20))
-    Medical_doctor = db.Column(db.String(50))
-    Billing_unit   = db.Column(db.String(50))
-
-    def __init__(self, Petition_id, User_id, Date, AP_code, HC_code, Tumour_pct,
-        Volume, Conc_nanodrop, Ratio_nanodrop, Tape_postevaluation, Medical_doctor, Billing_unit):
-        self.Petition_id = Petition_id
-        self.Date   = Date
-        self.User_id = User_id
-        self.AP_code= AP_code
-        self.HC_code  = HC_code
-        self.Tumour_pct= Tumour_pct
-        self.Volume = Volume
-        self.Conc_nanodrop = Conc_nanodrop
-        self.Ratio_nanodrop = Ratio_nanodrop
-        self.Tape_postevaluation = Tape_postevaluation
-        self.Medical_doctor = Medical_doctor
-        self.Billing_unit = Billing_unit
+# db = SQLAlchemy(app)
 
 @app.route('/')
 @app.route('/petition_menu')
@@ -65,15 +24,174 @@ def petition_menu():
 
     All_petitions = Petition.query.all()
 
-    return render_template("create_petition.html", title="Nova petició", petitions=All_petitions)
+    return render_template("create_petition.html", title="Nova petició",
+        petitions=All_petitions)
 
-@app.route('/upload_petition', methods = ['GET', 'POST'])
+@app.route('/download_petition_example')
+@login_required
+def download_petition_example():
+    uploads = os.path.join(app.config['STATIC_URL_PATH'], "example")
+    petition = "petition_example.xlsx"
+    return send_from_directory(directory=uploads, path=petition, as_attachment=True)
+
+@app.route('/upload_petition', methods=['GET', 'POST'])
 @login_required
 def upload_petition():
+    '''
+        Function that checks an input xlsx file with sample petition information.
+    '''
+    is_ok         = True
+    is_registered = False
+    error_list    =  []
+    if request.method == "POST":
+        petitions = request.files.getlist("petition_document")
+        petition_dir = app.config['WORKING_DIRECTORY'] + "/petitions"
+        if not os.path.isdir(petition_dir):
+            os.mkdir(petition_dir)
+
+        for petition in petitions:
+            if petition.filename != "":
+                if not petition.filename.endswith(".xlsx"):
+                    flash("Es requereix un document de peticions en format .xlsx", "warning")
+                    is_ok = False
+            else:
+                flash("Es requereix un document de peticions en format .xlsx", "warning")
+                is_ok = False
+
+        if is_ok == True:
+            for f in petitions:
+                f.save(os.path.join(petition_dir, f.filename))
+                input_xlsx = petition_dir + "/" + f.filename
+
+                # First, get extraction date
+                df_date = pd.read_excel(input_xlsx, sheet_name=0,
+                    engine='openpyxl', usecols = "C")
+                df_date = df_date.iloc[:1]
+                extraction_date = df_date.columns.values[0]
+                if not extraction_date:
+                    today = date.today()
+                    extraction_date = today.strftime("%d/%m/%Y")
+                else:
+                    extraction_date = str(pd.to_datetime(extraction_date).strftime("%d/%m/%Y"))
+
+                # Now, sample information
+                df_samples = pd.read_excel(input_xlsx, sheet_name=0,
+                    engine='openpyxl', header=4)
+
+                for index, row in df_samples.iterrows():
+                    # Valid rows
+                    if 'CODI DE LA MOSTRA AP' in row:
+
+                        if pd.isnull(row['CODI DE LA MOSTRA AP']):
+                            continue
+
+                        ap_code = str(row['CODI DE LA MOSTRA AP'])
+                        if "Nota" in ap_code or "nan" in ap_code:
+                            continue
+
+                        print(row['PERCENTATGE TUMORAL'])
+                        print("\n")
+
+                is_yet_registered = False
+                for index, row in df_samples.iterrows():
+
+                    if 'CODI DE LA MOSTRA AP' in row:
+                        if pd.isnull(row['CODI DE LA MOSTRA AP']):
+                            continue
+                        ap_code = str(row['CODI DE LA MOSTRA AP'])
+                        if "Nota" in ap_code or "nan" in ap_code:
+                            continue
+                        tumour_type = "."
+
+                        if 'ORIGEN TUMORAL' in row:
+                            tumour_type = row['ORIGEN TUMORAL']
+                        else:
+                            tumour_type = "."
+                        if 'TIPUS DE TUMOR' in row:
+                            tumour_type = row['TIPUS DE TUMOR']
+                        else:
+                            tumour_type = row['ORIGEN TUMORAL']
+
+                        ap_code = ap_code.rstrip(" ").lstrip(" ")
+
+                        hc_code = str(row['NÚMERO D’HISTÒRIA CLÍNICA']).replace('.0', '').rstrip("\n").lstrip("\n")
+                        hc_code = hc_code.replace(" ", "")
+                        tumour_pct = "."
+                        post_tape_eval= "."
+
+                        if pd.isna(row['PERCENTATGE TUMORAL']):
+                            row['PERCENTATGE TUMORAL'] = 100
+                        if row['PERCENTATGE TUMORAL'] < 1:
+                            tumour_pct = row['PERCENTATGE TUMORAL']*100
+                            tumour_pct = int(tumour_pct)
+                        elif int(row['PERCENTATGE TUMORAL']) > 100:
+                            tumour_pct = 100
+                        else:
+                            print(row['PERCENTATGE TUMORAL'])
+                            try:
+                                int(row['PERCENTATGE TUMORAL'])
+                            except:
+                                pass
+                            else:
+                                tumour_pct = int(row['PERCENTATGE TUMORAL'])
+                        CIP_code = "."
+                        if 'NÚMERO CIP' in row:
+                            CIP_code = row['NÚMERO CIP']
+                        Petition_date = "."
+                        if 'DATA PETICIÓ TÈCNICA' in row:
+                            Petition_date = row['DATA PETICIÓ TÈCNICA']
+                        Date_original_biopsy = "."
+                        if 'DATA BIÒPSIA ORIGINAL' in row:
+                            Date_original_biopsy = str(row['DATA BIÒPSIA ORIGINAL'])
+
+                        tumour_area   = row['ÀREA TUMORAL (mm2)']
+                        res_volume    = row['VOLUM  (µL) RESIDUAL  APROXIMAT']
+                        nanodrop_conc = row['CONCENTRACIÓ NANODROP (ng/µL)']
+                        nanodrop_ratio= row['RATIO 260/280 NANODROP']
+                        physician_name= row['METGE SOL·LICITANT']
+                        billing_unit  = row['UNITAT DE FACTURACIÓ']
+                        comments      = row['COMENTARIS']
+                        Petition_id    = ("PID_{}").format(extraction_date.replace("/", ""))
+
+                        petition = Petition( Petition_id=Petition_id, User_id=current_user.id,
+                        Date=extraction_date, Tumour_origin=tumour_type,
+                        AP_code=ap_code, HC_code=hc_code, CIP_code=CIP_code,
+                        Tumour_pct=tumour_pct, Volume=res_volume, Conc_nanodrop=nanodrop_conc,
+                        Ratio_nanodrop=nanodrop_ratio,Tape_postevaluation=post_tape_eval,
+                        Medical_doctor=physician_name,Billing_unit=billing_unit,
+                        Medical_indication=tumour_type, Date_original_biopsy=Date_original_biopsy)
+
+                        # Check if petition is already available
+                        found = Petition.query.filter_by(User_id=current_user.id).filter_by(AP_code=ap_code)\
+                            .filter_by(HC_code=hc_code).first()
+                        if not found:
+                            db.session.add(petition)
+                            db.session.commit()
+                            is_yet_registered = False
+                        else:
+                            print(ap_code + " " + hc_code)
+                            is_yet_registered = True
+
+            if is_ok == True:
+                if is_yet_registered == True:
+                    flash("Les mostres d'aquesta petició ja s'han enregistrat prèviament!", "warning")
+                else:
+                    flash("S'ha enregistrat la petició correctament!", "success")
+    else:
+        flash("Es requereix un document de peticions en format word (docx)", "warning")
+
+    All_petitions = Petition.query.all()
+    return render_template("create_petition.html", title="Nova petició",
+        petitions=All_petitions, errors=error_list)
+
+
+@app.route('/upload_legacy_petition', methods = ['GET', 'POST'])
+@login_required
+def upload_legacy_petition():
 
     is_ok = True
     is_yet_registered = False
-    errors =[]
+    errors = []
 
     if request.method == "POST":
 
@@ -141,7 +259,6 @@ def upload_petition():
     else:
         flash("Es requereix un document de peticions en format word (docx)", "warning")
 
-
     All_petitions = Petition.query.all()
     return render_template("create_petition.html", title="Nova petició", petitions=All_petitions, errors=errors)
 
@@ -165,15 +282,15 @@ def validate_petition_document(file):
         is_sample = False
         petition_date = ""
 
-        ap_code = ""
-        purity  = ""
+        ap_code         = ""
+        purity          = ""
         residual_volume = ""
-        nanodrop_conc = ""
-        nanodrop_ratio = ""
-        hc_number = ""
-        medical_doctor = ""
+        nanodrop_conc   = ""
+        nanodrop_ratio  = ""
+        hc_number       = ""
+        medical_doctor  = ""
         tape_postevaluation = ""
-        billing_unit = ""
+        billing_unit    = ""
 
         abs_idx = 0
         for t in all_t:
@@ -453,21 +570,139 @@ def create_petition():
 
     return render_template("create_petition.html", title="Nova petició", petitions=All_petitions, errors=errors)
 
-@app.route('/remove_sample/<id>')
+
+
+@app.route('/update_petition', methods = ['GET', 'POST'])
+@login_required
+def update_petition():
+    errors   = []
+    is_ok = True
+    if request.method == "POST":
+        ap_code = ""
+        if request.form.get('edit_ap_code'):
+            ap_code = request.form['edit_ap_code']
+        else:
+            errors.append("Es requereix el codi AP")
+            flash("Es requereix el codi AP", "warning")
+            # is_ok = False
+
+        hc_code = ""
+        if request.form.get('edit_hc_code'):
+            hc_code = request.form['edit_hc_code']
+        else:
+            errors.append("Es requereix el codi HC")
+            flash("Es requereix el codi HC", "warning")
+            # is_ok = False
+
+        cip_code = ""
+        if request.form.get('edit_cip_code'):
+            cip_code = request.form['edit_cip_code']
+        else:
+            errors.append("Es requereix el codi CIP")
+            flash("Es requereix el codi CIP", "warning")
+            # is_ok = False
+
+
+        tumour_origin = ""
+        if request.form.get('edit_origin_tumor'):
+            tumour_origin = request.form['edit_origin_tumor']
+        else:
+            errors.append("Es requereix l'origen tumoral")
+            flash("Es requereix l'origen tumoral", "warning")
+            # is_ok = False
+        print(tumour_origin)
+
+        residual_volume = ""
+        if request.form.get('Residual_volume'):
+            residual_volume = request.form['Residual_volume']
+
+        tape_posteval = ""
+        if request.form.get('tape_postevaluation'):
+            option = request.form['tape_postevaluation']
+            if option  == "1":
+                tape_posteval = "Sí"
+            elif option == "2":
+                tape_posteval = "No"
+
+        conc_nanodrop = ""
+        if request.form.get('Nanodrop_conc'):
+            conc_nanodrop = request.form['Nanodrop_conc']
+
+        ratio_nanodrop = ""
+        if request.form.get('Nanodrop_ratio'):
+            ratio_nanodrop = request.form['Nanodrop_ratio']
+
+        medical_doctor = ""
+        if request.form.get('edit_medical_doctor'):
+            medical_doctor = request.form['edit_medical_doctor']
+
+        billing_unit = ""
+        if request.form.get('edit_billing_doctor'):
+            billing_unit = request.form['edit_billing_doctor']
+
+        if is_ok == True:
+            petition = Petition.query.filter_by(AP_code=ap_code).first()
+            if petition:
+                print("here", ap_code)
+                petition.AP_code = ap_code
+                petition.HC_code = hc_code
+                petition.CIP_code = cip_code
+                petition.Tumour_origin = tumour_origin
+                petition.billing_unit = billing_unit
+                petition.medical_doctor = medical_doctor
+
+                # Petition_id = "PID_"+ date.replace("/", "")
+                # petition = Petition( Petition_id= Petition_id, 
+                # User_id=current_user.id, Date=date, 
+                # AP_code=ap_code, HC_code=hc_code,
+                # Tumour_origin=tumour_origin,
+                # Tumour_pct=".", Volume=residual_volume, 
+                # Conc_nanodrop=conc_nanodrop, Ratio_nanodrop=ratio_nanodrop,
+                # Medical_doctor=medical_doctor, Tape_postevaluation=tape_posteval, 
+                # Billing_unit=billing_unit)
+
+                # db.session.add(petition)
+                db.session.commit()
+
+            sample = SampleTable.query.filter_by(ext1_id=ap_code).first()
+            if sample:
+                sample.ext1_id = ap_code
+                sample.ext2_id = hc_code
+                sample.ext3_id = cip_code
+                sample.diagnosis = tumour_origin
+                sample.physician_name = medical_doctor
+                sample.medical_center = billing_unit
+                db.session.commit()
+            msg = "S'ha actualitzat correctament la petició "
+            flash(msg, "success")
+    All_petitions = Petition.query.all()
+
+    return render_template("create_petition.html", title="Nova petició", petitions=All_petitions, errors=errors)
+
+
+@app.route('/remove_sample/<id>', methods=["POST"])
 @login_required
 def remove_sample(id):
     errors   = []
+    if request.method == "POST":
+        entry = Petition.query.filter_by(Id=id).first()
+        if not entry:
+            msg = f"No s'ha pogut eliminar la mostra amb l'identificador {id}"
+            message = {
+                "info": msg,
+                "status": 400,
+            }
+            return make_response(jsonify(message), 400)
 
-    entry = Petition.query.filter_by(Id=id).first()
-    if entry:
+        # flash(msg, "warning")
         db.session.delete(entry)
         db.session.commit()
-        msg = "S'ha eliminat correctament la mostra amb l'identificador  " + id
-        flash(msg, "success")
-    else:
-        msg = "No s'ha pogut eliminar la mostra amb l'identificador  " + id
-        flash(msg, "warning")
+        msg = f"S'ha eliminat correctament la mostra amb l'identificador {id}"
+        message = {
+            "info": msg,
+            "status": 200,
+        }
+        return make_response(jsonify(message), 200)
 
-
-    All_petitions = Petition.query.all()
-    return render_template("create_petition.html", title="Nova petició", petitions=All_petitions, errors=errors)
+    # All_petitions = Petition.query.all()
+    # return render_template("create_petition.html", title="Nova petició", petitions=All_petitions, errors=errors)

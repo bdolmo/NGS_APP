@@ -1,0 +1,402 @@
+{% extends "base.html" %}
+
+{% block body %}
+
+<div class="d-flex" >
+
+<!-- Sidebar -->
+<div class="bg-light border-right vh-100" id="sidebar-wrapper"style="position:fixed;width:15%;">
+  <div class="list-group list-group-flush">
+    <div href="#" class="list-group-item list-group-item-action" style="background-color:#d9f7f7;">
+      <div style="font-size:24px;"><img class="card-img rounded-circle" style="width:32px;height:32px;font-size:28px;" src="{{ current_user.avatar(128) }}">
+    {{ current_user.username }}</div>
+    <i style="color:green;" class="fas fa-circle"></i><span style="font-size:13px;"> Online</span>
+    <p style="font-size:13px;"><b>Últim accés:</b> {{ current_user.last_login }} </p>
+   </div>
+    <div href="#" class="list-group-item list-group-item-action bg-light">
+      <div class="row">
+        <div class="col">
+          <i class="fas fa-external-link-alt"> </i><b> Últims 5 runs</b>
+        </div>
+      </div>
+      <div class="row">
+        <div class="col">
+          <ul>
+          {% for job in All_jobs %}
+            <li> <a href="{{ url_for('show_lowpass_run', run_id=job.Job_id) }}"><b>{{ job.Job_id }}</b></a></li>
+              <!-- <td>{{ job.Date }}</td> -->
+          {% endfor %}
+         </ul>
+        </div>
+     </div>
+    </div>
+
+    <div href="#" class="list-group-item list-group-item-action bg-light">
+      <div class="row">
+        <div class="col">
+          <i class="fas fa-list"> </i> <b>Últimes 5 modificacions</b>
+        </div>
+      </div>
+      <div class="row">
+        <div class="col">
+          <ul>
+          {% for change in All_changes_dict %}
+            <li><a style="word-wrap:break-word;">{{ All_changes_dict[change]['action_name'] }} <a href="{{ url_for('redo_action', action_id=change, run_id=sample_info.run_id, sample=sample_info.lab_id, sample_id=sample_info.id, active="General")}}" role="button"><span class="badge badge-secondary"><i class="fas fa-redo"></i></span></a></a></li>
+          {% endfor %}
+         </ul>
+        </div>
+     </div>
+    </div>
+
+    <!-- <a href="#" class="list-group-item list-group-item-action bg-light"><i class="fas fa-globe-europe"></i> Últims canvis</a>
+    <a href="#" class="list-group-item list-group-item-action bg-light"><i class="fas fa-book"></i> Pubmed</a>
+    <a href="#" class="list-group-item list-group-item-action bg-light"><i class="fas fa-sitemap" style="color:rgb(85, 1, 1);"></i> Predictors missense</a>
+    <a href="#" class="list-group-item list-group-item-action bg-light"><i class="fas fa-sitemap" style="color:rgb(14, 1, 85);"></i> Predictors splicing</a>
+    <a href="#" class="list-group-item list-group-item-action bg-light"><i class="bi bi-bezier2"></i> Conservació</a>
+    <a href="#" class="list-group-item list-group-item-action bg-light"><i class="bi bi-bar-chart-steps"></i> IGV</a> -->
+  </div>
+</div>
+
+<div class="container-fluid rounded" style="margin-right:90px;background-color:white; width:80%">
+
+  <nav aria-label="breadcrumb ">
+    <ol class="breadcrumb mt-3">
+      <li class="breadcrumb-item"><a href="{{ url_for('status') }}">Resultats</a></li>
+      <li class="breadcrumb-item"><a href="{{ url_for('show_lowpass_run', run_id=sample_info.run_id) }}">{{ sample_info.run_id }}</a></li>
+      <li class="breadcrumb-item active" aria-current="page"><h5>{{ sample_info.lab_id }}</h5></li>
+    </ol>
+  </nav>
+
+  <ul class="nav nav-tabs">
+    <li class="nav-item">
+      {% if active == "General" %}
+        <a class="nav-link active" id="General-tab" data-toggle="tab" href="#General">General</a>
+      {% else %}
+        <a class="nav-link" id="General-tab" data-toggle="tab" href="#General">General</a>
+      {% endif %}
+    </li>
+    <li class="nav-item">
+      <a class="nav-link" id="QC-tab" data-toggle="tab" href="#QC">QC</a>
+    </li>
+    <li class="nav-item">
+      {% if active == "CNV" %}
+        <a class="nav-link active" id="CNV-tab" data-toggle="tab" href="#CNV">CNVs </a>
+      {% else %}
+        <a class="nav-link" id="CNV-tab" data-toggle="tab" href="#CNV">CNVs</a>
+      {% endif %}
+    </li>
+  </ul>
+
+  <div class="tab-content">
+    {% if active == "General" %}
+      <div class="tab-pane fade show active" id="General" role="tabpanel" aria-labelledby="General-tab">
+    {% else %}
+      <div class="tab-pane fade" id="General" role="tabpanel" aria-labelledby="General-tab">
+    {% endif %}
+
+      <div class="card card-body border-0 mt-2" style="outline-bottom: 1px solid grey;background-color:white;">
+        <div class="row" style="font-size:16px;">
+          <div class="col">
+            <h5><i class="fas fa-id-card"></i> Pacient</h5>
+            <hr>
+            <p><b>Lab ID: </b>  {{ sample_info.lab_id }} </p>
+            <p><b>Ext1. ID:  </b>  {{ sample_info.ext1_id }}</p>
+            <p><b>Ext2. ID. </b> {{ sample_info.ext2_id }}</p>
+          </div>
+          <div class="col">
+            <h5><i class="fas fa-vials"></i> Mostra</h5>
+            <hr>
+            <p><b>Tipus de mostra: DNA</b></p>
+            <p><b>Data de rebuda:</b>.</p>
+          </div>
+          <div class="col">
+            <h5><i class="fas fa-hospital"></i> Centre sanitari</h5>
+            <hr>
+            <p><b>Hospital:  .</b></p>
+            <p><b>Metge sol·licitant:</b>.</p>
+          </div>
+          <div class="col">
+            <h5><i class="fas fa-server"></i> Anàlisi NGS</h5>
+            <hr>
+            <p><b>Data d'anàlisi:</b>  {{ sample_info.analysis_date }}</p>
+            <p><b>Anàlisi:</b>  Lowpass</p>
+          </div>
+        </div>
+      </div>
+      <div class="card border-1 mt-4">
+        <div class="card">
+          <h5 class="card-header">Perfil de <i> Copy Number</i></h5>
+        <div class="card-body " style="outline-bottom: 1px solid grey;background-color:white;">
+        <div class="chart" id="scatter">
+          <script>
+              var graphs = {{genomewide_plot | safe}};
+              Plotly.plot('scatter',graphs,{});
+          </script>
+        </div>
+        </div>
+      </div>
+      </div>
+    </div>
+    <div class="tab-pane fade" id="QC" role="tabpanel" aria-labelledby="QC-tab">
+      <div class="card card-body border-0 mt-1" style="outline-bottom: 1px solid grey;background-color:white;">
+        <div class="row" style="font-size:16px;">
+          <div class="col">
+            <h5><b><i class="fas fa-angle-right" style="margin-bottom:15px;"></i> Mètriques Generals</b></h5>
+            <table class="table table-hover table-sm ">
+              <thead>
+              </thead>
+              <tbody>
+                <tr>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+        <hr>
+      </div>
+
+    </div>
+    {% if active == "CNV" %}
+      <div class="tab-pane fade pt-5 show active" id="CNV" role="tabpanel" aria-labelledby="CNV-tab">
+    {% else %}
+    <div class="tab-pane fade pt-5" id="CNV" role="tabpanel" aria-labelledby="CNV-tab">
+    {% endif %}
+
+        <div class="d-flex justify-content-center">
+          <div class = "row mt-1">
+              {% with messages = get_flashed_messages(with_categories=true) %}
+              {% if messages %}
+              {% for category,message in messages %}
+              <div class="alert alert-{{ category }} alert-dismissible fade show ml-3" role="alert">
+                <span>{{ message }}</span>
+                <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+                  <span aria-hidden="true">&times;</span>
+                </button>
+                <br>
+              </div>
+              {% endfor %}
+            {% endif %}
+          {% endwith %}
+          </div>
+        </div>
+        <br>
+        <hr>
+        <div class="table-responsive">
+        <table id="therapeutic_table" class="table table-striped table-bordered dt-responsive wrap" style="width:100%;background-color:white;">
+          <thead>
+              <tr>
+                  <!-- <th>Accions</th> -->
+                  <!-- <th>Coordenades</th> -->
+                  <th>Accions</th>
+                  <th>CNV</th>
+                  <th>INFO.</th>
+                  <th>Gens dosi-sens.</th>
+                  <th>Gens condificants</th>
+                  <th>ACMG 2019</th>
+                  <!-- <th>Desordres Genètics/Malalties</th> -->
+              </tr>
+          </thead>
+          <tbody>
+          {% for var in All_cnvs %}
+          <tr>
+            <td>
+              <div class="row">
+                <div class="col">
+                  <a class="btn btn-outline-primary btn-sm" href="{{ url_for('show_lowpass_variant', lab_id=sample_info.lab_id, run_id=sample_info.run_id, var_id=var.id) }} ">
+                    <i class="fas fa-plus-circle fa"></i> Info
+                    <!-- <i class="fas fa-plus-circle fa-lg" style="margin-right:20px;color:rgb(31, 139, 211)"></i><small></small> -->
+                  </a>
+                </div>
+              </div>
+
+
+            </td>
+            <td>
+              <div class="row">
+                <div class="col">
+                  {{ var.chromosome }}:{{var.start}}-{{var.end}}
+                </div>
+              </div>
+              <div class="row">
+                <div class="col">
+                  <b>{{ var.svtype }}</b>
+                </div>
+              </div>
+              <div class="row">
+                <div class="col">
+                <b>Mida:</b> {{ (var.svlen/1000)|int }}  kb
+                </div>
+              </div>
+            </td>
+            <td>
+              <div class="row">
+                <div class="col">
+                  <b>Genotype:</b> {{ var.genotype }}
+                </div>
+                <div class="col">
+                  <b>Ratio:</b> {{ var.fold_change|string }}
+                </div>
+              </div>
+              <div class="row">
+                <div class="col">
+                  <b>Copy number: </b>{{var.cn}}
+                </div>
+                <div class="col">
+                  <b>Log2 ratio:</b> {{var.log_fold_change|string}}
+                </div>
+              </div>
+              <div class="row">
+                <div class="col">
+                </div>
+                <div class="col">
+                  <b>Num. Regions:</b>.
+                </div>
+              </div>
+
+            </td>
+            <td>
+              <div class="row">
+                <div class="col">
+                  {% set list_dosage_sensitive = var.dosage_sensitive_genes.split(',')  %}
+                  {% if list_dosage_sensitive|length < 10  %}
+                    {% for item in list_dosage_sensitive %}
+                      {% if item != "." %}
+                        <a href="https://www.genecards.org/cgi-bin/carddisp.pl?gene={{item}}"><i>{{ item }}</i></a>
+                      {% else %}
+                        {{ item }}
+                      {% endif %}
+                    {% endfor %}
+                  {% else %}
+                   {% for n in range(1,6) %}
+                      <a href="https://www.genecards.org/cgi-bin/carddisp.pl?gene={{list_dosage_sensitive[n]}}"><i>{{ list_dosage_sensitive[n] }}</i></a>,
+                     {% endfor %}
+                     <br>
+                     <div class="collapse" id="collapseTherapies">
+                      {% for n in range(6,list_dosage_sensitive|length) %}
+                        <a href="https://www.genecards.org/cgi-bin/carddisp.pl?gene={{list_dosage_sensitive[n]}}"><i>{{ list_dosage_sensitive[n] }}</i></a>,
+                      {% endfor %}
+                     </div>
+                     {% set num = list_dosage_sensitive|length - 5%}
+                     <a class="btn btn-primary btn-sm" data-toggle="collapse" href="#collapseTherapies" role="button" aria-expanded="false" aria-controls="collapseTherapies">Mostra <span class="badge badge-light">{{num}}</span></a>
+                  {% endif %}
+
+                </div>
+              </div>
+            </td>
+
+            <td>
+              <div class="row">
+                <div class="col">
+                  {% set list_protein_coding = var.protein_coding_genes.split(',')  %}
+                  {% if list_protein_coding|length < 10  %}
+                    {% for item in list_protein_coding %}
+                      {% if item != "." %}
+                        <a href="https://www.genecards.org/cgi-bin/carddisp.pl?gene={{item}}"><i>{{ item }}</i></a>
+                      {% else %}
+                        {{ item }}
+                      {% endif %}
+                    {% endfor %}
+                  {% else %}
+                   {% for n in range(1,6) %}
+                      <a href="https://www.genecards.org/cgi-bin/carddisp.pl?gene={{list_dosage_sensitive[n]}}"><i>{{ list_protein_coding[n] }}</i></a>,
+                     {% endfor %}
+                     <br>
+                     <div class="collapse" id="collapseTherapies">
+                      {% for n in range(6,list_protein_coding|length) %}
+                        <a href="https://www.genecards.org/cgi-bin/carddisp.pl?gene={{list_dosage_sensitive[n]}}"><i>{{ list_protein_coding[n] }}</i></a>,
+                      {% endfor %}
+                     </div>
+                     {% set num = list_protein_coding|length - 5%}
+                     <a class="btn btn-primary btn-sm" data-toggle="collapse" href="#collapseTherapies" role="button" aria-expanded="false" aria-controls="collapseTherapies">Mostra <span class="badge badge-light">{{num}}</span></a>
+                  {% endif %}
+
+                </div>
+              </div>
+            </td>
+
+            <td>
+              <div class="row">
+                <div class="col">
+                  {% if var.acmg_classification == "Pathogenic" %}
+                    <h5><span class="badge badge-danger rounded-pill">Pathogenic</span></h5>
+                  {% elif var.acmg_classification == "Likely_pathogenic" %}
+                    <h5><span class="badge badge-warning rounded-pill">Likely pathogenic</span></h5>
+                  {% elif var.acmg_classification == "Uncertain_significance" %}
+                    <h5><span class="badge badge-secondary rounded-pill">Uncertain significance</span></h5>
+                  {% elif var.acmg_classification == "Benign" %}
+                    <h5><span class="badge badge-success rounded-pill">Benign</span></h5>
+
+                  {% endif %}
+                </div>
+              </div>
+              <div class="row">
+                <div class="col">
+                  Score: {{ var.acmg_score }}
+                </div>
+              </div>
+            </td>
+            <!-- <td>.
+            </td> -->
+          </tr>
+           {% endfor %}
+
+          </tbody>
+        </table>
+        </div>
+    </div>
+  </div>
+</div>
+
+</div>
+
+{% block script %}
+ <script>
+    $(document).ready(function() {
+        $("#submit_analysis").click(function() {
+            // disable button
+            $(this).prop("disabled", true);
+            // add spinner to button
+            $(this).html(
+                `<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Uploading...`
+            );
+        });
+    });
+    $.ajax({
+  xhr: function() {
+    var xhr = new window.XMLHttpRequest();
+
+    xhr.upload.addEventListener("progress", function(evt) {
+      if (evt.lengthComputable) {
+        var percentComplete = evt.loaded / evt.total;
+        percentComplete = parseInt(percentComplete * 100);
+        console.log(percentComplete);
+
+        if (percentComplete === 100) {
+
+        }
+      }
+    }, false);
+
+    return xhr;
+  },
+  url: posturlfile,
+  type: "POST",
+  data: JSON.stringify(fileuploaddata),
+  contentType: "application/json",
+  dataType: "json",
+  success: function(result) {
+    console.log(result);
+  }
+});
+
+    //function input_filename() {
+    //    fil_input_label.innerHTML = input.files
+    //};
+
+     function filesize(elem) {
+        document.coocke = `filesize=${elem.files[0].size}`;
+     };
+ </script>
+{% endblock %}
+
+{% endblock body %}

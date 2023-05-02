@@ -1,5 +1,7 @@
 from app import app
-
+import os
+import sys
+import requests
 from flask import Flask
 from flask import request, render_template, url_for, redirect, flash
 from flask_wtf import FlaskForm
@@ -8,15 +10,9 @@ from flask_login import LoginManager, UserMixin, login_user, login_required, log
 from flask_sqlalchemy import SQLAlchemy
 from flask_sslify import SSLify
 from collections import defaultdict
-import redis
-from rq import Queue, cancel_job
-import os
-import sys
-import requests
 import time
 from datetime import date
 from datetime import datetime
-from command import background_task
 import pandas as pd
 import docx
 import re
@@ -28,6 +24,7 @@ class Panel(db.Model):
     Panel          = db.Column(db.String(20))
     Panel_bed      = db.Column(db.String(20))
     Version        = db.Column(db.String(20))
+    Subpanels      = db.Column(db.String(20))
     Size           = db.Column(db.Float())
     Genome_version = db.Column(db.String(20))
     Total_rois     = db.Column(db.Integer())
@@ -42,8 +39,8 @@ class Panel(db.Model):
     Variant_call   = db.Column(db.String(20))
     Language   = db.Column(db.String(20))
 
-class Roi(db.Model):
-  __tablename__ = 'ROI_TABLE'
+class PanelIsoforms(db.Model):
+  __tablename__ = 'PANEL_ISOFORMS'
   id             = db.Column(db.Integer, primary_key=True)
   chromosome     = db.Column(db.String(50))
   start          = db.Column(db.String(50))
@@ -103,7 +100,7 @@ def get_panel_size(bed_file):
             bases+=size
     f.close()
     kbases = bases/1000
-    return kbases,total_rois
+    return kbases, total_rois
 
 def get_gene_isoforms_list(gene_isoform_list, genome_version, autoselect_isoform):
     '''
@@ -161,9 +158,7 @@ def get_gene_isoforms_list(gene_isoform_list, genome_version, autoselect_isoform
                     errors.append("Línea " + str(count_line) + ":" + line + ". El gen i la isoforma no són vàlids")
         else:
             gene = line
-            print("el gen " + gene)
             GeneObjs = Genes.query.filter_by(gene=gene).all()
-            print(str(GeneObjs))
             if not GeneObjs:
                 errors.append( "Línea " + str(count_line) + ":" + " No s'ha trobat el gen " + gene)
             for entry in GeneObjs:
@@ -207,7 +202,7 @@ def get_gene_isoforms_file(gene_isoform_file, genome_version, autoselect_isoform
         2- Check the most relevant isoform (MANE select)
         3- If no MANE, select canonical isoform from Ensembl
     '''
-    is_ok = False
+    is_ok  = False
     errors = []
     count_line = 0
     gene_isoform_dict = defaultdict(dict)
@@ -241,23 +236,21 @@ def get_gene_isoforms_file(gene_isoform_file, genome_version, autoselect_isoform
                     if GeneObj and valid_gene and valid_isoform:
                         if genome_version == "hg19":
                             chromosome = GeneObj.hg19_chr
-                            start = GeneObj.hg19_start
-                            end = GeneObj.hg19_end
-                            isoform = GeneObj.hg19_enst_id
-                            ensg = GeneObj.hg19_ensg_id
+                            start      = GeneObj.hg19_start
+                            end        = GeneObj.hg19_end
+                            isoform    = GeneObj.hg19_enst_id
+                            ensg       = GeneObj.hg19_ensg_id
                         if genome_version == "hg38":
                             chromosome = GeneObj.hg38_chr
-                            start = GeneObj.hg38_start
-                            end = GeneObj.hg38_end
-                            isoform = GeneObj.hg38_enst_id
-                            ensg = GeneObj.hg38_ensg_id
+                            start      = GeneObj.hg38_start
+                            end        = GeneObj.hg38_end
+                            isoform    = GeneObj.hg38_enst_id
+                            ensg       = GeneObj.hg38_ensg_id
                     else:
                         errors.append("Línea " + str(count_line) + ":" + line + ". El gen i la isoforma no són vàlids")
             else:
                 gene = line
                 GeneObjs = Genes.query.filter_by(gene=gene).all()
-                print("el gen " + gene)
-                print(str(GeneObjs))
                 if not GeneObjs:
                     errors.append( "Línea " + str(count_line) + ":" + " No s'ha trobat el gen " + gene)
                 for entry in GeneObjs:
@@ -348,216 +341,221 @@ def get_ensembl_data(gene_isoform_file, genome_version):
     return gene_isoform_dict, errors
 
 @app.route('/')
-@app.route('/show_panels')
-def show_panels():
-    Panels = Panel.query.all()
-    return render_template("panel_management.html", Panels=Panels, title="Panells")
+# @app.route('/show_panels')
+# def show_panels():
+#     Panels = Panel.query.all()
+#     return render_template("panel_management.html", Panels=Panels, title="Panells")
 
 @app.route('/panel_configuration/<panel>')
 def panel_configuration(panel):
     panel_info = Panel.query.filter_by(Panel=panel).first()
+    panel_isoforms = []
     if panel_info:
-        roi_info = Roi.query.filter_by(panel=panel).all()
+        panel_isoforms = PanelIsoforms.query.filter_by(panel=panel).all()
     return render_template("panel_configuration.html", panel_info=panel_info,
-        roi_info=roi_info, title=panel)
+        roi_info=panel_isoforms, title=panel)
 
 @app.route('/panel_creation_board')
 def panel_creation_board():
     return render_template("panel_creation.html", title="Panells")
 
-@app.route('/create_panel', methods = ['GET', 'POST'])
-def create_panel():
-
-    is_ok = True
-    errors =[]
-    panel_name      = ""
-    panel_bed       = ""
-    panel_path      = ""
-    panel_version   = ""
-    genome_version  = ""
-    variant_analysis= ""
-    report_lang     = ""
-    call_rate_filter= ""
-    call_rate_perc  = ""
-    lost_exons_filter= ""
-    lost_exons_perc = ""
-    number_reads    = ""
-    enrichment_perc = ""
-    panel_size      = ""
-    total_genes     = ""
-    if request.method == "POST":
-        if request.form['panel_name']:
-            panel_name = request.form['panel_name']
-        else:
-            is_ok = False
-            flash("És requereix el nom del panell!", "warning")
-        if request.form['panel_version']:
-            panel_version = request.form['panel_version']
-        else:
-            is_ok = False
-            flash("És requereix una versió de panell", "warning")
-        if request.form.get('genome_version'):
-            option = request.form['genome_version']
-            if option  == "1":
-                genome_version = "hg19"
-            elif option == "2":
-                genome_version = "hg38"
-        else:
-            is_ok = False
-            flash("Es requereix la versió de genoma", "warning")
-        if request.form.get('variant_analysis'):
-            variant_analysis = request.form['variant_analysis']
-            if variant_analysis == "1":
-                variant_analysis = "Germline"
-            elif variant_analysis == "2":
-                variant_analysis = "Somatic"
-        else:
-            is_ok = False
-            flash("Es requereix el tipus d'anàlisi de variants", "warning")
-        if request.form.get('report_lang'):
-            report_lang = request.form['report_lang']
-            if report_lang == "1":
-                report_lang = "catalan"
-            elif variant_analysis == "2":
-                report_lang = "english"
-        else:
-            is_ok = False
-            flash("Es requereix el llenguatge dels informes", "warning")
-
-        if request.files:
-            panel_bed = request.files["panel_bed"]
-            panel_dir = app.config['WORKING_DIRECTORY'] + "/PANEL_FOLDER/" + panel_name
-            if not os.path.isdir(panel_dir):
-                os.mkdir(panel_dir)
-            if not panel_bed:
-                flash("Es requereix un fitxer en format .bed", "warning")
-                is_ok = False
-            else:
-                if panel_bed.filename.endswith(".bed"):
-                    panel_bed.save(os.path.join(panel_dir, panel_bed.filename))
-                    panel_path = panel_dir + "/" + panel_bed.filename
-                    panel_size,total_rois =  get_panel_size(panel_path)
-                else:
-                    flash("Es requereix un fitxer en format .bed", "warning")
-                    is_ok = False
-
-            get_file_info = True
-            if request.form["gene_isoform_text"]:
-                gene_isoform_text = request.form["gene_isoform_text"]
-                gene_isoform_list = gene_isoform_text.split("\n")
-
-                autoselect_isoform = False
-                if request.form.get('canonical_isoform'):
-                    autoselect_isoform = True
-
-                gene_isoform_dict, gene_isoform_errors = get_gene_isoforms_list(gene_isoform_list, genome_version, autoselect_isoform)
-                total_genes = len(gene_isoform_dict.keys())
-                if gene_isoform_errors:
-                    is_ok = False
-                    for error in gene_isoform_errors:
-                        flash(error, "warning")
-                        break
-                else:
-                    for gene in gene_isoform_dict:
-                        Gene = Roi(chromosome=gene_isoform_dict[gene]['CHR'], start=gene_isoform_dict[gene]['START'],
-                        end=gene_isoform_dict[gene]['END'],ensg_id=gene_isoform_dict[gene]['ENSG'],
-                        enst_id=gene_isoform_dict[gene]['ENST'], gene_name=gene, genome_version=genome_version,
-                        panel=panel_name, panel_version=panel_version )
-                        db.session.add(Gene)
-                        db.session.commit()
-                get_file_info = False
-            if request.files["gene_isoform_file"] and get_file_info == True:
-                gene_isoform_file = request.files["gene_isoform_file"]
-                gene_isoform_file.save(os.path.join(panel_dir, gene_isoform_file.filename))
-                gene_iso_path = panel_dir + "/" + gene_isoform_file.filename
-
-                autoselect_isoform = False
-                if request.form.get('canonical_isoform'):
-                    autoselect_isoform = True
-
-                gene_isoform_dict, gene_isoform_errors = get_gene_isoforms_file(gene_iso_path, genome_version, autoselect_isoform)
-                total_genes = len(gene_isoform_dict.keys())
-                if gene_isoform_errors:
-                    is_ok = False
-                    for error in gene_isoform_errors:
-                        flash(error, "warning")
-                        break
-                else:
-                    for gene in gene_isoform_dict:
-                        Gene = Roi(chromosome=gene_isoform_dict[gene]['CHR'], start=gene_isoform_dict[gene]['START'],
-                        end=gene_isoform_dict[gene]['END'],ensg_id=gene_isoform_dict[gene]['ENSG'],
-                        enst_id=gene_isoform_dict[gene]['ENST'], gene_name=gene, genome_version=genome_version,
-                        panel=panel_name, panel_version=panel_version )
-                        db.session.add(Gene)
-                        db.session.commit()
-
-        if request.form.get('call_rate_filter'):
-            call_rate_filter = request.form['call_rate_filter']
-            if call_rate_filter == "1":
-               call_rate_filter = "1X"
-            if call_rate_filter == "2":
-               call_rate_filter = "10X"
-            if call_rate_filter == "3":
-               call_rate_filter = "20X"
-            if call_rate_filter == "4":
-               call_rate_filter = "30X"
-            if call_rate_filter == "5":
-               call_rate_filter = "100X"
-            if call_rate_filter == "6":
-               call_rate_filter = "200X"
-        else:
-            is_ok = False
-            flash("Es requereix un filtre de call rate", "warning")
-
-        if request.form.get('call_rate_perc'):
-            call_rate_perc = request.form['call_rate_perc']
-        else:
-            is_ok = False
-            flash("Es requereix un percentatge de bases", "warning")
-
-        if request.form.get('lost_exons_filter'):
-            lost_exons_filter = request.form['lost_exons_filter']
-            if lost_exons_filter == "1":
-               lost_exons_filter = "1X"
-            if lost_exons_filter == "2":
-               lost_exons_filter = "10X"
-            if lost_exons_filter == "3":
-               lost_exons_filter = "20X"
-            if lost_exons_filter == "4":
-               lost_exons_filter = "30X"
-            if lost_exons_filter == "5":
-               lost_exons_filter = "100X"
-            if lost_exons_filter == "6":
-               lost_exons_filter = "200X"
-        else:
-            is_ok = False
-            flash("Es requereix un percentatge d'exons perduts", "warning")
-        if request.form.get('lost_exons_perc'):
-            lost_exons_perc = request.form['lost_exons_perc']
-        if request.form['number_reads']:
-            number_reads = request.form['number_reads']
-        if request.form.get('enrichment_perc'):
-            enrichment_perc = request.form['enrichment_perc']
-        now = datetime.now()
-        dt_string = now.strftime("%d/%m/%Y %H:%M:%S")
-        if is_ok:
-            New_panel = Panel(Panel=panel_name, Panel_bed=panel_path, Version=panel_version, Size=panel_size,
-            Genome_version=genome_version, Total_rois=total_rois, Total_genes=total_genes, Last_modified=dt_string,
-            Read_num_filter=number_reads, Call_rate_filter=call_rate_filter, Call_rate_perc=call_rate_perc,
-            Lost_exons_filter=lost_exons_filter,Lost_exons_perc=lost_exons_perc,
-            Enrichment_perc_filter=enrichment_perc, Variant_call=variant_analysis, Language=report_lang)
-
-            panel_exists = Panel.query.filter_by(Panel=panel_name).first()
-            if panel_exists:
-                flash("Ja existeix un panell amb el nom " + panel_name, "danger")
-
-            else:
-                db.session.add(New_panel)
-                db.session.commit()
-                flash("El nou panell s'ha creat correctament!", "success")
-
-    Panels = Panel.query.all()
-    return render_template("panel_management.html", Panels=Panels, title="Panells")
+# @app.route('/create_panel', methods = ['GET', 'POST'])
+# def create_panel():
+#
+#     is_ok = True
+#     errors =[]
+#     panel_name      = ""
+#     panel_bed       = ""
+#     panel_path      = ""
+#     panel_version   = ""
+#     genome_version  = ""
+#     variant_analysis= ""
+#     report_lang     = ""
+#     call_rate_filter= ""
+#     call_rate_perc  = ""
+#     lost_exons_filter= ""
+#     lost_exons_perc = ""
+#     number_reads    = ""
+#     enrichment_perc = ""
+#     panel_size      = ""
+#     total_genes     = ""
+#     if request.method == "POST":
+#         if request.form['panel_name']:
+#             panel_name = request.form['panel_name']
+#         else:
+#             is_ok = False
+#             flash("És requereix el nom del panell!", "warning")
+#         if request.form['panel_version']:
+#             panel_version = request.form['panel_version']
+#         else:
+#             is_ok = False
+#             flash("És requereix una versió de panell", "warning")
+#         if request.form.get('genome_version'):
+#             option = request.form['genome_version']
+#             if option  == "1":
+#                 genome_version = "hg19"
+#             elif option == "2":
+#                 genome_version = "hg38"
+#         else:
+#             is_ok = False
+#             flash("Es requereix la versió de genoma", "warning")
+#         if request.form.get('variant_analysis'):
+#             variant_analysis = request.form['variant_analysis']
+#             if variant_analysis == "1":
+#                 variant_analysis = "Germline"
+#             elif variant_analysis == "2":
+#                 variant_analysis = "Somatic"
+#         else:
+#             is_ok = False
+#             flash("Es requereix el tipus d'anàlisi de variants", "warning")
+#         if request.form.get('report_lang'):
+#             report_lang = request.form['report_lang']
+#             if report_lang == "1":
+#                 report_lang = "catalan"
+#             elif variant_analysis == "2":
+#                 report_lang = "english"
+#         else:
+#             is_ok = False
+#             flash("Es requereix el llenguatge dels informes", "warning")
+#
+#         if request.files:
+#             panel_bed = request.files["panel_bed"]
+#             panel_dir = app.config['WORKING_DIRECTORY'] + "/PANEL_FOLDER/" + panel_name
+#             if not os.path.isdir(panel_dir):
+#                 os.mkdir(panel_dir)
+#             if not panel_bed:
+#                 flash("Es requereix un fitxer en format .bed", "warning")
+#                 is_ok = False
+#             else:
+#                 if panel_bed.filename.endswith(".bed"):
+#                     panel_bed.save(os.path.join(panel_dir, panel_bed.filename))
+#                     panel_path = panel_dir + "/" + panel_bed.filename
+#                     panel_size,total_rois =  get_panel_size(panel_path)
+#                 else:
+#                     flash("Es requereix un fitxer en format .bed", "warning")
+#                     is_ok = False
+#
+#             get_file_info = True
+#             if request.form["gene_isoform_text"]:
+#                 gene_isoform_text = request.form["gene_isoform_text"]
+#                 gene_isoform_list = gene_isoform_text.split("\n")
+#
+#                 autoselect_isoform = False
+#                 if request.form.get('canonical_isoform'):
+#                     autoselect_isoform = True
+#
+#                 gene_isoform_dict, gene_isoform_errors = get_gene_isoforms_list(gene_isoform_list, genome_version, autoselect_isoform)
+#                 total_genes = len(gene_isoform_dict.keys())
+#                 if gene_isoform_errors:
+#                     is_ok = False
+#                     for error in gene_isoform_errors:
+#                         flash(error, "warning")
+#                         break
+#                 else:
+#                     for gene in gene_isoform_dict:
+#                         Gene = panel_isoforms(chromosome=gene_isoform_dict[gene]['CHR'], start=gene_isoform_dict[gene]['START'],
+#                         end=gene_isoform_dict[gene]['END'],ensg_id=gene_isoform_dict[gene]['ENSG'],
+#                         enst_id=gene_isoform_dict[gene]['ENST'], gene_name=gene, genome_version=genome_version,
+#                         panel=panel_name, panel_version=panel_version )
+#                         db.session.add(Gene)
+#                         db.session.commit()
+#                 get_file_info = False
+#             if request.files["gene_isoform_file"] and get_file_info == True:
+#                 gene_isoform_file = request.files["gene_isoform_file"]
+#                 gene_isoform_file.save(os.path.join(panel_dir, gene_isoform_file.filename))
+#                 gene_iso_path = panel_dir + "/" + gene_isoform_file.filename
+#
+#                 autoselect_isoform = False
+#                 if request.form.get('canonical_isoform'):
+#                     autoselect_isoform = True
+#
+#                 gene_isoform_dict, gene_isoform_errors = get_gene_isoforms_file(gene_iso_path,
+#                     genome_version, autoselect_isoform)
+#                 total_genes = len(gene_isoform_dict.keys())
+#                 if gene_isoform_errors:
+#                     is_ok = False
+#                     for error in gene_isoform_errors:
+#                         flash(error, "warning")
+#                         break
+#                 else:
+#                     for gene in gene_isoform_dict:
+#                         Gene = panel_isoforms(chromosome=gene_isoform_dict[gene]['CHR'],
+#                         start=gene_isoform_dict[gene]['START'],
+#                         end=gene_isoform_dict[gene]['END'],
+#                         ensg_id=gene_isoform_dict[gene]['ENSG'],
+#                         enst_id=gene_isoform_dict[gene]['ENST'],
+#                         gene_name=gene, genome_version=genome_version,
+#                         panel=panel_name, panel_version=panel_version)
+#                         db.session.add(Gene)
+#                         db.session.commit()
+#
+#         if request.form.get('call_rate_filter'):
+#             call_rate_filter = request.form['call_rate_filter']
+#             if call_rate_filter == "1":
+#                call_rate_filter = "1X"
+#             if call_rate_filter == "2":
+#                call_rate_filter = "10X"
+#             if call_rate_filter == "3":
+#                call_rate_filter = "20X"
+#             if call_rate_filter == "4":
+#                call_rate_filter = "30X"
+#             if call_rate_filter == "5":
+#                call_rate_filter = "100X"
+#             if call_rate_filter == "6":
+#                call_rate_filter = "200X"
+#         else:
+#             is_ok = False
+#             flash("Es requereix un filtre de call rate", "warning")
+#
+#         if request.form.get('call_rate_perc'):
+#             call_rate_perc = request.form['call_rate_perc']
+#         else:
+#             is_ok = False
+#             flash("Es requereix un percentatge de bases", "warning")
+#
+#         if request.form.get('lost_exons_filter'):
+#             lost_exons_filter = request.form['lost_exons_filter']
+#             if lost_exons_filter == "1":
+#                lost_exons_filter = "1X"
+#             if lost_exons_filter == "2":
+#                lost_exons_filter = "10X"
+#             if lost_exons_filter == "3":
+#                lost_exons_filter = "20X"
+#             if lost_exons_filter == "4":
+#                lost_exons_filter = "30X"
+#             if lost_exons_filter == "5":
+#                lost_exons_filter = "100X"
+#             if lost_exons_filter == "6":
+#                lost_exons_filter = "200X"
+#         else:
+#             is_ok = False
+#             flash("Es requereix un percentatge d'exons perduts", "warning")
+#         if request.form.get('lost_exons_perc'):
+#             lost_exons_perc = request.form['lost_exons_perc']
+#         if request.form['number_reads']:
+#             number_reads = request.form['number_reads']
+#         if request.form.get('enrichment_perc'):
+#             enrichment_perc = request.form['enrichment_perc']
+#         now = datetime.now()
+#         dt_string = now.strftime("%d/%m/%Y %H:%M:%S")
+#         if is_ok:
+#             New_panel = Panel(Panel=panel_name, Panel_bed=panel_path, Version=panel_version, Size=panel_size,
+#             Genome_version=genome_version, Total_rois=total_rois, Total_genes=total_genes, Last_modified=dt_string,
+#             Read_num_filter=number_reads, Call_rate_filter=call_rate_filter, Call_rate_perc=call_rate_perc,
+#             Lost_exons_filter=lost_exons_filter,Lost_exons_perc=lost_exons_perc,
+#             Enrichment_perc_filter=enrichment_perc, Variant_call=variant_analysis, Language=report_lang)
+#
+#             panel_exists = Panel.query.filter_by(Panel=panel_name).first()
+#             if panel_exists:
+#                 flash("Ja existeix un panell amb el nom " + panel_name, "danger")
+#
+#             else:
+#                 db.session.add(New_panel)
+#                 db.session.commit()
+#                 flash("El nou panell s'ha creat correctament!", "success")
+#
+#     Panels = Panel.query.all()
+#     return render_template("panel_management.html", Panels=Panels, title="Panells")
 
 @app.route('/delete_panel/<panel>', methods=['GET', 'POST'])
 def delete_panel(panel):
@@ -567,8 +565,8 @@ def delete_panel(panel):
     db.session.delete(PanelObj)
     db.session.commit()
 
-    RoiObjs = Roi.query.filter_by(panel=panel).all()
-    for item in RoiObjs:
+    Isoforms = panel_isoforms.query.filter_by(panel=panel).all()
+    for item in Isoforms:
         db.session.delete(item)
         db.session.commit()
 
@@ -700,11 +698,11 @@ def update_panel(panel):
         panel_info.Last_modified = dt_string
         db.session.commit()
         flash("El panell s'ha actualitzat!", "success")
-    roi_info = ""
+    isoforms = ""
     if panel_info:
-        roi_info = Roi.query.filter_by(panel=panel).all()
+        isoforms = PanelIsoforms.query.filter_by(panel=panel).all()
     return render_template("panel_configuration.html", panel_info=panel_info,
-        roi_info=roi_info, title=panel)
+        roi_info=isoforms, title=panel)
 
 @app.route('/update_gene_isoform/<panel>/<roi_id>', methods = ['GET', 'POST'])
 def update_gene_isoform(panel, roi_id):
@@ -720,15 +718,15 @@ def update_gene_isoform(panel, roi_id):
         if request.form['enst']:
             enst = request.form['enst']
 
-        roi = Roi.query.filter_by(id=roi_id).first()
-        if roi:
-            roi.ensg_id   = ensg
-            roi.enst_id   = enst
-            roi.gene_name = gene
+        isoform = PanelIsoforms.query.filter_by(id=roi_id).first()
+        if isoforms:
+            isoform.ensg_id   = ensg
+            isoform.enst_id   = enst
+            isoform.gene_name = gene
             db.session.commit()
-            flash("S'ha modificat correctament el gen " + roi.gene_name , "success")
+            flash("S'ha modificat correctament el gen " + isoform.gene_name , "success")
 
     panel_info = Panel.query.filter_by(Panel=panel).first()
-    roi_info = Roi.query.filter_by(panel=panel).all()
+    isoforms = PanelIsoforms.query.filter_by(panel=panel).all()
     return render_template("panel_configuration.html", panel_info=panel_info,
-        roi_info=roi_info, title=panel)
+        roi_info=isoforms, title=panel)

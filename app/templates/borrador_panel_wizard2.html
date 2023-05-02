@@ -1,0 +1,85 @@
+<!-- <td style="display:none;">
+  <p><i><b>{{ gene }} </b></i></p>
+</td>
+<td style="display:none;">
+  <p><i><b>{{ gene_structure[gene]['gene_type'] }} </b></i></p>
+</td>
+<td>
+  <p><i><b>{{ gene }}</b><i></p>
+    <button type="button" class="btn btn-sm btn-outline-primary" id="button_remove_gene2"><i class="fas fa-trash fa-sm" style="color:dodgerblue;"></i></button>
+</td>
+<td style="word-break: break-word;">
+
+  <div class="row">
+    <div class="col">
+      <a class="btn btn-light btn-sm" onclick="showAllIsoforms('list_other_{{ gene }}', '{{gene}}_button');" role="button" id="{{gene}}_button"><i class="fas fa-plus-square"></i> isoformes</a>
+    </div>
+  </div>
+
+  <ul style="padding:0;margin-left:0;columns:2;-webkit-columns:2;-moz-columns:2;list-style:none;">
+  {% set isoform_count = namespace(value=1) %}
+  {% for isoform, value in  gene_structure[gene]['transcripts'].items() | sort(attribute='1.is_mane', reverse=True) %}
+    {% set total_exons = gene_structure[gene]['transcripts'][isoform]['total_exons'] %}
+    {% set full_covered_exons = gene_structure[gene]['transcripts'][isoform]['full_covered_exons'] %}
+    {% set transcript_name = gene_structure[gene]['transcripts'][isoform]['name'] %}
+    {% set transcript_dict = gene_structure[gene]['transcripts'][isoform]|tojson|safe %}
+    {% if gene_structure[gene]['transcripts'][isoform]['is_appris'] %}
+      {% set is_appris = 1 %}
+    {% else %}
+      {% set is_appris = 0 %}
+    {% endif %}
+    {% if gene_structure[gene]['transcripts'][isoform]['is_mane'] %}
+      {% set is_mane = 1 %}
+    {% else %}
+      {% set is_mane = 0 %}
+    {% endif %}
+
+      {% if isoform_count.value == 1 %}
+
+      <li style="padding:0px;margin:0px;" name="list_first_{{isoform}}" id="list_first_{{isoform}}">
+
+      {% else %}
+      <li style="padding:0px;margin:0px;display:none;" name="list_other_{{gene}}" id="list_other">
+      {% endif %}
+
+       <div class="custom-control custom-checkbox custom-control">
+          {% if (is_mane == 1) %}
+          <input type="checkbox" class="custom-control-input" name="selected_isoforms" value="{{ isoform }}" id="{{ isoform }}" checked>
+          {% else %}
+          <input type="checkbox" class="custom-control-input" name="selected_isoforms" value="{{ isoform }}" id="{{ isoform }}">
+          {% endif %}
+          <label class="custom-control-label" for="{{ isoform }}">
+            {% if (is_mane == 0) and (is_appris == 0) %}
+              <a onclick='testViz({{ transcript_dict }}, {{ gene|tojson }}, {{ isoform|tojson }});' href="#/" >{{ transcript_name }} : {{ isoform }}</a>
+            {% else %}
+              <a onclick='testViz({{ transcript_dict }}, {{ gene|tojson }}, {{ isoform|tojson }});' href="#" ><b>{{ transcript_name }} : {{ isoform }}</b></a>
+            {% endif %}
+            {% if gene_structure[gene]['transcripts'][isoform]['is_appris'] == 1 %}
+              <span class="badge badge-pill badge-primary" style="font-size:10px;"> A(P1)</span>
+            {% endif %}
+            {% if gene_structure[gene]['transcripts'][isoform]['is_mane'] == 1 %}
+              <span class="badge badge-pill badge-danger" style="font-size:10px;"> M</span>
+            {% endif %}
+            <small>({{full_covered_exons}}/{{total_exons}})</small>
+          </label>
+       </div>
+       <div class="modal" tabindex="-1" role="dialog" aria-hidden="true" id="modal_d3">
+          <div class="modal-dialog" style="width:100%;max-width:1500px;">
+            <div class="modal-content">
+              <div class="modal-header">
+                <h5 class="modal-title" id="modal_gene_name"><b></b></h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                  <span aria-hidden="true">&times;</span>
+                </button>
+              </div>
+              <div class="modal-body" id="gene_d3" style="margin:0 auto;">
+              </div>
+              </div>
+          </div>
+        </div>
+      </li>
+
+    {% set isoform_count.value = isoform_count.value +1 %}
+  {% endfor %}
+  </ul>
+</td> -->

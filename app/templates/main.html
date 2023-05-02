@@ -3,18 +3,22 @@
 {% block body %}
 
 <div class="jumbotron bg-grey text-black jumbotron-image shadow">
-  <h1 class="mb-4" style="color:rgb(70, 70, 70)">
-    Servei de Genòmica i Bioinformàtica Clínica
+  <h1 class="mb-4" style="color:rgb(70, 70, 70);font-size:44px;">
+    Unitat de Diagnòstic Molecular i Medicina Personalitzada
+    <h2 class="mb-4 mt-5" style="color:rgb(70, 70, 70)">
+      <!-- Servei de Genòmica i Bioinformàtica Clínica -->
+      </h2>
     <hr>
+
   </h1>
   <div class="row">
     <div class= "col-sm">
-       <img src={{ url_for('static', filename="laptop3.png") }} width=375 height=300> 
+       <img src={{ url_for('static', filename="laptop3.png") }} width=375 height=300>
     </div>
     <div class= "col-sm">
       <h5 class="mb-4 mt-3" style="color:rgb(70, 70, 70)">
         <div>Identificació, anotació i priorització de variants somàtiques i germinals d'importància clínica</div>
-      </h5>      
+      </h5>
       <a href="{{ url_for('ngs_applications')}} " class="btn btn-primary btn-lg mt-3" style="transition-property:opacity;transition-duration:2s;"><i class="fas fa-search"></i> Explora</a>
    </div>
    <div class= "col-sm">
@@ -29,6 +33,7 @@
 
 </div>
 {% block script %}
+
  <script>
     $(document).ready(function() {
         $("#submit_analysis").click(function() {
@@ -77,6 +82,6 @@
         document.coocke = `filesize=${elem.files[0].size}`;
      };
  </script>
-{% endblock %} 
+{% endblock %}
 
 {% endblock body %}

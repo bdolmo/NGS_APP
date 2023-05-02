@@ -1,0 +1,111 @@
+<div class="row" style="width:100%;margin:0 auto;">
+  <div class="col" style="width:100%;margin:0px;color:#2c4fa1;">
+    <p style="font-size:15px;font-family: arial, sans-serif;"><img src="fourdot.png" alt="" style="width:16px;height:15px;">
+      <b>GENS ANALITZATS</b>
+    </p>
+    <p style="font-size:12px;font-family: arial, sans-serif;color:black;text-align: justify;">
+    Aquest panel cobreix completament les regions exòniques dels següents gens: AKT1, AKT3, ALK, APC,
+    BRAF, BRCA1, BRCA2, CDKN2A, CTNNB1, DDR2, EGFR, ERBB2, ERBB3, ERBB4, FGFR1, FGFR2,
+    FGFR3, NF1, HRAS, JAK1, JAK2, KIT, KRAS, MAP2K1, MAP2K2, MET, MYC, NRAS, NTRK1, NTRK2,
+    NTRK3, PDGFRA, PIK3CA, POLD1, POLE, PTEN, RB1, RET, ROS1, SLC34A2, SOX2, STK11, TERT,
+    TP53.
+    Addicionalment es cobreixen regions intròniques involucrades en fusions dels següents gens:ALK, BRAF,
+    EGFR, FGFR1, FGFR2, FGFR3, RET i ROS1.
+    </p>
+
+  </div>
+</div>
+
+<div class="row" style="width:100%;margin:0 auto;">
+  <div class="col" style="width:100%;margin:0px;color:#2c4fa1;">
+    <p style="font-size:15px;font-family: arial, sans-serif;"><img src="fourdot.png" alt="" style="width:16px;height:15px;">
+      <b>METODOLOGIA</b>
+    </p>
+    <p style="font-size:12px;font-family: arial, sans-serif;color:black;text-align: justify;">
+      El protocol de llibreries utilitzat és el SureSelectXT HS Target Enrichment System (Agilent Technologies).
+      Aquest protocol parteix d’un mínim de 50ng d'ADN de doble cadena i és apte per a mostres amb un alt nivell
+      de degradació com les provinents de FFPE. La fragmentació de l’ADN és de caràcter enzimàtic; seguidament
+      hi ha un procés de reparació dels extrems, adenilació, lligació dels adaptadors específics i amplificació
+      conjuntament amb l’indexing de cada mostra. Després d’un punt de control (TapeStation), els fragments
+      obtinguts són hibridats amb les sondes de RNA biotinilades corresponents a les regions d’interès del panell
+      dissenyat. L’enriquiment de les regions d’interès es realitza a partir de la química de captura d’Agilent
+      Technologies, SureSelect. Seguidament, es realitza la captura a partir de les boles de estreptavidina i
+      s’amplifica el DNA capturat. Finalment es realitza l’últim punt de control per tal d’obtenir els perfils de llibreria
+      esperats i la molaritat de cada mostra. Les llibreries resultants són multiplexades i seqüenciades en
+      l’instrument MiSeq (Illumina) a partir de la química basada en l’amplificació clonal i la seqüenciació per síntesi.
+    </p>
+  </div>
+</div>
+
+
+<div class="row" style="width:100%;margin:0 auto;">
+  <div class="col" style="width:100%;margin:0px;color:#2c4fa1;">
+    <p style="font-size:15px;font-family: arial, sans-serif;"><img src="fourdot.png" alt="" style="width:16px;height:15px;">
+      <b>ANÀLISI</b>
+    </p>
+    <p style="font-size:12px;font-family: arial, sans-serif;color:black;text-align: justify;">
+      L’anàlisi es realitza mitjançant el software d’anàlisi bioinformàtica desenvolupat i validat internament a
+      Gencardio Diagnostics. Els extrems dels reads són processats per eliminar bases de baixa qualitat i
+      adaptadors utilitzant l’eina fastp. L’alineament dels reads al genoma de referència (GRCh37/hg19) es realitza
+      amb el programa BWA-MEM i la posterior eliminació de reads duplicats es porta a terme amb l’eina Picard. La
+      detecció de SNVs i INDELs (1-50 pb) es realitza combinant els resultats de les eines Mutect2 i FreeBayes. La
+      freqüència al·lèlica mínima (VAF) correspon al 2%, juntament amb un mínim suport de 5 reads (SNV i indels).
+      Les variants estructurals (SV) majors de 50 pb són detectades mitjançant el software Manta. La detecció
+      d’alteracions de número de còpia (CNAs) es realitza mitjançant els programes CNVkit i PureCN. L’anotació de
+      variants a un nivell general es realitza amb el Variant Effect Predictor (VEP) utilitzant la nomenclatura
+      estàndard HGVS en base a les isoformes canòniques dels gens del panell. Per cada variant s’incorpora
+      informació dels predictors de patogenicitat Polyphen2, SIFT, MutationTaster i Provean i les variants d’splicing
+      s’analitzen amb l’SpliceAI i el MaxEntScan. Les freqüències poblacionals s’anoten amb el gnomAD, l’ExAC i
+      1000Genomes. L’anotació de variants amb evidència clínica en càncer es realitza amb les últimes versions
+      disponibles del CIViC i el CGI. Les fusions s’anoten amb la base de dades chimerKB. La classificació de
+      variants reportades es realitza a tres nivells, segons evidència clínica i tractament: (i) variants clíniques amb
+      tractament associat (ii) altres variants amb evidència d’interacció/resistència al tractament o d'alt impacte
+      (codons stop, variants d'splicing) (iii) variants rares (MAF < 1%) sense evidència clínica coneguda.
+      Addicionalment, es crea un registre amb totes les variants identificades per cada mostra i s’actualitza la base
+      de dades interna, possibilitant una futura re-interpretació i/o classificació degut a noves evidències
+      científiques.
+    </p>
+  </div>
+</div>
+<p style="page-break-before: always" ></p>
+
+<div class="row" style="width:100%;margin:0 auto;">
+  <div class="col" style="width:100%;margin:0px;color:#2c4fa1;">
+    <p style="font-size:15px;font-family: arial, sans-serif;"><img src="fourdot.png" alt="" style="width:16px;height:15px;">
+      <b>LIMITACIONS TÈCNIQUES</b>
+    </p>
+    <p style="font-size:12px;font-family: arial, sans-serif;color:black;text-align: justify;">
+      La detecció de variants somàtiques es veu afectada per l'enriquiment de cèl·lula somàtica respecte la
+      població total cel·lular (germinal i somàtica). Es recomana un percentatge de cèl·lula somàtica superior al
+      10% i en general quan més enriquida estigui la mostra millor. Les variants estructurals (fusions i altres) i
+      CNAs es veuen encara més afectades per l’enriquiment clonal de la mostra. No podem assegurar la seva
+      detecció en mostres poc enriquides.
+    </p>
+  </div>
+</div>
+
+<div class="row" style="width:100%;margin:0 auto;">
+  <div class="col" style="width:100%;margin:0px;color:#2c4fa1;">
+    <p style="font-size:15px;font-family: arial, sans-serif;"><img src="fourdot.png" alt="" style="width:16px;height:15px;">
+      <b>DISPOSICIONS LEGALS</b>
+    </p>
+    <p style="font-size:12px;font-family: arial, sans-serif;color:black;text-align: justify;">
+      Gencardio Diagnostics recull la seva petició d’estudi genètic assumint que el consentiment informat ha estat
+      degudament presentat per l’entitat competent de manera clara, transparent i explícita, en compliment de la
+      disposición adicional decimoséptima de la LOPDGDD 3/2018 essent acceptada per l’interessat.
+      Les mostres biològiques i informació associada que ha estat cedida a Gencardio Diagnostics es custodiaran
+      i conservaran fins a la seva extinció seguint el que estableix la Llei 14/2007 d’Investigació Biomèdica.
+    </p>
+  </div>
+</div>
+
+<div class="row" style="width:100%;margin:0 auto;">
+  <div class="col" style="width:100%;margin:0px;color:#2c4fa1;">
+    <p style="font-size:15px;font-family: arial, sans-serif;"><img src="fourdot.png" alt="" style="width:16px;height:15px;">
+      <b>CERTIFICACIÓ</b>
+    </p>
+    <p style="font-size:12px;font-family: arial, sans-serif;color:black;text-align: justify;">
+      L'activitat del laboratori està sota el sistema general de qualitat ISO9001:2015
+    </p>
+  </div>
+</div>

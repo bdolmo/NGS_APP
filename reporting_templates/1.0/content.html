@@ -1,0 +1,55 @@
+
+<div>
+  <div class="row">
+    <div class="col" style="width:100%;margin:0px;">
+      <p style="margin-bottom:0px;font-size:15px;font-family: arial, sans-serif;color:#2c4fa1;"><img src="fourdot.png" alt="" style="width:18px;height:15px;">
+        <b>SERVEI GENÈTIC SOL·LICITAT</b>
+      </p>
+      <p style="margin-left:24px;margin-top:0px;font-size:12px;font-family: arial, sans-serif;"><b>GenOncology-Dx</b></p>
+    </div>
+  </div>
+
+  <div class="row">
+    <div class="col" style="width:100%;margin:0px;">
+      <p style="margin-bottom:0px;font-size:15px;font-family: arial, sans-serif;color:#2c4fa1;"><img src="fourdot.png" alt="" style="width:18px;height:15px;">
+        <b>SOSPITA CLÍNICA/DIAGNÒSTIC DE REFERÈNCIA</b>
+      </p>
+      <p style="margin-left:24px;margin-top:0px;font-size:12px;font-family: arial, sans-serif;"><b>Càncer de PULMÓ</b></p>
+    </div>
+  </div>
+
+  <div class="row">
+    <div class="col" style="width:100%;margin:0px;color:#2c4fa1;">
+      <p style="font-size:15px;font-family: arial, sans-serif;"><img src="fourdot.png" alt="" style="width:18px;height:15px;">
+        <b>RESUM RESULTATS GENÈTICS</b>
+      </p>
+    </div>
+  </div>
+
+  <p style="page-break-before: always" ></p>
+
+  <table>
+    <tr style="color:white;background-color:#365c85;font-size:12px;padding:0px;margin:0px;">
+      <th> GEN</th>
+      <th> ISOFORMA</th>
+      <th> Codis HGVS</th>
+      <th> Localització/Efecte</th>
+      <th> Freq. Al·lèlica</th>
+      <th> Freq. Poblacional</th>
+    </tr>
+    {% for var in rare_variants %}
+      <tr style="background-color:white;">
+        <td><b><i>{{ var.gene }} </i></b></td>
+        <td> {{ var.enst_id }} </td>
+        <td>
+          {{ var.hgvsg }}<br>
+          {{ var.hgvsp }}<br>
+          {{ var.hgvsc }}
+        </td>
+        <td> {{ var.consequence }} </td>
+        <td> {{ var.allele_frequency }} </td>
+        <td> {{ var.max_af }} </td>
+      </tr>
+    {% endfor %}
+  </table>
+</div>

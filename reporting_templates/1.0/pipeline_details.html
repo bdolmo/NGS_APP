@@ -1,0 +1,94 @@
+<div class="row" style="width:100%;margin:0 auto;">
+  <div class="col" style="width:100%;margin:0px;color:#2c4fa1;">
+    <p style="font-size:15px;font-family: arial, sans-serif;"><img src="fourdot.png" alt="" style="width:16px;height:15px;">
+      <b>PIPELINE BIOINFORMÀTIC</b>
+    </p>
+  </div>
+</div>
+
+<div class="row" style="width:90%;margin:0 auto;">
+  <div class="col" style="width:49%;margin:0px;color:black;">
+    <table style="width:70%;font-size:12px;padding:8px;">
+        <tr style="padding:5px;">
+          <td style="background-color:#e6e6e6;padding:8px;"><b>Versió pipeline</b></td>
+          <td style="background-color:#f0f4f8;padding:8px;">{{ pipeline_details['pipeline_version']}}</td>
+        </tr>
+        <tr>
+          <td style="background-color:#e6e6e6;padding:8px;"><b>Versió genoma</b></td>
+          <td style="background-color:#f0f4f8;padding:8px;">{{ pipeline_details['genome_version'] }}</td>
+        </tr>
+    </table>
+  <br>
+  <br>
+  <p style="font-size:13px;width:90%;"><b>Software third-party</b></p>
+  <hr style="margin:0px;border-width:1px;background-color:black;color:black;width:90%;">
+  <table style="width:90%;color:black;font-size:12px;padding:8px;">
+      <tr>
+        <td style="background-color:#e6e6e6;padding:8px;"><b>fastp</b></td>
+        <td style="background-color:#f0f4f8;padding:8px;">{{ pipeline_details['fastp_version']}}</td>
+      </tr>
+      <tr>
+        <td style="background-color:#e6e6e6;padding:8px;"><b>samtools</b></td>
+        <td style="background-color:#f0f4f8;padding:8px;">{{ pipeline_details['samtools_version'] }}</td>
+      </tr>
+      <tr>
+        <td style="background-color:#e6e6e6;padding:8px;"><b>bwa</b></td>
+        <td style="background-color:#f0f4f8;padding:8px;">{{ pipeline_details['bwa_version'] }}</td>
+      </tr>
+      <tr>
+        <td style="background-color:#e6e6e6;padding:8px;"><b>GATK</b></td>
+        <td style="background-color:#f0f4f8;padding:8px;">{{ pipeline_details['gatk_version'] }}</td>
+      </tr>
+      <tr>
+        <td style="background-color:#e6e6e6;padding:8px;"><b>Manta</b></td>
+        <td style="background-color:#f0f4f8;padding:8px;">{{ pipeline_details['manta_version'] }}</td>
+      </tr>
+      <tr>
+        <td style="background-color:#e6e6e6;padding:8px;"><b>CNVkit</b></td>
+        <td style="background-color:#f0f4f8;padding:8px;">{{ pipeline_details['cnvkit_version'] }}</td>
+      </tr>
+  </table>
+  </div>
+
+  <div class="col" style="width:49%;margin:0px;color:#2c4fa1;">
+    <br>
+    <p style="font-size:13px;width:90%;margin:0 auto;color:black;"><b>Annotació de variants</b></p>
+    <hr style="margin:0px auto;border-width:1px;background-color:black;color:black;width:90%;margin:0 auto;">
+
+    <table style="width:90%;margin:0 auto;color:black;font-size:12px;padding:8px;">
+        <tr>
+          <td style="background-color:#e6e6e6;padding:8px;"><b>Variant Effect Predictor (VEP)</b></td>
+          <td style="background-color:#f0f4f8;padding:8px;">{{ pipeline_details['vep_version']}}</td>
+        </tr>
+        <tr>
+          <td style="background-color:#e6e6e6;padding:8px;"><b>1000Genomes</b></td>
+          <td style="background-color:#f0f4f8;padding:8px;">{{ pipeline_details['thousand_genomes_version'] }}</td>
+        </tr>
+        <tr>
+          <td style="background-color:#e6e6e6;padding:8px;"><b>GnomAD</b></td>
+          <td style="background-color:#f0f4f8;padding:8px;">{{ pipeline_details['gnomad_version'] }}</td>
+        </tr>
+        <tr>
+          <td style="background-color:#e6e6e6;padding:8px;"><b>CIViC</b></td>
+          <td style="background-color:#f0f4f8;padding:8px;">{{ pipeline_details['civic_version'] }}</td>
+        </tr>
+        <tr>
+          <td style="background-color:#e6e6e6;padding:8px;"><b>ChimerKB</b></td>
+          <td style="background-color:#f0f4f8;padding:8px;">{{ pipeline_details['chimerkb_version'] }}</td>
+        </tr>
+        <tr>
+          <td style="background-color:#e6e6e6;padding:8px;"><b>dbNSFP</b></td>
+          <td style="background-color:#f0f4f8;padding:8px;">{{ pipeline_details['dbnsfp_version'] }}</td>
+        </tr>
+        <tr>
+          <td style="background-color:#e6e6e6;padding:8px;"><b>dbscSNV</b></td>
+          <td style="background-color:#f0f4f8;padding:8px;">{{ pipeline_details['dbscsnv_version'] }}</td>
+        </tr>
+    </table>
+  </div>
+
+  <div class="col" style="width:49%;margin:0px;color:#2c4fa1;">
+
+  </div>
+</div>
+<p style="page-break-before: always" ></p>

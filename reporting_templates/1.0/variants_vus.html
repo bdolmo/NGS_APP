@@ -1,0 +1,33 @@
+<!-- <table style=" page-break-inside:none;"> -->
+  <table style="">
+
+  <caption style="font-size:14px;"><b>ALTRES VARIANTS</b></caption>
+
+  <thead>
+  <tr style="color:white;background-color:#365c85;font-size:12px;padding:0px;margin:0px;">
+    <th> GEN</th>
+    <th> ISOFORMA</th>
+    <th> Codis HGVS</th>
+    <th> Localització/Efecte</th>
+    <th> Freq. Al·lèlica</th>
+    <th> Freq. Poblacional</th>
+  </tr>
+  </thead>
+  <tbody>
+  {% for var in rare_variants %}
+    <tr style="background-color:#f0f4f8;">
+      <td style="padding:3px;"><b><i>{{ var.gene }} </i></b></td>
+      <td style="padding:3px;"> {{ var.enst_id }} </td>
+      <td style="padding:3px;">
+        {{ var.hgvsg }}<br>
+        {{ var.hgvsp }}<br>
+        {{ var.hgvsc }}
+      </td>
+      <td style="padding:3px;"> {{ var.consequence }} </td>
+      <td style="padding:3px;"> {{ var.allele_frequency }} </td>
+      <td style="padding:3px;"> {{ var.max_af }} </td>
+    </tr>
+  {% endfor %}
+  </tbody>
+</table>
+<p style="break-before: always;" ></p>

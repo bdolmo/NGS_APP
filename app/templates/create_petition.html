@@ -3,32 +3,24 @@
 {% block body %}
 
 <div class="d-flex justify-content-center pt-3 mt-3 rounded" style="background-color:white; width:100%">
-
     <div class="container-fluid rounded" style="background-color:white; width:75%">
-      <div class="d-flex justify-content-center">
-        <div class = "row mt-1">
-            {% with messages = get_flashed_messages(with_categories=true) %}
-            {% if messages %}
-            {% for category,message in messages %}
-            <div class="alert alert-{{ category }} alert-dismissible fade show ml-3" role="alert">
-              <span>{{ message }}</span>
-              <button type="button" class="close" data-dismiss="alert" aria-label="Close">
-                <span aria-hidden="true">&times;</span>
-              </button>
-               <br>
-            </div>
-            {% endfor %}
-          {% endif %}
-        {% endwith %}
+
+      <div id="alert_id" style="margin:0 auto;width:70%;display:none;padding:0px;">
+        <div class="alert alert-success alert-dismissible fade show"  role="alert">
+            <strong id="show_alert_title"></strong> <p id="show_alert_text"></p>
+            <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+              <span aria-hidden="true">&times;</span>
+            </button>
         </div>
       </div>
+
         <div class="card card-body border-0" style="background-color:rgb(248, 248, 248);">
-        <h2 class="card-title">Nova petició</h2>
-          <hr style="1px solid black;">
+        <h2 id="create_petition_title" class="card-title">Nova petició de càncer</h2>
+          <hr style="1px solid black;margin:0px;">
           <div class="row">
             <div class="col-sm mt-3">
               <!-- Button trigger modal -->
-              <h6><b>Opció A:</b> carrega un document word (.docx) de petició de laboratori</h6>
+              <h6><b>Opció A:</b> Carrega una petició de laboratori</h6>
               <form action="/upload_petition" method="POST" enctype="multipart/form-data" id="petition_form">
                 <div class="input-group mb-3" style="width:90%;">
                   <div class="input-group-prepend">
@@ -36,41 +28,40 @@
                   </div>
                   <!-- Here is the input file type -->
                   <div class="custom-file">
-                    <input type="file" name="petition_document" class="button" id="inputPetitionDocument" multiple>
-                    <label class="custom-file-label" id="petition_document" for="inputPetitionDocument">Selecciona un docx</label>
+                    <input type="file" name="petition_document" class="button" id="inputPetitionDocument" multiple accept="application/msexcel">
+                    <label class="custom-file-label" id="petition_document" for="inputPetitionDocument">Selecciona una fulla de petició <i class="fas fa-file-excel"></i></label>
                   </div>
                   <button class="btn btn-primary ml-3" type="submit" id="upload_petition" >Envia</button>
                 </div>
               </form>
+              <a href="/download_petition_example"><i class="fa fa-xs fa-download" aria-hidden="true"></i> Descarrega't un exemple</a>
+
             </div>
             <div class="col-sm mt-3">
-              <h6><b>Opció B:</b> Afegeix mostres a través de l'aplicació</h6>
+              <h6><b>Opció B:</b> Afegeix una petició a través de l'aplicatiu</h6>
               <button type="button" class="btn btn-outline-primary" data-toggle="modal" data-target="#new_sample">
-                <i class="fas fa-plus-square"></i> mostra
+                <i class="fas fa-plus-square"></i> Petició
               </button>
             </div>
           </div>
         </div>
         <div class="card card-body border-0 mt-3" style="background-color:rgb(248, 248, 248);">
-          <h2 class="card-title">Llista de peticions</h2>
-          <hr>
-          <a class="btn btn-primary" style="width:10%;" data-toggle="collapse" href="#petition_container" role="button" aria-expanded="false" aria-controls="petition_container">
-            Veure llistat
-          </a>
-          <div class="collapse" id="petition_container">
+          <h2 class="card-title">Llista de peticions de càncer</h2>
+          <hr style="margin:0px;">
+
+          <div class="collapse show" id="petition_container">
           <div class="row" id="petition_row">
             <div class="container-fluid pt-1 rounded mb-3 mt-3" style="width:100%">
-                <table id="petition_table" class="table table-striped table-bordered" style="background-color:white;width:100;font-size:14px;">
+                <table id="petition_table" class="table table-sm table-striped table-bordered" style="background-color:white;width:100;font-size:16px;">
                   <thead>
                     <tr>
                       <th>ID</th>
+                      <th>Origen tumoral</th>
+                      <th>Codi CIP</th>
                       <th>Codi AP</th>
                       <th>Num. HC</th>
                       <th>Data Extracció</th>
                       <th>%Tumoral</th>
-                      <th>Volum residual</th>
-                      <th>Conc. nanodrop</th>
-                      <th>Ratio 260/280 nanodrop</th>
                       <th>Metge sol·licitant</th>
                       <th>Unitat de facturació</th>
                       <th>Accions</th>
@@ -78,20 +69,19 @@
                   </thead>
                   <tbody>
                     {% for p in petitions %}
-                    <tr>
-                      <td>{{ p.Id }}</td>
-                      <td><b>{{ p.AP_code }}</b></td>
-                      <td><b>{{ p.HC_code }}</b></td>
-                      <td>{{ p.Date }}</td>
-                      <td>{{ p.Tumour_pct }}</td>
-                      <td>{{ p.Volume }}</td>
-                      <td>{{ p.Conc_nanodrop }}</td>
-                      <td>{{ p.Ratio_nanodrop }}</td>
-                      <td>{{ p.Medical_doctor }}</td>
-                      <td>{{ p.Billing_unit }}</td>
-
-                      <td> <a href="" role="button"><i class="fas fa-edit fa-lg" style="color:rgb(109, 106, 106)"></i></a>
-                        <a href="{{ url_for('remove_sample', id=p.Id) }}" role="button"  onclick="return confirm('Vols eliminar aquesta mostra?');">
+                    <tr >
+                      <td id="petition_id">{{ p.Id }}</td>
+                      <td id="tumour_origin">{{ p.Tumour_origin }}</td>
+                      <td id="cip_code">{{ p.CIP_code }}</td>
+                      <td id="ap_code"><b>{{ p.AP_code }}</b></td>
+                      <td id="hc_code">{{ p.HC_code }}</td>
+                      <td id="petition_date">{{ p.Date }}</td>
+                      <td id="tumor_pct">{{ p.Tumour_pct }}</td>
+                      <td id="medical_doctor">{{ p.Medical_doctor }}</td>
+                      <td id="billing_unit">{{ p.Billing_unit }}</td>
+                      <td id="{{ p.Id }}"> <a role="button" onclick="updatePetition(this);"><i class="fas fa-edit fa-lg" style="color:rgb(109, 106, 106)"></i></a>
+                        <!-- {{ url_for('remove_sample', id=p.Id) }} -->
+                        <a  role="button" onclick="removePetition(this);">
                           <i class="fas fa-trash fa-lg" style="color: rgba(209, 20, 20, 0.938)"></i>
                         </a>
                       </td>
@@ -102,12 +92,107 @@
             </div>
           </div>
           </div>
-          <div class="modal fade bd-example-modal-lg" id="new_sample" tabindex="-1" aria-labelledby="modal_new_sample" aria-hidden="true">
+          <div id="edit_petition" class="modal fade">
+            <form action="/update_petition" method="POST" enctype="multipart/form-data" id="update_petition">
+              <div class="modal-dialog modal-lg">
+                <div class="modal-content">
+                  <div class="modal-header" style="background-color:rgb(248, 248, 248);">
+                    <h4 class="modal-title" id="edit_petition_name">Edita petició</h4>
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                      <span aria-hidden="true">&times;</span>
+                    </button>
+                  </div>
+                  <div class="modal-body">
+                    <div class="row mt-3">
+
+                      <div class="col-sm">
+                        <h6><b>Origen tumoral</b></h6>
+                        <div class="input-group mb-3">
+                          <div class="input-group-prepend">
+                            <span class="input-group-text" id="basic-addon1">Origen tumoral</span>
+                          </div>
+                          <input id="edit_origin_tumor" value="" type="text" name="edit_origin_tumor" class="form-control" placeholder="">
+                        </div>
+                      </div>
+
+                      <div class="col-sm">
+                        <h6><b>Data d'extracció</b> <small>(MM/DD/YYYY)</small></h6>
+                        <div class="form-group">
+                          <div id="datepicker" data-provide="datepicker">
+                            <input class="form-control" name="Date" type="date" value="" id="edit_petition_date">
+                            <div class="input-group-addon">
+                                <span class="glyphicon glyphicon-th"></span>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                    <div class="row mt-3">
+                      <div class="col-sm ">
+                        <h6><b>Codi d'Anatomia Patològica</b></h6>
+                        <div class="input-group mb-3">
+                          <div class="input-group-prepend">
+                            <span class="input-group-text" id="basic-addon1">Codi AP</span>
+                          </div>
+                          <input id="edit_ap_code" value="" type="text" name="edit_ap_code" class="form-control" placeholder="">
+                        </div>
+                      </div>
+                      <div class="col-sm">
+                        <h6><b>Número d'Història clínica</b></h6>
+                        <div class="input-group mb-3">
+                          <div class="input-group-prepend">
+                            <span class="input-group-text" id="basic-addon1">Num. HC</span>
+                          </div>
+                          <input id="edit_hc_code" type="text" name="edit_hc_code" class="form-control" placeholder="">
+                        </div>
+                      </div>
+                    </div>
+                     <div class="row mt-3">
+                      <div class="col-sm">
+                        <h6><b>Número CIP</b></h6>
+                        <div class="input-group mb-3">
+                          <div class="input-group-prepend">
+                            <span class="input-group-text" id="basic-addon1">Num. CIP</span>
+                          </div>
+                          <input id="edit_cip_code" type="text" name="edit_cip_code" class="form-control" placeholder="">
+                        </div>
+                      </div>
+
+                      <div class="col-sm ">
+                        <h6><b>%Tumoral</b></h6>
+                        <select class="custom-select" name="edit_tumoral_pct" id="edit_tumoral_pct">
+                          {% for n in range(0, 100, 5) %}
+                          <option value="{{n}}">{{n}}</option>
+                          {% endfor %}
+                        </select>
+                      </div>
+                    </div>
+
+                    <div class="row mt-3">
+                      <div class="col-sm ">
+                        <h6><b>Metge sol·licitant</b></h6>
+                        <input id="edit_medical_doctor" type="text" name="edit_medical_doctor" class="form-control" id="medical_doctor" >
+                      </div>
+                      <div class="col-sm ">
+                        <h6><b>Unitat de facturació</b></h6>
+                        <input id="edit_billing_unit" type="text" name="edit_billing_unit" class="form-control" id="billing_unit" >
+                      </div>
+                    </div>
+                    </div>
+                    <div class="d-flex justify-content-center align-items-center mt-1 mb-2">
+                      <button class="btn btn-primary mt-2 mb-2" style="width:15%;" type="submit" id="add_sample">Desa</button>
+                    </div>
+                  </div>
+              </div>
+            </form>
+          </div>
+
+          <div id="new_sample" class="modal fade">
             <form action="/create_petition" method="POST" enctype="multipart/form-data" id="create_petition">
               <div class="modal-dialog modal-lg">
                 <div class="modal-content">
                   <div class="modal-header" style="background-color:rgb(248, 248, 248);">
-                    <h4 class="modal-title" id="modal_new_sample">Nova mostra</h4>
+                    <h4 class="modal-title" id="modal_new_sample">Nova petició</h4>
                     <button type="button" class="close" data-dismiss="modal" aria-label="Close">
                       <span aria-hidden="true">&times;</span>
                     </button>
@@ -118,7 +203,7 @@
                         <h6><b>Data d'extracció</b></h6>
                         <div class="form-group">
                           <div id="datepicker" data-provide="datepicker">
-                            <input class="form-control" name="Date" type="date" value="" id="example-date-input">
+                            <input class="form-control" name="Date" type="date" value="" id="new_petition_date">
                             <div class="input-group-addon">
                                 <span class="glyphicon glyphicon-th"></span>
                             </div>
@@ -220,69 +305,110 @@
                         <input type="text" name="Billing_unit" class="form-control" id="billing_unit" >
                       </div>
                     </div>
-
                     </div>
                     <div class="d-flex justify-content-center align-items-center mt-5">
                       <button class="btn btn-primary mt-2 mb-2" style="width:15%;" type="submit" id="add_sample">Envia</button>
                     </div>
-
                   </div>
               </div>
             </form>
           </div>
-
         </div>
       </div>
   </div>
 </div>
 {% block script %}
  <script>
-    $(document).ready(function() {
-        $("#submit_analysis").click(function() {
-            // disable button
-            $(this).prop("disabled", true);
-            // add spinner to button
-            $(this).html(
-                `<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Uploading...`
-            );
-        });
-    });
-    $.ajax({
-  xhr: function() {
-    var xhr = new window.XMLHttpRequest();
 
-    xhr.upload.addEventListener("progress", function(evt) {
-      if (evt.lengthComputable) {
-        var percentComplete = evt.loaded / evt.total;
-        percentComplete = parseInt(percentComplete * 100);
-        console.log(percentComplete);
 
-        if (percentComplete === 100) {
+   function updatePetition(event) {
+    let petition_id = event.parentElement.parentElement;
 
+    let all_fields = petition_id.getElementsByTagName("td");
+    let hidden_fields =  petition_id.getElementsByTagName("input");
+    console.log(all_fields) 
+    let petition_div = document.getElementById("edit_petition");
+    
+    for (let i = 0;i<all_fields.length;i++) {
+        td = all_fields[i]
+        console.log(td.id)
+
+        if (td.id == "tumour_origin") {
+          let petition_tumour_origin = petition_div.querySelector("#edit_origin_tumor");
+          petition_tumour_origin.value = td.innerText;
         }
 
-      }
-    }, false);
+        if (td.id == "petition_id") {
+          let petition_name_div = petition_div.querySelector("#edit_petition_name");
+          petition_name_div.innerText = `Petition_${td.innerText}`;
+        }
+        if (td.id == "ap_code") {
+          let petition_ap_code = petition_div.querySelector("#edit_ap_code");
+          petition_ap_code.value = td.innerText;
+        }
+        if (td.id == "hc_code") {
+          let petition_hc_code = petition_div.querySelector("#edit_hc_code");
+          petition_hc_code.value = td.innerText;
+        }
+        if (td.id == "cip_code") {
+          let petition_cip_code = petition_div.querySelector("#edit_cip_code");
+          petition_cip_code.value = td.innerText;
+        }
+        if (td.id == "tumor_pct") {
+          let petition_tumoral_pct = petition_div.querySelector("#edit_tumoral_pct");
+          petition_tumoral_pct.value = td.innerText;
+        }
+        if (td.id == "petition_date") {
+          myarr = td.innerText.split("/");
+          mydate = myarr[2]+"-"+myarr[1]+"-"+myarr[0];
 
-    return xhr;
-  },
-  url: posturlfile,
-  type: "POST",
-  data: JSON.stringify(fileuploaddata),
-  contentType: "application/json",
-  dataType: "json",
-  success: function(result) {
-    console.log(result);
-  }
-});
+          let petition_date = petition_div.querySelector("#edit_petition_date");
+          petition_date.value = mydate;
+          console.log(mydate)
+          console.log(petition_date);
 
-    //function input_filename() {
-    //    fil_input_label.innerHTML = input.files
-    //};
+        }
+        if (td.id == "medical_doctor") {
+          let medical_doctor = petition_div.querySelector("#edit_medical_doctor");
+          medical_doctor.value = td.innerText;
+        }
+        if (td.id == "billing_unit") {
+          let billing_unit = petition_div.querySelector("#edit_billing_unit");
+          billing_unit.value = td.innerText;
+        }
+    }
 
-     function filesize(elem) {
-        document.coocke = `filesize=${elem.files[0].size}`;
-     };
+    $('#edit_petition').modal('show'); 
+
+   }
+
+   function removePetition(event) {
+     let petition_id = event.parentElement.id;
+     let url = `remove_sample/${petition_id}`;
+     fetch(url,{
+       method: "POST"
+     })
+     .then((response) => response.json())
+     .then((data) => {
+       let alert_div = document.getElementById("alert_id");
+       let flag = "success";
+       if (data.status == 400) {
+         flag = "warning";
+       }
+       alert_div.innerHTML=
+       `<div class="alert alert-${flag} alert-dismissible fade show" role="alert">
+            <strong id="show_alert_title"></strong> <p id="show_alert_text">${data.info}</p>
+            <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+              <span aria-hidden="true">&times;</span>
+            </button>
+        </div>`;
+        alert_div.style.display = "block";
+
+     });
+   }
+
+
+
  </script>
 {% endblock %}
 

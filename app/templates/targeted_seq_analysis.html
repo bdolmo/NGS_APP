@@ -1,0 +1,388 @@
+{% extends "base.html" %}
+
+{% block body %}
+
+<div class="container-fluid rounded" style="background-color:white; width:75%">
+  <div class="row mt-5">
+    <div class="col">
+      <nav aria-label="breadcrumb ">
+        <ol class="breadcrumb mt-3">
+          <li style="color:black;" class="breadcrumb-item"><p class="m-0"><b>Panells: </b>  anàlisi de variants genètiques amb panells de gens de captura híbrida</p></li>
+        </ol>
+      </nav>
+    </div>
+  </div>
+
+    <div class="row">
+        <div class="col">
+            <!-- This is the Complete option form -->
+
+            <form action="/submit_ngs_analysis" method="POST" enctype="multipart/form-data" id="complete_form">
+                <div class="row mt-4">
+                    <div class = "col-sm">
+                        <div class="card card-body border-0 m-2" style="background-color:#f6f6f6">
+                            <div class="d-flex align-items-baseline">
+                                <div class="p-1">
+                                    <div class="numberCircle">1</div>
+                                </div>
+                                <div class="p-1">
+                                    <div><b>Penja els arxius FASTQ</b></div>
+                                </div>
+                            </div>
+                            <div class="input-group mb-1">
+                                <div class="input-group-prepend">
+                                    <span class="input-group-text">Selecciona</span>
+                                </div>
+                                <!-- Here is the input file type -->
+                                <div class="custom-file">
+                                    <input class="custom-file-input" onchange="showFilesToUpload();" type="file" name="fastqs" id="fastq_files" multiple required>
+                                    <label class="custom-file-label" id="fastqs_label" for="fastq_files"></label>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="card card-body border-0 m-2" style="background-color:#f6f6f6">
+                            <div class="d-flex align-items-baseline">
+                                <div class="p-1">
+                                    <div class="numberCircle">2</div>
+                                </div>
+                                <div class="p-1">
+                                    <div><b>(Opcional) Penja el fitxer de laboratori</b></div>
+                                </div>
+                            </div>
+                            <div class="input-group mb-3">
+                                <div class="input-group-prepend">
+                                    <span class="input-group-text">Selecciona</span>
+                                </div>
+                                <!-- Here is the input file type -->
+                                <div class="custom-file">
+                                    <input type="file" name="lab_file" class="custom-file-input" id="lab_file_id"  multiple accept="application/msexcel">
+                                    <label class="custom-file-label text-wrap" id="lab_file_label" for="lab_file_id" style="word-wrap:break-word";></label>
+                                    <div class="invalid-feedback">
+                                      Si us plau, selecciona un xlsx de laboratori
+                                   </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class = "col-sm">
+                        <div class="card card-body border-0 m-2" style="background-color:#f6f6f6">
+                            <div class="d-flex align-items-baseline">
+                                <div class="p-1">
+                                    <div class="numberCircle">3</div>
+                                </div>
+                                <div class="p-1">
+                                    <div><b>Panell de gens</b></div>
+                                </div>
+                            </div>
+                            <p>Selecciona un panell de gen predefinit o carrega un panell custom:</p>
+                            <br>
+                            <div>
+                            <!-- <b>Gencardio-Dx</b> -->
+                            <select class="custom-select" name="select_panel" id="select_panel" required>
+                                <option value="0" selected>Selecciona un panell</option>
+                              {% for panel_name in gene_panels %}
+                                <option value="{{ panel_name }}">{{ panel_name }}</option>
+                              {% endfor %}
+                            </select>
+                            <br><br>
+                            </div>
+                            <!-- <b>Custom panel</b>
+                            <div class="input-group mb-3">
+                                <div class="input-group-prepend">
+                                    <span class="input-group-text">Carrega arxiu BED</span>
+                                </div>
+                                <div class="custom-file">
+                                    <input type="file" class="custom-file-input" name="custom_bed" id="custom_bed">
+                                    <label class="custom-file-label" for="custom_bed"></label>
+                                </div>
+                            </div> -->
+                        </div>
+                    </div>
+                    <div class = "col-sm">
+                        <div class="card card-body border-0 m-2" style="background-color:#f6f6f6">
+
+                            <div class="d-flex align-items-baseline">
+                                <div class="p-1">
+                                    <div class="numberCircle">4</div>
+                                </div>
+                                <div class="p-1">
+                                    <div><b>Envia una anàlisi</b></div>
+                                </div>
+                            </div>
+                            <p>Introdueix un identificador d'anàlisi únic:</p>
+                            <br>
+                            <div class="input-group mb-3">
+                                <input type="text" class="form-control" name ="job_id" id="job_id" placeholder="Job ID" required>
+                            </div>
+                            <hr>
+                            <div class="accordion" id="AdvanceComplete" aria-expanded="false">
+                                <div class="card border-0" style="background-color:#f6f6f6">
+                                <div class="card-header" id="headingTwoTwo" style="background-color:#f6f6f6">
+                                <button class="btn btn-outline-info" type="button" data-toggle="collapse" data-target="#collapseTwoTwo" aria-expanded="false" aria-controls="collapseTwoTwo">
+                                    Opcions avançades
+                                </button>
+                                    <div id="collapseTwoTwo" class="collapse" aria-labelledby="headingTwoTwo" data-parent="#AdvanceComplete">
+                                      <div class="card-body">
+                                          <div class="form-group">
+                                              <b>SNV & INDEL calling:</b>
+                                              <br>
+                                              <div class="custom-control custom-checkbox custom-control-inline">
+                                                  <input type="checkbox" checked="checked" id="gatk" name="gatk" class="custom-control-input">
+                                                  <label class="custom-control-label active" for="gatk">GATK</label>
+                                              </div>
+                                              <div class="custom-control custom-checkbox custom-control-inline">
+                                                  <input type="checkbox" checked="checked" id="freebayes" name="freebayes" class="custom-control-input">
+                                                  <label class="custom-control-label active" for="freebayes">FreeBayes</label>
+                                              </div>
+                                              <br>
+                                              <br>
+                                              <fieldset>
+                                                  <b>CNV / SV calling:</b><br>
+                                                  <div class="custom-control custom-checkbox custom-control-inline">
+                                                      <input type="checkbox" id="cnvkit" name="cnvkit" class="custom-control-input">
+                                                      <label class="custom-control-label" for="cnvkit">CNVkit</label>
+                                                  </div>
+                                                  <div class="custom-control custom-checkbox custom-control-inline">
+                                                      <input type="checkbox" id="manta" name="manta" class="custom-control-input">
+                                                      <label class="custom-control-label" for="manta">Manta</label>
+                                                  </div>
+                                              </fieldset>
+                                              <br>
+                                              <b>Population databases:</b><br>
+                                              <div class="custom-control custom-checkbox custom-control-inline">
+                                                  <input type="checkbox" checked="checked" id="1KGenomes" name="1KGenomes" class="custom-control-input">
+                                                  <label class="custom-control-label active" for="1KGenomes">1KGenomes</label>
+                                              </div>
+                                              <div class="custom-control custom-checkbox custom-control-inline">
+                                                  <input type="checkbox" checked="checked" id="gnomad" name="gnomad" class="custom-control-input">
+                                                  <label class="custom-control-label active" for="gnomad">gnomAD v2.1</label>
+                                              </div>
+                                              <br>
+                                              <br>
+                                              <b><i>In silico</i> predictors:</b><br>
+                                              <div class="custom-control custom-checkbox custom-control-inline">
+                                                  <input type="checkbox" checked="checked"  id="sift" name="sift" class="custom-control-input">
+                                                  <label class="custom-control-label active" for="sift">SIFT</label>
+                                              </div>
+                                              <div class="custom-control custom-checkbox custom-control-inline">
+                                                  <input type="checkbox" checked="checked" id="polyphen" name="polyphen" class="custom-control-input">
+                                                  <label class="custom-control-label active" for="polyphen">Polyphen</label>
+                                              </div>
+                                              <div class="custom-control custom-checkbox custom-control-inline">
+                                                  <input type="checkbox" checked="checked" id="mutationtaster" name="mutationtaster" class="custom-control-input">
+                                                  <label class="custom-control-label active" for="mutationtaster">MutationTaster</label>
+                                              </div>
+                                              <div class="custom-control custom-checkbox custom-control-inline">
+                                                  <input type="checkbox" checked="checked" id="provean" name="provean" class="custom-control-input">
+                                                  <label class="custom-control-label active" for="provean">PROVEAN</label>
+                                              </div>
+                                              <div class="custom-control custom-checkbox custom-control-inline">
+                                                  <input type="checkbox" checked="checked" id="revel" name="revel" class="custom-control-input">
+                                                  <label class="custom-control-label active" for="revel">REVEL</label>
+                                              </div>
+                                              <div class="custom-control custom-checkbox custom-control-inline">
+                                                  <input type="checkbox" id="cadd" name="cadd" class="custom-control-input">
+                                                  <label class="custom-control-label" for="cadd">CADD</label>
+                                              </div>
+                                              <div class="custom-control custom-checkbox custom-control-inline">
+                                                  <input type="checkbox" id="fathmm" name="fathmm" class="custom-control-input">
+                                                  <label class="custom-control-label" for="fathmm">FATHMM</label>
+                                              </div>
+                                              <div class="custom-control custom-checkbox custom-control-inline">
+                                                  <input type="checkbox" id="lrt" name="lrt" class="custom-control-input">
+                                                  <label class="custom-control-label" for="lrt">LRT</label>
+                                              </div>
+                                              <div class="custom-control custom-checkbox custom-control-inline">
+                                                  <input type="checkbox" id="eigen" name="eigen" class="custom-control-input">
+                                                  <label class="custom-control-label" for="eigen">Eigen</label>
+                                              </div>
+                                              <div class="custom-control custom-checkbox custom-control-inline">
+                                                  <input type="checkbox" id="mutpred" name="mutpred" class="custom-control-input">
+                                                  <label class="custom-control-label" for="mutpred">MutPred</label>
+                                              </div>
+                                              <div class="custom-control custom-checkbox custom-control-inline">
+                                                  <input type="checkbox" id="metasvm" name="metasvm" class="custom-control-input">
+                                                  <label class="custom-control-label" for="metasvm">MetaSVM</label>
+                                              </div>
+                                          </div>
+                                      </div>
+                                    </div>
+                                </div>
+                                </div>
+                                <hr>
+                                <button class="btn btn-primary mb-2" type="submit" name= "submit_analysis" id="submit_analysis">Envia</button>
+                                <button class="btn btn-secondary mb-2" type="reset">Reset</button>
+                            </div>
+
+                            <div class="modal" tabindex="-1" role="dialog" id="process" aria-hidden="true" style="background-color:rgba(0, 0, 0, 0.25);display:none;">
+                              <div class="modal-dialog modal-dialog-centered" role="document">
+                                <div class="modal-content">
+                                  <div class="modal-header">
+                                    <h5 class="modal-title" id ="progress-header">Enviant arxius...</h5>
+                                  </div>
+                                  <div class="modal-body">
+                                    <div class="progress">
+                                        <div class="progress-bar progress-bar active bg-success" role="progressbar" aria-valuemin="0" aria-valuemax="100" style=""></div>
+                                    </div>
+                                  </div>
+                                  <div class="modal-footer">
+                                  </div>
+                                </div>
+                              </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+
+
+                <div class = "container" style="width:35%; float:right;">
+                    {% with messages = get_flashed_messages(with_categories=true) %}
+                    {% if messages %}
+                    {% for category, message in messages %}
+                    <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
+                        <span>{{ message }}</span>
+                          <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+                            <span aria-hidden="true">&times;</span>
+                          </button>
+                          <br>
+                    </div>
+                    {% endfor %}
+                    {% endif %}
+                    {% endwith %}
+                </div>
+            </form>
+        </div>
+    </div>
+    <div class="row">
+        <div class = "col">
+          <span id="fastq_list" class="rounded" style="border:1px dashed grey;background-color:azure;display:none;">
+          </span>
+        </div>
+        <div class = "col">
+          <div class = "container" id="fastq_error_msg" style="width:100%;display:none;">
+              <div class="alert alert-warning alert-dismissible fade show" role="alert">
+                  <span>S'han trobat arxius no compatibles amb el format FASTQ. Si us plau, torna a seleccionar les mostres amb el format FASTQ (suffix acabat en fastq.gz o fq.gz).</span>
+                    <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+                      <span aria-hidden="true">&times;</span>
+                    </button>
+                    <br>
+              </div>
+          </div>
+        </div>
+    </div>
+</div>
+{% block script %}
+
+<script>
+
+  $('#fastq_files').on('change',function(){
+      //get the file name
+      var fileName = $(this).val();
+      //replace the "Choose a file" label
+      $(this).next('.custom-file-label').html(fileName);
+  })
+
+  $('#lab_file_id').on('change',function(){
+      //get the file name
+      var fileName = $(this).val();
+      //replace the "Choose a file" label
+      $(this).next('.custom-file-label').html(fileName);
+  })
+
+  function validFastq(filename) {
+    if (filename.includes(".fastq.gz")) {
+      return true;
+    }
+    else if (filename.includes(".fq.gz")) {
+      return true;
+    }
+    else {
+      return false;
+    }
+  }
+
+  function showFilesToUpload() {
+    var fastqInput = document.getElementById("fastq_files");
+    var fastqList = document.getElementById("fastq_list");
+    fastqList.style.display = 'block';
+
+    // var children = '<h6 class="card-title mt-2" style="padding-left:15px;"><b>Fitxers seleccionats</b></h6>';
+    var children = "";
+    children += '<ul style="margin-top:15px;list-style-type:none;padding-left:15px;columns:2;-webkit-columns:2;-moz-columns:2;">'
+    var num_fastq = 0;
+    var is_ok = true
+    for (var i = 0; i < fastqInput.files.length; ++i) {
+        var fastq_name = fastqInput.files.item(i).name;
+        if (validFastq(fastq_name)) {
+          num_fastq++;
+          children += '<li ><i class="fas fa-check" style="color:green;"></i> ' + fastqInput.files.item(i).name + ' </li>';
+        }
+        else {
+          children += '<li ><i class="fas fa-times" style="color:red;"></i> ' +  fastqInput.files.item(i).name + ' </li>';
+          is_ok = false
+        }
+    }
+    var submit_button = document.getElementById("submit_analysis");
+    var fastq_error_msg = document.getElementById("fastq_error_msg");
+    if (!is_ok) {
+      submit_button.style.pointerEvents = "none";
+      submit_button.classList.add("disabled");
+      fastq_error_msg.style.display = "block";
+    }
+    else {
+      submit_button.style.pointerEvents = "auto";
+      submit_button.classList.remove("disabled");
+      fastq_error_msg.style.display = "none";
+    }
+    children += '</ul>'
+    fastqList.innerHTML = children + '<h6 class="card-title mt-2 pl-4"><b>FASTQs trobats:</b> ' + num_fastq + ' </h6>';
+  }
+
+  $('#complete_form').on('submit', function(e){
+      e.preventDefault();
+      var form_data = $('#complete_form')[0];
+      var formData = new FormData(form_data);
+
+      if( document.getElementById("fastq_files").files.length > 0 ){
+        $("#process").show();
+      }
+
+      $.ajax({
+          xhr: function() {
+              var xhr = new window.XMLHttpRequest();
+              xhr.upload.addEventListener("progress", function(evt) {
+                  if (evt.lengthComputable) {
+                      var percentComplete = Math.floor(((evt.loaded / evt.total) * 100));
+                      $(".progress-bar").width(percentComplete + '%');
+                      $(".progress-bar").html(percentComplete+'%');
+                      if (percentComplete == 100) {
+                        $("#progress-header").html("Copiant arxius...");
+                      }
+                  }
+              }, false);
+              return xhr;
+          },
+          type: 'POST',
+          processData:false,
+          contentType:false,
+          url: '/submit_ngs_analysis',
+          data: formData,
+          success: function() {
+            window.location.href = "status";
+          },
+          error: function() {
+            window.location.href = "targeted_seq_analysis";
+          },
+          beforeSend: function(){
+              $(".progress-bar").width('0%');
+          },
+      });
+  });
+
+
+ </script>
+{% endblock %}
+
+{% endblock body %}

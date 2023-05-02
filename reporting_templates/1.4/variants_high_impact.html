@@ -1,0 +1,193 @@
+<!-- <p style="font-size:14px;page-break-inside: auto;"><b>ALTRES VARIANTS D'ALT IMPACTE</b></p> -->
+<p style="page-break-inside: auto"></p>
+
+<!-- {% if low_concentration %}
+<div class="row" style="background-color:#ffb2b2;border-radius: 5px;">
+ <p style="font-size:12px;display:inline;">
+
+  <b style="color:red;margin-left:3px;margin-right:3px;font-size:15px;">!</b>
+  Els valors de concentració de la mostra es troben per sota dels valors mínims requerits
+ </p>
+</div>
+<br>
+{% endif %} -->
+
+{% if is_substitute %}
+<div class="row" style="background-color:#fff3cd ;border-radius: 5px;">
+ <p style="font-size:12px;display:inline;">
+  <b style="color:black;margin-left:3px;margin-right:3px;font-size:15px;">!</b>
+  Aquest informe substitueix l'informe {{ latest_report_pdf_name }} emès en data {{ substituted_date }}
+ </p>
+</div>
+{% endif %}
+
+{% if relevant_variants|length == 0 %}
+  <div style="margin:0 auto;margin-bottom:5px">
+    <p style="font-size:14px;"><b> VARIANTS AMB EVIDÈNCIA CLÍNICA O POTENCIALMENT PATOGÈNIQUES</b></p>
+    <p style="font-size:12px;"> No s'han detectat variants amb evidència clínica o potencialment patogèniques</p>
+  </div>
+{% else %}
+<table style="width:100%;margin:0 auto; table-layout: fixed;border:none; border-collapse: collapse;border: none;position:relative;top:30px;" >
+    <caption style="font-size:14px;margin-bottom:5px"><b> VARIANTS AMB EVIDÈNCIA CLÍNICA O POTENCIALMENT PATOGÈNIQUES</b></caption>
+  <tr style="color:black;background-color:#e6e6e6;font-size:12px;padding:0px;margin:0px;border: none;">
+    <th style="padding:5px;color:white;background-color:#123279;font-size:15px;font-family: arial, sans-serif;"> GEN </th>
+    <th style="padding:5px;color:white;background-color:#123279;font-size:15px;font-family: arial, sans-serif;"> VARIANT</th>
+    <th style="padding:5px;color:black;background-color:#dbe9ec;font-size:12px;font-family: arial, sans-serif;"> Detalls</th>
+  </tr>
+
+{% for var in relevant_variants %}
+
+  {% set mark_depth = "" %}
+  {% set mark_vaf = "" %}
+  {% set mark_read_support = "" %}
+
+  {% set accredited = "" %}
+  {% set accreditation_class = "" %}
+  {% set accreditation_class = "PASS" %}
+  {% set var_phrase = "*" %}
+  {% if (var.allele_frequency|float < 0.05) %}
+    {% set var_phrase = var_phrase + " VAF < 5%" %}
+    {% set accreditation_class = "FAIL" %}
+    {% set mark_vaf = "1" %}
+  {% endif %}
+  {% if (var.read_support|int < 4) %}
+    {% set var_phrase = var_phrase + "< 4 reads suportant la variant" %}
+    {% set accreditation_class = "FAIL" %}
+    {% set mark_read_support = "1" %}
+  {% endif %}
+  {% if (var.depth|int < 100) %}
+    {% set var_phrase = var_phrase + "profunditat < 100X" %}
+    {% set accreditation_class = "FAIL" %}
+    {% set mark_depth = "1" %}
+  {% endif %}
+
+
+  <tr style="background-color:#f0f4f8;border-bottom: 1pt solid lightgrey;">
+    <td style="background-color:white;">
+        <b style="font-size:15px;margin:0px 0px 2px 0px;"><i>{{ var.gene }} </i></b><br>
+        <p style="margin:0px;margin:0px 0px 2px 0px;">{{ var.enst_id }}</p>
+        {% if var.intron == "." %}
+          <p style="margin:0px;">Exó: {{ var.exon }}</p>
+        {% else %}
+          <p style="margin:0px;">Intró: {{ var.intron }}</p>
+        {% endif %}
+    </td>
+    <td style="background-color:white;">
+         <div class="row" style="margin-bottom:0px;">
+
+           <div class="col" style="width:75%;font-size:11px">
+             {% set hgvsp = var.hgvsp %}
+             {% if var.hgvsp != "." %}
+               {% set hgvsp = hgvsp | replace("p.","p.(") %}
+               {% set hgvsp = hgvsp + ")" %}
+             {% endif %}
+             <p style="margin:0px;font-size:11px"><b>{{ hgvsp }}</b></p>
+             <p style="margin:0px;font-size:11px">{{ var.hgvsc }}</p>
+             <p style="margin:0px;font-size:11px">{{ var.hgvsg }}</p>
+             <p style="margin:0px;font-size:11px">Tipus: {{ var.variant_type }}</p>
+           </div>
+           <div class="col" style="width:25%;">
+             {% set tier_color = "" %}
+             {% if var.tier_catsalut == "1" %}
+               {% set tier_color = "#8b0000" %}
+             {% endif %}
+             {% if var.tier_catsalut == "2" %}
+               {% set tier_color = "#6B8E23" %}
+             {% endif %}
+             {% if var.tier_catsalut == "3" %}
+               {% set tier_color = "#20B2AA" %}
+             {% endif %}
+             {% if var.tier_catsalut != "None" %}
+             <button style="padding:3px;font-size:12px;border-radius:15px;background-color:{{tier_color}};color:white;">
+                 Tier {{ var.tier_catsalut }}
+             </button>
+             {% endif %}
+           </div>
+
+         </div>
+         {% if accreditation_class == "FAIL" %}
+<!--            <div class="row" style="margin-bottom:0px;">
+             <div class="col" style="width:100%">
+              <p style="font-size:7px"><i>{{ var_phrase }}</i><p/>
+             </div>
+          </div> -->
+        {% endif %}
+    </td>
+    <td>
+        <div class="row" style="margin-bottom:0px;">
+          <div class="col" style="width:45%;font-size:11px">
+            {% set var_depth = var.depth %}
+            {% set var_read_support = var.read_support %}
+            {% if mark_depth %} 
+              {% set var_depth = "<b>"+ var.depth +"</b>" %}
+            {% endif %}
+            {% if mark_read_support %} 
+              {% set var_read_support = "<b>" + var.read_support + "</b>" %}
+            {% endif %}
+
+            <p style="margin:0px;">AD/DP: {{ var_read_support }}/{{ var_depth }}</p>
+          </div>
+          <div class="col" style="width:45%;font-size:11px">
+            <p style="margin:0px;">Max AF: {{ var.max_af }}</p>
+          </div>
+        </div>
+        <div class="row" style="margin-bottom:0px;">
+          <div class="col" style="width:45%;font-size:11px">
+            {% set var_vaf = var.allele_frequency %}
+            {% if mark_vaf %} 
+              {% set var_vaf = "<b>" + var.allele_frequency +"</b>" %}
+            {% endif %}
+            <p style="margin:0px;">VAF: {{ var_vaf }}</p>
+          </div>
+          <div class="col" style="width:45%;font-size:11px">
+            <p style="margin:0px;">Població: {{ var.max_af_pop }}</p>
+          </div>
+        </div>
+        <div class="row" style="margin-bottom:0px;">
+          <div class="col" style="width:100%;font-size:11px">
+            <p style="margin:0px;">Localització/Efecte: {{ var.consequence | replace("&",",") }}</p>
+          </div>
+        </div>
+    </td>
+  </tr>
+  <!-- <hr style="border-top: 1px solid lightgrey"> -->
+
+    <!-- <tr style="background-color:#f0f4f8;border: none;">
+    <th style="min-width:33%;max-width:33%;padding:5px;color:black;background-color:#dbe9ec;font-size:12px;font-family: arial, sans-serif;"> Teràpies</th>
+    <th style="min-width:33%;max-width:33%;padding:5px;color:black;background-color:#dbe9ec;font-size:12px;font-family: arial, sans-serif;"> Assajos Clínics</th>
+    <th style="min-width:33%;max-width:33%;padding:5px;color:black;background-color:#dbe9ec;font-size:12px;font-family: arial, sans-serif;"> Tipus de Tumor</th>
+  </tr>
+  <tr style="background-color:#f0f4f8;border: none;">
+    <td style="overflow-wrap: break-word;max-width: 1px;background-color:white;">
+      <div class="row" style="margin-bottom:0px;">
+        <div class="col" style="width:100%;font-size:11px">
+          <p> {{ var.therapies }}</p>
+        </div>
+      </div>
+    </td>
+    <td style="overflow-wrap: break-word;max-width: 1px;background-color:white;">
+      <div class="row" style="margin-bottom:0px;">
+        <div class="col" style="width:100%;font-size:11px">
+          <p style=""> {{ var.clinical_trials }}</p>
+        </div>
+      </div>
+    </td >
+    <td style="overflow-wrap: break-word;max-width: 1px;background-color:white;">
+      <div class="row" style="margin-bottom:0px;">
+        <div class="col" style="width:100%;font-size:11px">
+          <p style=""> {{ var.tumor_type }}</p>
+        </div>
+      </div>
+    </td>
+  </tr> -->
+
+<!-- <p style="page-break-inside: avoid" ></p>
+<p style="page-break-after: auto;"></p> -->
+
+{% endfor %}
+</table>
+<br>
+
+{% endif %}
+
+<!-- <p style="page-break-before: always" ></p> -->

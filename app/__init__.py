@@ -9,12 +9,15 @@ from wtforms import StringField,SubmitField,PasswordField,validators
 from wtforms.validators import InputRequired, Email, DataRequired
 from flask_login import LoginManager, UserMixin, login_user, login_required, logout_user, current_user
 from flask_mail import Mail
-from itsdangerous import TimedJSONWebSignatureSerializer as Serializer
+from itsdangerous.url_safe import URLSafeTimedSerializer as Serializer
+from flask_pymongo import PyMongo
 
 app = Flask(__name__)
 app.config.from_object("config.DevelopmentConfig")
 mail = Mail(app)
 CORS(app)
+
+# mongo = PyMongo(app)
 db = SQLAlchemy(app)
 
-from app import complete_analysis, petitions, user, results, management
+from app import panel_analysis, petitions, user, results, management, search, gene_panels

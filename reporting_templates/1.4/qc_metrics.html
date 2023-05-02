@@ -1,0 +1,120 @@
+<div class="row" style="width:100%;margin:0 auto;">
+  <div class="col" style="width:100%;margin:0px;color:#2c4fa1;">
+    <p style="font-size:15px;font-family: arial, sans-serif;"><img src="fourdot.png" alt="" style="width:16px;height:15px;">
+      <b>PARÀMETRES ASSAIG NGS</b>
+    </p>
+  </div>
+</div>
+
+<p style="font-size:12px;width:80%;margin:0 auto;"><b>Mètriques Generals</b></p>
+<hr style="margin:0px auto;border-width:1px;background-color:black;color:black;width:80%;margin:0 auto;">
+
+<table style="width:80%;margin:0 auto;">
+  <tr style="color:black;background-color:#e6e6e6;font-size:12px;padding:0px;margin:0px;">
+    <th> Reads totals (M)</th>
+    <th> Cobertura mitja</th>
+    <th> Enriquiment (%)</th>
+    <th> Reads duplicats (%)</th>
+  </tr>
+    {% set total_reads = summary_qc_dict['TOTAL_READS'] | int %}
+    <tr style="background-color:#f0f4f8;font-size:12px;">
+      <td style="padding:8px;">{{ (total_reads/1000000)|float|round(3) }} </td>
+      <td style="padding:8px;">{{ summary_qc_dict['MEAN_COVERAGE_TARGET'] }} </td>
+      <td style="padding:8px;">{{ summary_qc_dict['ROI_PERCENTAGE'] }} </td>
+      <td style="padding:8px;">{{ summary_qc_dict['PCT_PCR_DUPLICATES'] }} </td>
+    </tr>
+</table>
+<br>
+<br>
+<div class="row" style="width:80%;margin:0 auto;">
+  <div class="col" style="width:50%;">
+    <p style="font-size:12px;width:90%;margin:0 auto;"><b>Reads</b></p>
+    <hr style="margin:0px auto;border-width:1px;background-color:black;color:black;width:90%;margin:0 auto;">
+    <table style="width:90%;margin:0 auto;font-size:12px;">
+        <tr>
+          <td style="background-color:#e6e6e6;padding:8px;"><b>Reads totals (M)</b></td>
+          <td style="background-color:#f0f4f8;">{{ (total_reads/1000000)|float|round(3) }}</td>
+        </tr>
+        <tr>
+          {% set pct_mapped_reads = summary_qc_dict['PCT_MAPPED_READS'] %}
+          <td style="background-color:#e6e6e6;padding:8px;"><b>Reads mapejats (%)</b></td>
+          <td style="background-color:#f0f4f8;padding:8px;">{{ pct_mapped_reads }}</td>
+        </tr>
+        <tr>
+          {% set useful_reads = summary_qc_dict['TOTAL_USEFUL_READS']|int %}
+          <td style="background-color:#e6e6e6;padding:8px;"><b>Reads útils (M)</b></td>
+          <td style="background-color:#f0f4f8;padding:8px;">{{ (useful_reads/1000000)|float|round(3)}}</td>
+        </tr>
+        <tr>
+          <td style="background-color:#e6e6e6;padding:8px;"><b>Reads amb adaptadors</b></td>
+          <td style="background-color:#f0f4f8;padding:8px;">{{ summary_qc_dict['READS_WITH_ADAPTERS'] }}</td>
+        </tr>
+    </table>
+
+  </div>
+  <div class="col" style="width:50%;margin:0px auto;">
+    <p style="font-size:12px;width:90%;margin:0 auto;"><b>Bases</b></p>
+    <hr style="margin:0px auto;border-width:1px;background-color:black;color:black;width:90%;margin:0 auto;">
+    <table style="width:90%;margin:0 auto;font-size:12px;">
+        <tr>
+          <td style="background-color:#e6e6e6;padding:8px;"><b>Bases totals (M)</b></td>
+          <td style="background-color:#f0f4f8;padding:8px;">{{ (fastp_dict['summary']['after_filtering']['total_bases']/10e6)|round(3) }}</td>
+        </tr>
+        <tr>
+          <td style="background-color:#e6e6e6;padding:8px;"><b>Bases trimmed (%)</b></td>
+          <td style="background-color:#f0f4f8;padding:8px;">{{ fastp_dict['adapter_cutting']['adapter_trimmed_reads'] }}</td>
+        </tr>
+        <tr>
+          <td style="background-color:#e6e6e6;padding:8px;"><b>Bases q20 (%)</b></td>
+          <td style="background-color:#f0f4f8;padding:8px;">{{ 100*(fastp_dict['summary']['after_filtering']['q20_rate'])|float|round(3)}}</td>
+        </tr>
+        <tr>
+          <td style="background-color:#e6e6e6;padding:8px;"><b>Bases q30 (%)</b></td>
+          <td style="background-color:#f0f4f8;padding:8px;">{{100*(fastp_dict['summary']['after_filtering']['q30_rate'])|float|round(3) }}</td>
+        </tr>
+    </table>
+  </div>
+</div>
+
+<br>
+<br>
+<!-- <p style="font-size:12px;80%;margin:0 auto;"><b>Mètriques Generals</b></p>
+<hr style="margin:0 auto;border-width:1px;background-color:black;color:black;width:80%;"> -->
+
+<table style="width:80%;margin:0 auto;font-size:12px;">
+
+  <tr style="color:black;background-color:white;font-size:12px;padding:0px;margin:0px;">
+    <td style="border: 0px solid black;"rowspan="2"></td>
+    <th style="padding:0px;border: 0px solid black;" colspan="5" scope="colgroup">
+        Cutoff cobertura
+        <hr style="margin:0 auto;border-width:1px;background-color:black;color:black;width:100%;">
+    </th>
+  </tr>
+
+  <tr style="color:black;background-color:#e6e6e6;font-size:12px;padding:0px;margin:0px;">
+    <!-- <th style="background-color:white;border: 0px solid black;">&nbsp;</th> -->
+    <th>1X</th>
+    <th>10X</th>
+    <th>20X</th>
+    <th>30X</th>
+    <th>100X</th>
+  </tr>
+    <tr style="background-color:#f0f4f8;">
+      <td style="background-color:#e6e6e6;padding:8px;"><b>Call Rate (%)</b></td>
+      <td style="padding:8px;">{{ summary_qc_dict['CALL_RATE']['1X'] }} </td>
+      <td style="padding:8px;">{{ summary_qc_dict['CALL_RATE']['10X'] }} </td>
+      <td style="padding:8px;">{{ summary_qc_dict['CALL_RATE']['20X'] }} </td>
+      <td style="padding:8px;">{{ summary_qc_dict['CALL_RATE']['30X'] }} </td>
+      <td style="padding:8px;">{{ summary_qc_dict['CALL_RATE']['100X'] }} </td>
+    </tr>
+    <tr style="background-color:#f0f4f8;">
+      <td style="background-color:#e6e6e6;padding:8px;"><b>Exons no coberts</b></td>
+      <td style="padding:8px;">{{ summary_qc_dict['LOST_EXONS']['total']['1X'] }} </td>
+      <td style="padding:8px;">{{ summary_qc_dict['LOST_EXONS']['total']['10X'] }} </td>
+      <td style="padding:8px;">{{ summary_qc_dict['LOST_EXONS']['total']['20X'] }} </td>
+      <td style="padding:8px;">{{ summary_qc_dict['LOST_EXONS']['total']['30X'] }} </td>
+      <td style="padding:8px;">{{ summary_qc_dict['LOST_EXONS']['total']['100X'] }} </td>
+    </tr>
+
+</table>
+<p style="page-break-before: always"></p>

@@ -2,10 +2,41 @@
 
 {% block body %}
 
+
+
+
+
 <div class="d-flex justify-content-center">
 
-  <div class="container-fluid rounded" style="background-color:white; width:60%"> 
-    <div class = "container mt-3" style="width:100%; float:right;">
+  <div class="container-fluid rounded mt-4" style="background-color:white; width:60%">
+      <div class="stepper-wrapper" style="margin:0 auto;width:80%">
+        <div class="stepper-item current">
+          <div class="step-counter">1</div>
+          <div class="step-name active" >Nou panell</div>
+        </div>
+        <div class="stepper-item">
+          <div class="step-counter">2</div>
+          <div class="step-name inactive">Anotació Genòmica</div>
+        </div>
+        <div class="stepper-item">
+          <div class="step-counter">3</div>
+          <div class="step-name inactive">Selecció Gen-Isoforma</div>
+        </div>
+        <div class="stepper-item">
+          <div class="step-counter">4</div>
+          <div class="step-name inactive">Regions d'anàlisi</div>
+        </div>
+
+        <!-- <div class="stepper-item">
+          <div class="step-counter">5</div>
+          <div class="step-name inactive">Subpanells</div>
+        </div> -->
+        <div class="stepper-item">
+          <div class="step-counter">5</div>
+          <div class="step-name inactive">Finalitza</div>
+        </div>
+    </div>
+    <div class="container mt-3" style="width:100%; float:right;">
       {% with messages = get_flashed_messages(with_categories=true) %}
       {% if messages %}
           {% for category,message in messages %}
@@ -14,211 +45,88 @@
               <button type="button" class="close" data-dismiss="alert" aria-label="Close">
                   <span aria-hidden="true">&times;</span>
               </button>
-              <br>          
+              <br>
           </div>
-          {% endfor %}                                       
+          {% endfor %}
       {% endif %}
       {% endwith %}
     </div>
-    <div class="card card-body border-0 mt-3" style="background-color:rgb(248, 248, 248);">
-     <form action="{{ url_for('create_panel')}} " method="POST" enctype="multipart/form-data" id="update_panel">
-      <h2 class="card-title">Crea un nou panell de gens</h2>
-      <hr>
-      <div class="row">
-        <div class="col-3">
-            <div style="width:100%;">
-                <label for="panel_name"><b>Panell:</b></label>
-                <div class="input-group mb-3">
-                    <input type="text" value="" name="panel_name" class="form-control" required></input>
-                    <div class="invalid-feedback">
-                        Es requreix un nom!
-                    </div>
-                </div>
+    <div class="card card-body border-0 mt-3" style="margin:0 auto;width:70%;background-color:rgb(248, 248, 248);">
 
-             </div>
+     <form action="{{ url_for('panel_summary')}} " method="POST" enctype="multipart/form-data" id="update_panel">
+       <h2 class="card-title">Nou panell</h2>
+       <hr>
+
+      <div class="row">
+        <div class="col-6">
+           <div style="width:100%;margin:0 auto;">
+              <label for="panel_id1"><b>Nom panell:</b></label>
+              <div class="input-group mb-3">
+                  <input type="text" value="" name="panel_name" class="form-control" required></input>
+                  <div class="invalid-feedback">
+                      Es requereix un nom!
+                  </div>
+              </div>
+           </div>
         </div>
-        <div class="col-2">
-            <div style="width:100%;">
+
+        <div class="col-6">
+          <div style="width:100%;margin:0 auto;">
                 <label for="panel_version"><b>Versió:</b></label>
                 <div class="input-group mb-3">
                     <input type="text" value="" name="panel_version" class="form-control" required></input>
                 </div>
             </div>
         </div>
-        <div class="col-7">
-            <label for="panel_name"><b>Arxiu BED</b></label>
+
+      </div>
+      <div class="row">
+        <div class="col">
+            <div style="width:100%;margin:0 auto;">
+                <label for="panel_id1"><b>Id1:</b></label>
+                <div class="input-group mb-3">
+                    <input type="text" value="" name="panel_ext1_id" class="form-control"></input>
+                    <div class="invalid-feedback">
+                      Es requereix un nom!
+                    </div>
+                </div>
+             </div>
+        </div>
+        <div class="col">
+            <div style="width:100%;">
+                <label for="panel_id1"><b>Id2:</b></label>
+                <div class="input-group mb-3">
+                    <input type="text" value="" name="panel_ext2_id" class="form-control"></input>
+                    <div class="invalid-feedback">
+                      Es requereix un nom!
+                    </div>
+                </div>
+             </div>
+        </div>
+      </div>
+
+
+      <div class="row mt-3">
+
+        <div class="col">
+            <label for="panel_name"><b>Regions de captura (BED)</b></label>
             <div class="input-group mb-3">
                 <div class="custom-file">
-                    <input oninput="filesize(this);" type="file" name="panel_bed" class="custom-file-input" id="panel_bed" lang="ca">
+                    <input  type="file" name="panel_bed" class="custom-file-input" id="panel_bed" lang="ca">
                     <label class="custom-file-label" id="panel_label" for="inputGroupFile01">Selecciona un fitxer BED</label>
                 </div>
             </div>
-        </div>        
+        </div>
       </div>
-      <hr>
-       <div class="row">
-            <div class="col">
-              <h6><b>Versió del genoma</b></h6>
-              <div class="custom-control custom-radio custom-control-inline">
-                  <div class="custom-control custom-radio custom-control-inline">
-                    <input type="radio" class="custom-control-input" name="genome_version" value="1" id="hg19" checked>
-                    <label class="custom-control-label" for="hg19">
-                        hg19
-                    </label>
-                  </div>
-                  <div class="custom-control custom-radio custom-control-inline">
-                    <input type="radio" class="custom-control-input" name="genome_version" value="1" id="hg38">
-                    <label class="custom-control-label" for="hg38">
-                        hg38
-                    </label>
-                  </div>
-              </div>
-            </div>
-            <div class="col">
-                <h6><b>Anàlisi de variants</b></h6>
-                <div class="custom-control custom-radio custom-control-inline">
-                    <input type="radio" class="custom-control-input" name="variant_analysis" value="1" id="germline" checked>
-                    <label class="custom-control-label" for="germline">
-                        Germinal
-                    </label>
-                  </div>
-                <div class="custom-control custom-radio custom-control-inline">
-                    <input type="radio" class="custom-control-input" name="variant_analysis" value="2" id="somatic">
-                    <label class="custom-control-label" for="somatic">
-                        Somàtic
-                    </label>
-                </div>                         
-            </div>
-            <div class="col">
-                <h6><b>Llengua de l'informe</b></h6>
-                <div class="custom-control custom-radio custom-control-inline">
-                    <input type="radio" class="custom-control-input" name="report_lang" value="1" id="catalan" checked>
-                    <label class="custom-control-label" for="catalan">
-                        Català
-                    </label>
-                </div>
-                <div class="custom-control custom-radio custom-control-inline">
-                    <input type="radio" class="custom-control-input" name="report_lang" value="2" id="english">
-                    <label class="custom-control-label" for="english">
-                        Anglès
-                    </label>
-                </div>
-            </div>
-       </div>
-       <hr>
-       <div class="row mt-2">
-            <div class="col">
-                <div><b>Relació Gen-Isoforma:</b></div>
-            </div>
-       </div>
-
-       <div class="row mt-2">
-        <div class="col">
-            <div><b>Opció 1:</b> Introdueix, per cada fila, un gen i una isoforma separats per comes:</div>
-            <div class="input-group mb-3">                
-                <textarea type="text" name="gene_isoform_text" class="form-control" placeholder="Exemple: AKT1,ENST00000349310" id="gene_isoform_text"></textarea>
-            </div>
-        </div>
-        <div class="col">
-            <div><b>Opció 2:</b> O bé adjunta un fitxer de text de gens i isoformes</div>
-            <div class="input-group mb-3">                
-                <div class="custom-file" style="width:50%;" >
-                    <input oninput="filesize(this);" type="file" name="gene_isoform_file" class="custom-file-input" id="gene_isoform_file" lang="ca">
-                    <label class="custom-file-label" id="gene_isoform_file" for="inputGroupFile01">Selecciona el fitxer de gens</label>
-                </div>
-            </div>
-        </div>
-        </div>
-       <div class="row mt-2">
-        <div class="col">
-            <div> Acceptant la següent opció, es seleccionarà la isoforma principal per a cada gen:</div>
-            <div class="card border-1 m-1 p-1" style="background-color:rgb(216, 216, 216)">
-                <div class="custom-control custom-checkbox">
-                    <input type="checkbox" name="canonical_isoform" class="custom-control-input" id="canonical_isoform">
-                    <label class="custom-control-label" for="canonical_isoform">Isoforma principal</label>
-                </div>
-            </div>
-        </div>
-        <div class="col">
-        </div>
-        <div class="col">
-        </div>
-       </div>
-       <hr>
-       <div class ="row mt-2"> 
-        <div class="col mb-3">
-            <h6><b>Mètriques QC:</b> estableix els paràmetres mínims de qualitat</h6>
-        </div>
-       </div>
-       <div class ="row mt-2">            
-        <div class="col">
-            <label style="color:rgb(78, 78, 78);" for=""><b><i>Call rate a:</i></b></label>
-            <div style="width:100%;">
-                <select class="custom-select" name="call_rate_filter">
-                    <option selected>30X</option>
-                    <option value="1">1X</option>
-                    <option value="2">10X</option>
-                    <option value="3">20X</option>
-                    <option value="4">30X</option>
-                    <option value="5">100X</option>
-                    <option value="6">200X</option>
-                </select>
-            </div>
-       </div>
-       <div class="col">
-        <label style="color:rgb(78, 78, 78);" for=""><b><i>% de bases</i></b></label>
-        <div class="input-group mb-3">
-            <input type="range" style="margin-left:10px;width:50%;" value="99" class="custom-range" name="call_rate_perc" min="0" max="100" oninput="this.nextElementSibling.value = this.value">
-            <input type="text" id="call_rate_perc" value="99" style="margin-left:10px;width:15%;">
-        </div>    
-        </div>
-       </div>
-       <div class ="row mt-2">            
-        <div class="col">
-            <label style="color:rgb(78, 78, 78);" for=""><b><i>Exons perduts a:</i></b></label>
-            <div style="width:100%;">
-                <select class="custom-select" name="lost_exons_filter">
-                    <option selected>30X</option>
-                    <option value="1">1X</option>
-                    <option value="2">10X</option>
-                    <option value="3">20X</option>
-                    <option value="4">30X</option>
-                    <option value="5">100X</option>
-                    <option value="6">200X</option>
-                </select>
-            </div>
-        </div>       
-        <div class="col">
-            <label style="color:rgb(78, 78, 78);" for=""><b><i>% d'exons</i></b></label>
-            <div class="input-group mb-3">
-                <input type="range" style="margin-left:10px;width:50%;" value="99" class="custom-range" name="lost_exons_perc" min="0" max="100" oninput="this.nextElementSibling.value = this.value">
-                <input type="text" id="lost_exons_perc" value="99" style="margin-left:10px;width:15%;">
-            </div>    
+       <div class="row" id="genes_textarea" style="display:none;">
+         <div>Introdueix, per cada fila, un gen i una isoforma separats per comes:</div>
+         <div class="input-group mb-3">
+             <textarea type="text" name="gene_isoform_text" class="form-control" placeholder="Exemple: AKT1,ENST00000349310" id="gene_isoform_text"></textarea>
          </div>
        </div>
-
-       <div class ="row mt-2">
-        <div class="col">
-            <div style="width:50%;">
-                <label style="color:rgb(78, 78, 78);" for="panel_name"><b><i>Nº de reads (Millions):</i></b></label>
-                <div class="input-group mb-3">
-                    <input type="text" value="2.5" name="number_reads" class="form-control"></input>
-                </div>
-            </div>
-        </div>   
-       </div>        
         <div class ="row mt-2">
             <div class="col">
-                <label style="color:rgb(78, 78, 78);" for=""><b><i>% Enrichment</i></b></label>
-                <div class="input-group mb-3">
-                    <input type="range" style="margin-left:10px;width:40%;" value="40%" class="custom-range" name="enrichment_perc" min="0" max="100" oninput="this.nextElementSibling.value = this.value">
-                    <input type="text" id="enrichment_perc" value="40%" style="margin-left:10px;width:7%;">
-                </div>    
-            </div>
-        </div>
-        <div class ="row mt-2">            
-            <div class="col">
-                <button class="btn btn-primary" type="submit"  href="">Desa canvis</button>
+                <button class="btn btn-primary float-right" type="submit" onsubmit="showAnnotationProgressModal();" href="">Següent</button>
             </div>
         </div>
      </form>
@@ -226,61 +134,26 @@
 
 </div>
 {% block script %}
-
  <script>
-    function updateTextInput(val) {
-        document.getElementById('range_selector').value=val; 
-    }
- </script>
 
- <script>
-    $(document).ready(function() {
-        $("#submit_analysis").click(function() {
-            // disable button
-            $(this).prop("disabled", true);
-            // add spinner to button
-            $(this).html(
-                `<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Uploading...`
-            );
-        });
-    });
-    $.ajax({
-  xhr: function() {
-    var xhr = new window.XMLHttpRequest();
 
-    xhr.upload.addEventListener("progress", function(evt) {
-      if (evt.lengthComputable) {
-        var percentComplete = evt.loaded / evt.total;
-        percentComplete = parseInt(percentComplete * 100);
-        console.log(percentComplete);
 
-        if (percentComplete === 100) {
-
+   $('#specify_genes').on('change',function(){
+        if ($(this).is(":checked")) {
+          $('#genes_textarea').show();
+       }
+        else {
+          $('#genes_textarea').hide();
         }
+   })
+   $('#panel_bed').on('change',function(){
+       //get the file name
+       var fileName = $(this).val();
+       //replace the "Choose a file" label
+       $(this).next('.custom-file-label').html(fileName);
+   })
 
-      }
-    }, false);
-
-    return xhr;
-  },
-  url: posturlfile,
-  type: "POST",
-  data: JSON.stringify(fileuploaddata),
-  contentType: "application/json",
-  dataType: "json",
-  success: function(result) {
-    console.log(result);
-  }
-});
-
-    //function input_filename() {
-    //    fil_input_label.innerHTML = input.files
-    //};
-
-     function filesize(elem) {
-        document.coocke = `filesize=${elem.files[0].size}`;
-     };
  </script>
-{% endblock %} 
+{% endblock %}
 
 {% endblock body %}

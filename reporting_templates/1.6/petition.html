@@ -1,0 +1,39 @@
+<div class="row" style="margin-top:0px;top:-1cm">
+  <div class="col" style="width:100%;margin:0px;">
+    <p style="margin-bottom:0px;font-size:15px;font-family: arial, sans-serif;color:#2c4fa1;"><img src="fourdot.png" alt="" style="width:16px;height:15px;">
+      <b>SERVEI GENÈTIC SOL·LICITAT</b>
+    </p>
+    <p style="margin-left:24px;margin-top:0px;font-size:12px;font-family: arial, sans-serif;"><b>Diagnòstic Genètic de Càncer de Pulmó mitjançant Seqüenciació Massiva (NGS)</b></p>
+  </div>
+</div>
+
+<div class="row">
+  <div class="col" style="width:100%;margin:0px;">
+    <p style="margin-bottom:0px;font-size:15px;font-family: arial, sans-serif;color:#2c4fa1;"><img src="fourdot.png" alt="" style="width:16px;height:15px;">
+      <b>SOSPITA CLÍNICA/DIAGNÒSTIC DE REFERÈNCIA</b>
+    </p>
+    <p style="margin-left:24px;margin-top:0px;font-size:12px;font-family: arial, sans-serif;"><b>Càncer de PULMÓ</b></p>
+  </div>
+</div>
+
+<div class="row" style="margin-bottom:0px;">
+  <div class="col" style="width:100%;margin:0px;color:#2c4fa1;margin-bottom:0px;">
+    <p style="font-size:15px;font-family: arial, sans-serif;"><img src="fourdot.png" alt="" style="width:16px;height:15px;">
+      <b>RESUM RESULTATS GENÈTICS</b>
+    </p>
+
+    {% if is_substitute %}
+      <span style="border-left: 4px solid rgba(0, 106, 182, 0.895);margin-left:22px;border-radius: 5px;margin-top:0px;font-size:12px;font-family: arial,sans-serif;padding:4px;color:black;background-color:#e8f4f8">
+        <span>&#9432;</span> Aquest informe substitueix l'informe {{ latest_report_pdf_name }} emès en data {{ substituted_date }}
+      </span>
+      <div style="margin-top:10px"></div>
+    {% endif %}
+
+    {% if lowqual_msg %}
+      <span style="border-left: 4px solid orange;margin-left:22px;border-radius: 5px;margin-top:0px;font-size:12px;font-family: arial,sans-serif;padding:4px;color:black;background-color:#fff8e7">
+        <span>&#9888;</span> {{ lowqual_msg }}
+      </span>
+      <div style="margin-top:40px"></div>
+    {% endif %}
+  </div>
+</div>

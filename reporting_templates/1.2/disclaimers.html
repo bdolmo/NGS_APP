@@ -1,0 +1,181 @@
+<div class="row" style="width:100%;margin:0 auto;">
+  <div class="col" style="width:100%;margin:0px;color:#2c4fa1;">
+    <p style="font-size:15px;font-family: arial, sans-serif;"><img src="fourdot.png" alt="" style="width:16px;height:15px;">
+      <b>GENS ANALITZATS</b>
+    </p>
+    <p style="font-size:12px;font-family: arial, sans-serif;color:black;text-align: justify;">
+    Aquest panell cobreix les regions codificants (+/-50bp) dels següents gens: <i> AKT1, AKT3, ALK, APC,
+    BRAF, BRCA1, BRCA2, CDKN2A, CTNNB1, DDR2, EGFR, ERBB2, ERBB3, ERBB4, FGFR1, FGFR2,
+    FGFR3, NF1, HRAS, JAK1, JAK2, KIT, KRAS, MAP2K1, MAP2K2, MET, MYC, NRAS, NTRK1, NTRK2,
+    NTRK3, PDGFRA, PIK3CA, POLD1, POLE, PTEN, RB1, RET, ROS1, SLC34A2, SOX2, STK11, TERT,
+    TP53</i>.
+    Addicionalment es cobreixen regions intròniques involucrades en fusions dels següents gens: <i>ALK, BRAF,
+    EGFR, FGFR1, FGFR2, FGFR3, RET, ROS1</i>.
+    </p>
+
+  </div>
+</div>
+
+<div class="row" style="width:100%;margin:0 auto;">
+  <div class="col" style="width:100%;margin:0px;color:#2c4fa1;">
+    <p style="font-size:15px;font-family: arial, sans-serif;"><img src="fourdot.png" alt="" style="width:16px;height:15px;">
+      <b>METODOLOGIA</b>
+    </p>
+    <pre style="font-size:12px;font-family: arial, sans-serif;color:black;text-align: justify;">
+    Requeriments mínims de la mostra per a ser processada:
+      • % Tumoral ≥ 10%.
+      • Mostra acreditada: concentració > 10ng/ul.
+      • Mostra no acreditada: concentració ≥ 4 ng/ul ≤ 10ng/ul.
+    </pre>
+    <p style="font-size:12px;font-family: arial, sans-serif;color:black;text-align: justify;">
+      El mètode d'enriquiment de regions d'interés es basa en el kit de captura hìbrida SureSelectXT
+      HS Target Enrichment System (Agilent Technologies). Es parteix d'un mínim de 50ng d'ADN de doble cadena.
+      Es fragmenta el DNA enzimàticament, es reparen i s'adenilen els extrems.
+      Seguidament es realitza la lligació dels adaptadors específics i l'amplificació
+      conjuntament amb l’indexing de cada mostra.
+      Després d’un punt de control (TapeStation), els fragments obtinguts s'hibriden amb les sondes de
+      RNA biotinilades corresponents a les regions d’interès del panell dissenyat.
+      Seguidament, es realitza la captura a partir de les boles de estreptavidina i
+      s’amplifica el DNA capturat. Finalment es realitza l’últim punt de control
+      per tal d’obtenir els perfils de llibreriaesperats i la molaritat de cada mostra.
+      Les llibreries resultants són multiplexades i seqüenciades en
+      l’instrument MiSeq (Illumina) a partir de la química basada en l’amplificació clonal
+      i la seqüenciació per síntesi.
+    </p>
+  </div>
+</div>
+
+<div class="row" style="width:100%;margin:0 auto;">
+  <div class="col" style="width:100%;margin:0px;color:#2c4fa1;">
+    <p style="font-size:15px;font-family: arial, sans-serif;"><img src="fourdot.png" alt="" style="width:16px;height:15px;">
+      <b>ANÀLISI I PRIORITZACIÓ DE VARIANTS</b>
+    </p>
+    <pre style="font-size:12px;font-family: arial, sans-serif;color:black;text-align: justify;">
+      L’anàlisi es realitza mitjançant el software d’anàlisi bioinformàtica desenvolupat i validat internament a
+      Gencardio Diagnostics.
+
+      <b style="font-size:13px;">Criteris d'acreditació qualitativa</b>
+
+       Es llisten les variants que quedin enmarcades en els següents nivells d'acreditació:
+
+        <b>i) Variants acreditades</b>
+            Es consideren únicament SNVs i Indels.
+            • VAF ≥ 5% (Obligatori).
+
+            Addicionalment s'ha de cumplir un dels següents criteris:
+            • Profunditat ≥ 100X.
+            • ≥ 4 Reads suportant la variant.
+
+        <b>ii) Variants no acreditades</b>
+            Les fusions i CNAs.
+            També, s'informarà de la presència d'altres variants que compleixin 2/3 dels criteris mencionats,
+            sense complir el criteri d'obligatorietat del VAF ≥ 5%.
+
+      <b style="font-size:13px;">Priorització de variants</b>
+
+      Per a facilitar la posterior classificació de variants somàtiques, es realitza una primera priorització de variants
+      en base a la informació obtinguda de les següents fonts sobre variants somàtiques:
+
+          • ClinVar (v2022-01).
+          • COSMIC (v91).
+          • CIViC (nighly release).
+          • ChimerDB (v4).
+
+      Només s'informa de la presència de variants rares (MAF < 1%).
+      L'abast d'aquest informe no inclou la classificació de variants en funció de cap guia específica.
+
+      Les variants es prioritzen de la següent forma:
+
+      <b>i) Variants amb evidència terapèutica o potencialment patogèniques:</b>
+          Les variants que compleixin els següents criteris:
+          • Variants/marcadors genètics indicats per la instrucció de tumors sòlids de CatSalut:
+             Determinacions del perfil genètic de tumors sòlids de l’adult. CatSalut, Juny 2021.
+          • Variants presents a CIViC amb els següents requeriments:
+             - Evidència acceptada (status “accepted”).
+             - Variant que confereixi sensibilitat o resistència a un determinat tractament.
+          • Variants localitzades en un hotspot: canvis exactes o en el mateix codó.
+          • Variants presents a ClinVar classificades com a Pathogenic o Likely Pathogenic.
+          • Variants missense amb un REVEL score > 0.75.
+          • Variants localitzades a la regió d’splicing.
+          • Variants localitzades o amb efectes potencialment disruptors a nivell proteic: frameshifts,
+             codons stop prematurs, pèrdua de condons d’inici/final.
+
+     <b>ii) Altres variants:</b>
+          En aquest apartat es llisten les altres variants detectades
+          que no apliquen per cap dels camps definits a l’apartat anterior.
+    </pre>
+  </div>
+</div>
+<p style="page-break-before: always" ></p>
+
+<div class="row" style="width:100%;margin:0 auto;">
+  <div class="col" style="width:100%;margin:0px;color:#2c4fa1;">
+    <p style="font-size:15px;font-family: arial, sans-serif;"><img src="fourdot.png" alt="" style="width:16px;height:15px;">
+      <b>LIMITACIONS TÈCNIQUES</b>
+    </p>
+    <p style="font-size:12px;font-family: arial, sans-serif;color:black;text-align: justify;">
+      La detecció de variants somàtiques es veu afectada per l'enriquiment de cèl·lula somàtica respecte la
+      població total cel·lular (germinal i somàtica). Es recomana un percentatge de cèl·lula somàtica superior al
+      10%. Les variants estructurals (fusions i altres) i CNAs es veuen encara més afectades per l’enriquiment clonal de la mostra.
+      No podem assegurar la seva detecció en mostres amb poca representació tumoral.
+    </p>
+  </div>
+</div>
+
+<div class="row" style="width:100%;margin:0 auto;">
+  <div class="col" style="width:100%;margin:0px;color:#2c4fa1;">
+    <p style="font-size:15px;font-family: arial, sans-serif;"><img src="fourdot.png" alt="" style="width:16px;height:15px;">
+      <b>DISPOSICIONS LEGALS</b>
+    </p>
+    <p style="font-size:12px;font-family: arial, sans-serif;color:black;text-align: justify;">
+      Gencardio Diagnostics recull la seva petició d’estudi genètic assumint que el consentiment informat ha estat
+      degudament presentat per l’entitat competent de manera clara, transparent i explícita, en compliment de la
+      disposición adicional decimoséptima de la LOPDGDD 3/2018 essent acceptada per l’interessat.
+      Les mostres biològiques i informació associada que ha estat cedida a Gencardio Diagnostics es custodiaran
+      i conservaran fins a la seva extinció seguint el que estableix la Llei 14/2007 d’Investigació Biomèdica.
+    </p>
+  </div>
+</div>
+
+<div class="row" style="width:100%;margin:0 auto;">
+  <div class="col" style="width:100%;margin:0px;color:#2c4fa1;">
+    <p style="font-size:15px;font-family: arial, sans-serif;"><img src="fourdot.png" alt="" style="width:16px;height:15px;">
+      <b>CERTIFICACIÓ</b>
+    </p>
+    <p style="font-size:12px;font-family: arial, sans-serif;color:black;text-align: justify;">
+      L'activitat del laboratori està sota el sistema general de qualitat ISO9001:2015.
+    </p>
+  </div>
+</div>
+<br>
+<br>
+<div class="row" style="width:100%;margin:0 auto;">
+  <div class="col" style="width:50%;">
+    <div class="row" style="width:100%;margin:0 auto;">
+      <p style="color:black;font-size:12px;font-family: arial, sans-serif;">Validat per:</p>
+      <div class="col" style="width:45%;">
+        <p style="color:black;font-size:12px;font-family: arial, sans-serif;">Dra. Mònica Coll Vidal</p>
+        <img src="firma_monica.png" alt="" style="width:60px;height:55px;">
+      </div>
+      <div class="col" style="width:45%;">
+        <p style="color:black;font-size:12px;font-family: arial, sans-serif;">Dra. Glòria Oliveras Serrat<p>
+        <img src="firma_gloria.png" alt="" style="width:60px;height:55px;">
+      </div>
+      <p style="color:black;font-size:12px;font-family: arial, sans-serif;">Girona, {{ sample_info.analysis_date }}</p>
+    </div>
+  </div>
+  <div class="col" style="width:50%;">
+    <div class="row" style="width:100%;margin:0 auto;">
+      <p style="color:black;font-size:12px;font-family: arial, sans-serif;">Autoritza l'emissió:</p>
+      <div class="col" style="width:50%;">
+        <p style="color:black;font-size:12px;font-family: arial, sans-serif;">Dr. Eugeni Lòpez Bonet<p>
+        <img src="firma_eugeni.png" alt="" style="width:60px;height:55px;">
+      </div>
+      <div class="col" style="width:50%;">
+        <p style="color:black;font-size:12px;font-family: arial, sans-serif;">Dra. Carmen Amalia Vázquez Dongo<p>
+        <img src="firma_carmen.png" alt="" style="width:60px;height:55px;">
+      </div>
+      <p style="color:black;font-size:12px;font-family: arial, sans-serif;">Girona, {{ sample_info.analysis_date }}</p>
+    </div>
+  </div>
+</div>

@@ -1,0 +1,33 @@
+<table style="width:100%;margin:0 auto;">
+  <caption>
+    <div class="row" style="width:100%;margin:0 auto;">
+      <div class="col" style="width:100%;margin:0px;color:#2c4fa1;">
+        <p style="font-size:15px;font-family: arial, sans-serif;color:black;">
+            <!-- <img src="fourdot.png" alt="" style="width:16px;height:15px;"> -->
+          <b>ALTERACIONS DE NÚMERO DE CÒPIA (CNAs)</b>
+        </p>
+      </div>
+    </div>
+  </caption>
+  <thead>
+
+  <tr style="color:white;background-color:#365c85;font-size:12px;padding:0px;margin:0px;">
+    <th> GENS</th>
+    <th> Ratio (log2)</th>
+    <th> N Còpies</th>
+    <th> N Regions afectades</th>
+    <th> Tipus</th>
+  </tr>
+  </thead>
+  <tbody>
+    {% for cna in cnas %}
+      <tr style="background-color:white;padding:5px;font-size:11px;">
+        <td style="padding:5px;" ><b><i>{{ cna.genes }} </i></b></td>
+        <td style="padding:5px;"> {{ cna.ratio }}</td>
+        <td style="padding:5px;">{{ cna.cn }}<br>
+        <td style="padding:5px;">{{ cna.qual }} </td>
+        <td style="padding:5px;">{{ cna.svtype }} </td>
+      </tr>
+    {% endfor %}
+  </tbody>
+</table>

@@ -28,7 +28,7 @@
       <div class="row">
         <div class="col-3">
             <div style="width:100%;">
-                <label for="panel_name"><b>Panell:</b></label>
+                <label for="panel_name"><b>Nom:</b></label>
                 <div class="input-group mb-3">
                     <input type="text" value="{{ panel_info.Panel }}" name="panel_name" class="form-control" ></input>
                 </div>
@@ -43,17 +43,47 @@
             </div>
         </div>
         <div class="col-7">
-            <label for="panel_name"><b>Arxiu BED</b></label>
+            <label for="panel_name"><b>BED de captura (chip)</b></label>
             <div class="input-group mb-3">
                 <div class="custom-file">
                     <input oninput="filesize(this);" type="file" name="panel_bed" class="custom-file-input" id="panel_bed" lang="ca">
-                    <label class="custom-file-label" id="panel_label" for="inputGroupFile01">{{ panel_info.Panel_bed }}</label>
+                    <label class="custom-file-label" id="panel_label" for="inputGroupFile01">{{ panel_info.Panel_bed}}</label>
                 </div>
             </div>
         </div>
       </div>
       <hr>
-       <div class="row">
+      <div class="row mt-2">
+        <h4 style="margin-left:15px;">Subpanells</h4>
+        <button class="" href="#" style="border:none;margin-left:20px;text-align:center;border-radius:4px;padding:6px 10px;color:white;background-color:#4CAF50;font-size:12px;">Nou</button>
+        <div class="container" id="" style="width:100%;">
+           <div class="row mt-2">
+             <div class="container-fluid pt-1 rounded mb-2 mt-3" style="width:100%">
+               <div class="card">
+                 <div class="card-body">
+                   <h5><a href="#"><b>ALL</b></a></h5>
+                   <small>Descripció: panell global</small>
+                   <div class=""><small><i>Última modificació: {{ panel_info.Last_modified }}</i></small></div>
+                 </div>
+               </div>
+              </div>
+            </div>
+
+            <div class="row">
+              <div class="container-fluid pt-1 rounded mb-3 mt-1" style="width:100%">
+                <div class="card">
+                  <div class="card-body">
+                    <h5><a href="#"><b>Melanoma</b></a></h5>
+                    <small>Descripció: Melanoma</small>
+                    <div class=""><small><i>Última modificació: {{ panel_info.Last_modified }}</i></small></div>
+                  </div>
+                </div>
+               </div>
+             </div>
+
+        </div>
+      </div>
+       <!-- <div class="row">
             <div class="col">
               <h6><b>Versió del genoma</b></h6>
               <div class="custom-control custom-radio custom-control-inline">
@@ -73,7 +103,7 @@
                   </div>
                 {% endif %}
                 {% if panel_info.Genome_version == "hg38" %}
-                  <div class="custom-control custom-radio custom-control-inline">
+                 <div class="custom-control custom-radio custom-control-inline">
                     <input type="radio" class="custom-control-input" name="genome_version" value="2" id="hg38" checked>
                     <label class="custom-control-label" for="hg38">
                         hg38
@@ -157,22 +187,22 @@
                 {% endif %}
 
             </div>
-       </div>
-       <hr>
+       </div> -->
+
+       <!-- <hr>
        <div class="row mt-2">
             <div class="col">
                 <div><b>Relació Gen-Isoforma:</b> mostra, afegeix o edita</div>
             </div>
        </div>
        <div class ="row mt-2">
-        <div class="col">
+       <div class="col">
             <a class="btn btn-outline-secondary"  data-toggle="collapse" href="#roi_container" role="button" aria-expanded="false" aria-controls="roi_container">
                 Veure llistat
             </a>
-        </div>
-
-       </div>
-       <div class="collapse" id="roi_container" style="width:100%;">
+       </div> -->
+       <!-- </div> -->
+       <!-- <div class="collapse" id="roi_container" style="width:100%;">
             <div class="row mt-2">
                 <div class="col" style="width:90%;">
                     <table id="roi_table" class="table table-striped table-bordered dt-responsive nowrap" style="width:100%;background-color:white;">
@@ -248,15 +278,15 @@
                     </table>
                 </div>
             </div>
-       </div>
-       <hr>
-
+       </div> -->
+       <!-- <hr>
        <div class ="row mt-2">
         <div class="col mb-3">
             <h6><b>Mètriques QC:</b> estableix els paràmetres mínims de qualitat</h6>
         </div>
-       </div>
-       <div class ="row mt-2">
+       </div> -->
+
+       <!-- <div class ="row mt-2">
         <div class="col">
             <label style="color:rgb(78, 78, 78);" for=""><b><i>Call rate a:</i></b></label>
             <div style="width:100%;">
@@ -278,9 +308,9 @@
             <input type="text" id="call_rate_perc" value="{{ panel_info.Call_rate_perc }}" style="margin-left:10px;width:15%;">
         </div>
         </div>
-       </div>
+       </div> -->
 
-       <div class ="row mt-2">
+       <!-- <div class ="row mt-2">
         <div class="col">
             <label style="color:rgb(78, 78, 78);" for=""><b><i>Exons perduts a:</i></b></label>
             <div style="width:100%;">
@@ -302,9 +332,9 @@
                 <input type="text" id="lost_exons_perc" value="{{ panel_info.Lost_exons_perc }}" style="margin-left:10px;width:15%;">
             </div>
          </div>
-       </div>
+       </div> -->
 
-       <div class ="row mt-2">
+       <!-- <div class ="row mt-2">
         <div class="col">
             <div style="width:50%;">
                 <label style="color:rgb(78, 78, 78);" for="panel_name"><b><i>Nº de reads (Millions):</i></b></label>
@@ -313,9 +343,9 @@
                 </div>
             </div>
         </div>
-       </div>
+       </div> -->
 
-        <div class ="row mt-2">
+        <!-- <div class ="row mt-2">
             <div class="col">
                 <label style="color:rgb(78, 78, 78);" for=""><b><i>% Enrichment</i></b></label>
                 <div class="input-group mb-3">
@@ -323,7 +353,9 @@
                     <input type="text" id="enrichment_perc" value="{{ panel_info.Enrichment_perc_filter }}" style="margin-left:10px;width:7%;">
                 </div>
             </div>
-        </div>
+        </div> -->
+
+
         <div class ="row mt-2">
             <div class="col">
                 <button class="btn btn-primary" type="submit"  href="">Desa canvis</button>

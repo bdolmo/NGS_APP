@@ -1,0 +1,93 @@
+<!-- <p style="font-size:14px;page-break-inside: auto;"><b>ALTRES VARIANTS D'ALT IMPACTE</b></p> -->
+
+{% if high_impact_variants|length == 0 %}
+  <div style="margin:0 auto;">
+    <p style="font-size:14px;"><b> ALTRES VARIANTS AMB EVIDÈNCIA CLÍNICA O POTENCIALMENT PATOGÈNIQUES</b></p>
+    <p style="font-size:12px;"> No s'han detectat variants amb evidència clínica o potencialment patogèniques</p>
+  </div>
+{% endif %}
+
+{% for var in high_impact_variants %}
+
+<table style="width:100%;margin:0 auto; table-layout: fixed;border:none; border-collapse: collapse;border: none;" >
+  {% if loop.index == 1 %}
+    <caption style="font-size:14px;"><b>ALTRES VARIANTS AMB EVIDÈNCIA CLÍNICA O POTENCIALMENT PATOGÈNIQUES</b></caption>
+  {% endif %}
+  <tr style="color:black;background-color:#e6e6e6;font-size:12px;padding:0px;margin:0px;border: none;">
+    <th style="padding:5px;color:white;background-color:#123279;font-size:15px;font-family: arial, sans-serif;"> GEN </th>
+    <th style="padding:5px;color:white;background-color:#123279;font-size:15px;font-family: arial, sans-serif;"> VARIANT</th>
+    <th style="padding:5px;color:black;background-color:#dbe9ec;font-size:12px;font-family: arial, sans-serif;"> Detalls</th>
+  </tr>
+  <tr style="background-color:#f0f4f8;border: none;">
+      <td style="background-color:white;">
+        <b style="font-size:15px;margin:0px 0px 2px 0px;"><i>{{ var.gene }} </i></b><br>
+        <p style="margin:0px;margin:0px 0px 2px 0px;">{{ var.enst_id }}</p>
+        <p style="margin:0px;margin:0px 0px 2px 0px;">Exó: {{ var.exon }}</p>
+       </td>
+      <td style="background-color:white;">
+        <p style="margin:0px;"><b>{{ var.hgvsp }}</b></p>
+        <p style="margin:0px;">{{ var.hgvsc }}</p>
+        <p style="margin:0px;">{{ var.hgvsg }}</p>
+        <p style="margin:0px;">Classe: {{ var.variant_type }}</p>
+
+      </td>
+      <td>
+        <div class="row" style="margin-bottom:0px;">
+          <div class="col" style="width:45%;font-size:11px">
+            <p style="margin:0px;">AD/DP: {{ var.read_support}}/{{ var.depth }}</p>
+          </div>
+          <div class="col" style="width:45%;font-size:11px">
+            <p style="margin:0px;">Max AF: {{ var.max_af }}</p>
+          </div>
+        </div>
+        <div class="row" style="margin-bottom:0px;">
+          <div class="col" style="width:45%;font-size:11px">
+            <p style="margin:0px;">VAF: {{ var.allele_frequency }}</p>
+          </div>
+          <div class="col" style="width:45%;font-size:11px">
+            <p style="margin:0px;">Població: {{ var.max_af_pop }}</p>
+          </div>
+        </div>
+        <div class="row" style="margin-bottom:0px;">
+          <div class="col" style="width:100%;font-size:11px">
+            <p style="margin:0px;">Localització/Efecte: {{ var.consequence }}</p>
+          </div>
+        </div>
+      </td>
+  </tr>
+  <tr style="background-color:#f0f4f8;border: none;">
+    <th style="min-width:33%;max-width:33%;padding:5px;color:black;background-color:#dbe9ec;font-size:12px;font-family: arial, sans-serif;"> Teràpies</th>
+    <th style="min-width:33%;max-width:33%;padding:5px;color:black;background-color:#dbe9ec;font-size:12px;font-family: arial, sans-serif;"> Assajos Clínics</th>
+    <th style="min-width:33%;max-width:33%;padding:5px;color:black;background-color:#dbe9ec;font-size:12px;font-family: arial, sans-serif;"> Tipus de Tumor</th>
+  </tr>
+  <tr style="background-color:#f0f4f8;border: none;">
+    <td style="overflow-wrap: break-word;max-width: 1px;background-color:white;">
+      <div class="row" style="margin-bottom:0px;">
+        <div class="col" style="width:100%;font-size:11px">
+          <p> {{ var.therapies }}</p>
+        </div>
+      </div>
+    </td>
+    <td style="overflow-wrap: break-word;max-width: 1px;background-color:white;">
+      <div class="row" style="margin-bottom:0px;">
+        <div class="col" style="width:100%;font-size:11px">
+          <p style=""> {{ var.clinical_trials }}</p>
+        </div>
+      </div>
+    </td >
+    <td style="overflow-wrap: break-word;max-width: 1px;background-color:white;">
+      <div class="row" style="margin-bottom:0px;">
+        <div class="col" style="width:100%;font-size:11px">
+          <p style=""> {{ var.tumor_type }}</p>
+        </div>
+      </div>
+    </td>
+  </tr>
+
+</table>
+<br>
+<!-- <p style="page-break-inside: avoid" ></p>
+<p style="page-break-after: auto;"></p> -->
+
+{% endfor %}
+<!-- <p style="page-break-before: always" ></p> -->

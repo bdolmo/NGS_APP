@@ -1,0 +1,214 @@
+<!DOCTYPE html>
+<html>
+<head lang="en">
+    <meta charset="UTF-8">
+    <title>{{ title }}</title>
+</head>
+<body>
+  
+  <!-- <div class='header'>
+    <div class="row">
+      <div class="col" style="margin:0px;color:white">
+        f
+      </div>
+      <div class="col" style="margin:0px;">
+        <p><b style="color:#2c4fa1;font-size:20px;">INFORME GENÈTIC</b></p>
+      </div>
+      <div class="col" style="margin:0px;">
+      <div style="color:#2c4fa1;text-align:right;">
+        <b>IDIBGI<br>
+        Edifici M2, Parc Hospitalari<br>
+        17190-Salt<br>
+        Tel. 872.98.70.87 ext. 63.</b>
+      </div>
+      </div>
+    </div>
+
+    <div style="border: 1px solid #eff1fe;background-color:#f9faff;padding: 5px 10px 5px 10px">
+      <div class="row">
+        <div class="col" style="margin:0px;">
+          <p style="font-size:8px;margin:0px;color:#2c4fa1;"><b>Codi pacient:</b> {{ sample_info.ext2_id }} </p>
+        </div>
+        <div class="col" style="margin:0px;">
+          <p style="font-size:8px;margin:0px;color:#2c4fa1;"><b>Tipus de mostra:</b> {{ sample_info.sample_type }}</p>
+        </div>
+        <div class="col" style="margin:0px;">
+          <p style="font-size:8px;margin:0px;color:#2c4fa1;"><b>Data d'anàlisi:</b> {{ sample_info.analysis_date }}</p>
+        </div>
+      </div>
+      <div class="row">
+        <div class="col" style="margin:0px;">
+          <p style="font-size:8px;margin:0px;color:#2c4fa1;"><b>Codi Lab:</b>  {{ sample_info.lab_id }}</p>
+        </div>
+        <div class="col" style="margin:0px;">
+          <p style="font-size:8px;margin:0px;color:#2c4fa1;"><b>Data de rebuda:</b>  {{ sample_info.extraction_date }}</p>
+        </div>
+        <div class="col" style="margin:0px;">
+          <p style="font-size:8px;margin:0px;color:#2c4fa1;"><b>Panell:</b>  {{ sample_info.panel }}</p>
+        </div>
+      </div>
+      <div class="row">
+        <div class="col" style="">
+          <p style="font-size:8px;margin:0px;color:#2c4fa1;"><b>Codi AP:</b>  {{ sample_info.ext1_id }}</p>
+        </div>
+        <div class="col" style="">
+          <p style="font-size:8px;margin:0px;color:#2c4fa1;"><b>Puresa tumoral (%):</b>  {{ sample_info.tumour_purity }}</p>
+        </div>
+        <div class="col" style="">
+          <p style="font-size:8px;margin:0px;color:#2c4fa1;"><b>Versió informe:</b>  {{ sample_info.report_version }}</p>
+        </div>
+      </div>
+    </div>
+    <hr style="border: 1px solid #e5e6eb;width:100%;">
+    <p style="text-aligh:justify;color:#2c4fa1;font-size:8px;">
+      <b>La Unitat de Genòmica i Medicina Personalitzada accepta la vostra petició d’estudi genètic
+        assumint que el consentiment informat ha estat degudament presentat per
+        competent de forma clara, transparent i explícita, en compliment de la disposició addicional
+        dissetena de la LOPDGDD 3/2018, essent acceptat per l’interessat
+      </b>
+    </p>
+  </div> -->
+
+<!-- <div>
+    <div class="row">
+      <div class="col" style="width:100%;margin:0px;">
+        <p style="margin-bottom:0px;font-size:15px;font-family: arial, sans-serif;color:#2c4fa1;"><img src="fourdot.png" alt="" style="width:18px;height:15px;">
+          <b>SERVEI GENÈTIC SOL·LICITAT</b>
+        </p>
+        <p style="margin-left:24px;margin-top:0px;font-size:12px;font-family: arial, sans-serif;"><b>GenOncology-Dx</b></p>
+      </div>
+    </div>
+
+    <div class="row">
+      <div class="col" style="width:100%;margin:0px;">
+        <p style="margin-bottom:0px;font-size:15px;font-family: arial, sans-serif;color:#2c4fa1;"><img src="fourdot.png" alt="" style="width:18px;height:15px;">
+          <b>SOSPITA CLÍNICA/DIAGNÒSTIC DE REFERÈNCIA</b>
+        </p>
+        <p style="margin-left:24px;margin-top:0px;font-size:12px;font-family: arial, sans-serif;"><b>Càncer de PULMÓ</b></p>
+      </div>
+    </div>
+
+    <div class="row">
+      <div class="col" style="width:100%;margin:0px;color:#2c4fa1;">
+        <p style="font-size:15px;font-family: arial, sans-serif;"><img src="fourdot.png" alt="" style="width:18px;height:15px;">
+          <b>RESUM RESULTATS GENÈTICS</b>
+        </p>
+      </div>
+    </div>
+
+    {% for var in actionable_variants %}
+
+    <div class="row" style="margin-bottom:0px;">
+      <div class="col" style="padding:5px;color:white;background-color:#123279;width:30%;font-size:15px;font-family: arial, sans-serif;">
+        <b>GEN</b>
+      </div>
+      <div class="col" style="padding:5px;color:white;background-color:#123279;width:30%;font-size:15px;font-family: arial, sans-serif;">
+        <b>VARIANT</b>
+      </div>
+      <div class="col" style="padding:5px;color:black;background-color:#dbe9ec;width:40%;font-size:15px;font-family: arial, sans-serif;">
+        Detalls
+      </div>
+    </div>
+    <div class="row" style="margin-top:0px;margin-bottom:0px;">
+      <div class="col" style="width:30%;font-size:11px">
+        <b style="font-size:15px"><i>{{ var.gene }} </i></b><br>
+        <p style="margin:0px;">{{ var.enst_id }}</p>
+        <p style="margin:0px;">Exon:{{ var.exon }}</p>
+      </div>
+      <div class="col" style="width:30%;font-size:11px">
+        <p style="margin:0px;">Classe: {{ var.variant_type }}</p>
+        <p style="margin:0px;"><b>{{ var.hgvsp }}</b></p>
+        <p style="margin:0px;">{{ var.hgvsc }}</p>
+        <p style="margin:0px;">{{ var.hgvsg }}</p>
+      </div>
+      <div class="col">
+        <div class="row" style="width:40%;margin-bottom:0px;">
+          <div class="col-variants" style="width:100px;">
+            <p style="margin:0px;">AD/DP: {{ var.read_support}}/{{ var.depth }}</p>
+          </div>
+          <div class="col-variants" style="width:100px;">
+            <p style="margin:0px;">Max AF: {{ var.allele_frequency }}</p>
+          </div>
+        </div>
+        <div class="row" style="margin-bottom:0px;">
+
+
+        </div>
+
+
+      </div>
+    </div>
+    <div class="row" style="margin-bottom:0px;">
+      <div class="col" style="padding:5px;color:black;background-color:#dbe9ec;width:33%;font-size:15px;">
+        Teràpies
+      </div>
+      <div class="col" style="padding:5px;color:black;background-color:#dbe9ec;width:33%;font-size:15px;">
+        Assajos Clínics
+      </div>
+      <div class="col" style="padding:5px;color:black;background-color:#dbe9ec;width:33%;font-size:15px;">
+        Tipus de Tumor
+      </div>
+    </div>
+    <div class="row">
+      <div class="col" style="margin-left:1px;width:33%;overflow-wrap:break-word;hyphens: manual;font-size:11px;">
+        <p style="margin-top:0px;margin-bottom:0px;">{{ var.therapies }}</p>
+      </div>
+      <div class="col" style="margin-left:1px;margin-right:1px;width:33%;overflow-wrap: break-word;hyphens: manual;font-size:11px;">
+          <p style="margin-top:0px;margin-bottom:0px;">{{ var.clinical_trials }}</p>
+      </div>
+      <div class="col" style="width:33%;overflow-wrap: break-word;hyphens: manual;font-size:11px;">
+          <p style="margin-top:0px;margin-bottom:0px;">{{ var.tumor_type }}</p>
+      </div>
+    </div>
+    <hr style="border: 1px solid #e5e6eb;width:100%;">
+
+    <br>
+    <br>
+    {% endfor %}
+    <p style="page-break-before: always" ></p>
+
+    <table>
+      <tr style="color:white;background-color:#365c85;font-size:12px;padding:0px;margin:0px;">
+        <th> GEN</th>
+        <th> ISOFORMA</th>
+        <th> Codis HGVS</th>
+        <th> Localització/Efecte</th>
+        <th> Freq. Al·lèlica</th>
+        <th> Freq. Poblacional</th>
+      </tr>
+      {% for var in rare_variants %}
+        <tr style="background-color:white;">
+          <td><b><i>{{ var.gene }} </i></b></td>
+          <td> {{ var.enst_id }} </td>
+          <td>
+            {{ var.hgvsg }}<br>
+            {{ var.hgvsp }}<br>
+            {{ var.hgvsc }}
+          </td>
+          <td> {{ var.consequence }} </td>
+          <td> {{ var.allele_frequency }} </td>
+          <td> {{ var.max_af }} </td>
+        </tr>
+      {% endfor %}
+    </table>
+</div> -->
+
+
+<!-- <div class='footer'>
+  <hr style="border: 1px solid #e5e6eb;width:100%;">
+  <div class="row">
+    <div class="col" style="margin:0px;">
+      <img src="ics.jpeg" alt="" style="width:105px;height:25px;">
+    </div>
+    <div class="col" style="margin:0px;">
+      <img src="IdIBGi-logo-noticies.png" alt="" style="display:block;margin:auto;width:50px;height:30px;">
+    </div>
+    <div class="col" style="margin:0px;">
+      <img src="logo-ico.jpeg" alt="" style="float:right;width:95px;height:30px;">
+    </div>
+  </div>
+
+</div> -->
+
+</body>
+</html>
