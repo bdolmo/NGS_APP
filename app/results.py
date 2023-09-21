@@ -4,6 +4,7 @@ import binascii
 import requests
 from rq import Queue, cancel_job
 from uuid import uuid4
+from functools import wraps
 from flask import Flask
 from flask import (
     request,
@@ -16,16 +17,17 @@ from flask import (
     send_file,
     make_response,
     jsonify,
+    session
 )
 from flask_wtf import FlaskForm
-from flask_login import (
-    LoginManager,
-    UserMixin,
-    login_user,
-    login_required, 
-    logout_user,
-    current_user,
-)
+# from flask_login import (
+#     LoginManager,
+#     UserMixin,
+#     login_user,
+#     login_required, 
+#     logout_user,
+#     current_user,
+# )
 from flask_sqlalchemy import SQLAlchemy
 from flask_sslify import SSLify
 from collections import defaultdict
@@ -116,7 +118,30 @@ class AlchemyEncoder(json.JSONEncoder):
         return json.JSONEncoder.default(self, obj)
 
 
+def login_required(f):
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        if not session.get("username"):
+            URL_HOME = f'http://172.16.78.83:5000/logout'
+            return redirect(URL_HOME)
+            # return render_template("login.html", title="Identificació")
+        return f(*args, **kwargs)
+    return decorated_function
+
 @app.route("/")
+@app.route("/main")
+@login_required
+def main():
+    return render_template("main.html", title="Pàgina inicial")
+
+
+@app.route("/return_home")
+@login_required
+def return_home():
+    home_url = "http://172.16.78.83:5000"
+    return redirect(home_url)
+
+
 @app.route("/show_run_details/<run_id>")
 @login_required
 def show_run_details(run_id):
@@ -144,7 +169,7 @@ def show_run_details(run_id):
 
 
 @app.route("/modify_tier", methods=["POST"])
-@login_required
+#@login_required
 def modify_tier():
     """ """
     if request.method == "POST":
@@ -152,17 +177,30 @@ def modify_tier():
         # print(data)
         tier = data["tier"]
         var_id = data["var_id"]
+        print(data["var_id"])
         var = TherapeuticTable.query.filter_by(id=var_id).first()
-        if var:
-            var.tier_catsalut = tier
-            db.session.commit()
+        if not var:
+            var = OtherVariantsTable.query.filter_by(id=var_id).first()
 
-        message = {"info": "S'ha modificat correctament", "tier": tier}
-        return make_response(jsonify(message), 200)
+        print(var)
+        if var:
+            if tier == "4":
+                var.tier_catsalut = "None"
+            else:
+                var.tier_catsalut = tier
+            db.session.commit()
+            print(var)
+            if tier == "4":
+                message = {"info": f"S'ha eliminat la tier per la La variant {var.hgvsg }", "tier": tier}
+            else:
+                message = {"info": f"La variant {var.hgvsg } s'ha modificat com a tier {tier}", "tier": tier}
+            return make_response(jsonify(message), 200)
+        message = {"info": f"No s'ha pogut modificar la tier {tier}", "tier": tier}
+        return make_response(jsonify(message), 400)
 
 
 @app.route("/download_summary_qc/<run_id>")
-@login_required
+#@login_required
 def download_summary_qc(run_id):
     """ """
     uploads = os.path.join(app.config["STATIC_URL_PATH"], run_id, "GenOncology-Dx")
@@ -180,7 +218,7 @@ def download_summary_qc(run_id):
 
 
 @app.route("/download_sample_bam/<run_id>/<sample>")
-@login_required
+#@login_required
 def download_sample_bam(run_id, sample):
 
     sample_object = SampleTable.query.filter_by(lab_id=sample).first()
@@ -206,7 +244,7 @@ def download_sample_bam(run_id, sample):
 
 
 @app.route("/download_sample_bai/<run_id>/<sample>")
-@login_required
+#@login_required
 def download_sample_bai(run_id, sample):
     sample_object = SampleTable.query.filter_by(lab_id=sample).first()
 
@@ -228,7 +266,7 @@ def download_sample_bai(run_id, sample):
 
 
 @app.route("/download_sample_vcf/<run_id>/<sample>")
-@login_required
+#@login_required
 def download_sample_vcf(run_id, sample):
     uploads = os.path.join(
         app.config["STATIC_URL_PATH"], run_id + "/" + sample + "/VCF_FOLDER/"
@@ -253,7 +291,7 @@ def download_sample_vcf(run_id, sample):
 
 
 @app.route("/download_all_reports/<run_id>")
-@login_required
+#@login_required
 def download_all_reports(run_id):
     run_samples = SampleTable.query.filter_by(run_id=run_id).all()
     run_id_zip_name = f"{run_id}.zip"
@@ -302,7 +340,7 @@ def generate_key(self):
 
 
 @app.route("/show_sample_details/<run_id>/<sample>/<sample_id>/<active>")
-@login_required
+#@login_required
 def show_sample_details(run_id, sample, sample_id, active):
 
     sample_info = []
@@ -547,7 +585,7 @@ def show_sample_details(run_id, sample, sample_id, active):
     "/update_therapeutic_variant/<run_id>/<sample>/<sample_id>/<var_id>/<var_classification>",
     methods=["GET", "POST"],
 )
-@login_required
+#@login_required
 def update_therapeutic_variant(run_id, sample, sample_id, var_id, var_classification):
 
     if var_classification == "Therapeutic":
@@ -615,6 +653,7 @@ def update_therapeutic_variant(run_id, sample, sample_id, var_id, var_classifica
                         max_af_pop=variant.max_af_pop,
                         therapies=variant.therapies,
                         clinical_trials=variant.clinical_trials,
+                        tier_catsalut="None",
                         tumor_type=variant.tumor_type,
                         var_json=variant.var_json,
                         classification="Other",
@@ -654,6 +693,7 @@ def update_therapeutic_variant(run_id, sample, sample_id, var_id, var_classifica
                         max_af_pop=variant.max_af_pop,
                         therapies=variant.therapies,
                         clinical_trials=variant.clinical_trials,
+                        tier_catsalut="None",
                         tumor_type=variant.tumor_type,
                         var_json=variant.var_json,
                         classification="Rare",
@@ -693,6 +733,7 @@ def update_therapeutic_variant(run_id, sample, sample_id, var_id, var_classifica
                         max_af_pop=variant.max_af_pop,
                         therapies=variant.therapies,
                         clinical_trials=variant.clinical_trials,
+                        tier_catsalut="None",
                         tumor_type=variant.tumor_type,
                         var_json=variant.var_json,
                         classification="Therapeutic",
@@ -732,6 +773,7 @@ def update_therapeutic_variant(run_id, sample, sample_id, var_id, var_classifica
                         max_af_pop=variant.max_af_pop,
                         therapies=variant.therapies,
                         clinical_trials=variant.clinical_trials,
+                        tier_catsalut="None",
                         tumor_type=variant.tumor_type,
                         var_json=variant.var_json,
                         classification="Rare",
@@ -744,7 +786,7 @@ def update_therapeutic_variant(run_id, sample, sample_id, var_id, var_classifica
                     db.session.commit()
                     new_active = "Rare"
 
-                if var_classification == "Rare" and new_classification == "1":
+                if var_classification == "Rare" and new_classification != "3":
                     db.session.delete(variant)
                     db.session.commit()
 
@@ -771,6 +813,7 @@ def update_therapeutic_variant(run_id, sample, sample_id, var_id, var_classifica
                         max_af_pop=variant.max_af_pop,
                         therapies=variant.therapies,
                         clinical_trials=variant.clinical_trials,
+                        tier_catsalut="None",
                         tumor_type=variant.tumor_type,
                         var_json=variant.var_json,
                         classification="Therapeutic",
@@ -783,45 +826,6 @@ def update_therapeutic_variant(run_id, sample, sample_id, var_id, var_classifica
                     db.session.commit()
                     new_active = "Therapeutic"
 
-                if var_classification == "Rare" and new_classification == "2":
-
-                    db.session.delete(variant)
-                    db.session.commit()
-
-                    other = OtherVariantsTable(
-                        user_id=variant.user_id,
-                        lab_id=variant.lab_id,
-                        ext1_id=variant.ext1_id,
-                        ext2_id=variant.ext2_id,
-                        run_id=variant.run_id,
-                        petition_id=variant.petition_id,
-                        gene=variant.gene,
-                        enst_id=variant.enst_id,
-                        hgvsp=variant.hgvsp,
-                        hgvsg=variant.hgvsg,
-                        hgvsc=variant.hgvsc,
-                        exon=variant.exon,
-                        intron=variant.intron,
-                        variant_type=variant.variant_type,
-                        consequence=variant.consequence,
-                        depth=variant.depth,
-                        allele_frequency=variant.allele_frequency,
-                        read_support=variant.read_support,
-                        max_af=variant.max_af,
-                        max_af_pop=variant.max_af_pop,
-                        therapies=variant.therapies,
-                        clinical_trials=variant.clinical_trials,
-                        tumor_type=variant.tumor_type,
-                        var_json=variant.var_json,
-                        classification="Other",
-                        validated_assessor=variant.validated_assessor,
-                        validated_bioinfo=variant.validated_bioinfo,
-                        blacklist=variant.blacklist,
-                    )
-
-                    db.session.add(other)
-                    db.session.commit()
-                    new_active = "Other"
 
         msg = ("La variant {} s'ha modificat correctament").format(variant.hgvsg)
         flash(msg, "success")
@@ -855,7 +859,7 @@ def update_therapeutic_variant(run_id, sample, sample_id, var_id, var_classifica
 
 
 @app.route("/redo_action/<action_id>/<run_id>/<sample>/<sample_id>/<active>")
-@login_required
+#@login_required
 def redo_action(action_id, run_id, sample, sample_id, active):
 
     actions = VersionControl.query.filter_by(Action_id=action_id).all()
@@ -902,7 +906,7 @@ def redo_action(action_id, run_id, sample, sample_id, active):
     "/remove_variant/<run_id>/<sample>/<sample_id>/<var_id>/<var_classification>",
     methods=["GET", "POST"],
 )
-@login_required
+#@login_required
 def remove_variant(run_id, sample, sample_id, var_id, var_classification):
 
     origin_table = None
@@ -936,7 +940,7 @@ def remove_variant(run_id, sample, sample_id, var_id, var_classification):
         now = datetime.now()
         dt = now.strftime("%d/%m/%y-%H:%M:%S")
         vc = VersionControl(
-            User_id=current_user.id,
+            User_id=7,
             Action_id=generate_key(16),
             Action_name=action_name,
             Action_json=action_str,
@@ -982,7 +986,7 @@ def myvariant_request(hgvsg: str) -> dict:
 
 
 @app.route("/show_therapeutic_details/<sample>/<entry_id>/<var_classification>")
-@login_required
+#@login_required
 def show_therapeutic_details(sample, entry_id, var_classification):
 
     sample_info = SampleTable.query.filter_by(lab_id=sample).first()
@@ -1059,7 +1063,7 @@ def show_therapeutic_details(sample, entry_id, var_classification):
 
 
 @app.route("/download_report/<run_id>/<sample>")
-@login_required
+#@login_required
 def download_report(run_id, sample):
     sample_info = SampleTable.query.filter_by(run_id=run_id, lab_id=sample).first()
 
@@ -1084,7 +1088,8 @@ def download_report(run_id, sample):
 
 
 def generate_new_report(
-    sample: str, sample_id: str, run_id: str, substitute_report: bool, lowqual_sample: bool
+    sample: str, sample_id: str, run_id: str, substitute_report: bool, lowqual_sample: bool,
+    comments: str
 ):
     """ """
 
@@ -1259,6 +1264,7 @@ def generate_new_report(
         latest_report_pdf_name=latest_report_pdf_name,
         report_date=report_date,
         low_concentration=low_concentration,
+        comments=comments
     )
 
     now = datetime.now()
@@ -1293,6 +1299,7 @@ def generate_new_report(
         latest_report_pdf_name=latest_report_pdf_name,
         report_date=report_date,
         low_concentration=low_concentration,
+        comments=comments
     )
 
     new_report_name_short = f"{sample}.genetic.{dt}.pdf"
@@ -1322,7 +1329,7 @@ def generate_new_report(
     now = datetime.now()
     dt = now.strftime("%d/%m/%y-%H:%M:%S")
     vc = VersionControl(
-        User_id=current_user.id,
+        User_id=7,
         Action_id=generate_key(16),
         Action_name=action_name,
         Action_json=action_str,
@@ -1338,7 +1345,7 @@ def generate_new_report(
 
 
 @app.route("/create_somatic_report", methods=["POST", "GET"])
-@login_required
+#@login_required
 def create_somatic_report():
 
     if request.method == "POST":
@@ -1346,6 +1353,8 @@ def create_somatic_report():
         run_id = request.form["run_id"]
         sample = request.form["sample"]
         sample_id = request.form["sample_id"]
+        comments = request.form["comments"]
+        print(comments)
         lowqual_sample = False
         if "lowqual_sample" in request.form:
             if request.form["lowqual_sample"]:
@@ -1355,13 +1364,13 @@ def create_somatic_report():
             substitute_report = True
 
         message = generate_new_report(sample, sample_id, run_id, 
-            substitute_report, lowqual_sample)
+            substitute_report, lowqual_sample, comments)
 
         return make_response(jsonify(message), 200)
 
 
 @app.route("/create_all_somatic_reports", methods=["POST"])
-@login_required
+#@login_required
 def create_all_somatic_reports():
     """ """
     if request.method == "POST":
@@ -1370,9 +1379,10 @@ def create_all_somatic_reports():
         substitute_report = False
         lowqual_sample = False
         samples = SampleTable.query.filter_by(run_id=run_id).all()
+        comments = ""
 
         for sample in samples:
-            generate_new_report(sample.lab_id, sample.lab_id, run_id, substitute_report, lowqual_sample)
+            generate_new_report(sample.lab_id, sample.lab_id, run_id, substitute_report, lowqual_sample, comments)
     return redirect(url_for("show_run_details", run_id=run_id))
     message = {
         "message_text": f"S'han generat correctament els informes",

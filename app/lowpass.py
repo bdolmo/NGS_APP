@@ -3,7 +3,7 @@ from flask import Flask
 from flask import request, render_template, url_for, redirect, flash
 from flask_wtf import FlaskForm, RecaptchaField, Form
 from wtforms import Form, StringField,PasswordField,validators
-from flask_login import LoginManager, UserMixin, login_user, login_required, logout_user, current_user
+# from flask_login import LoginManager, UserMixin, login_user, login_required, logout_user, current_user
 from flask_sqlalchemy import SQLAlchemy
 from flask_sslify import SSLify
 from sqlalchemy.sql import and_, or_

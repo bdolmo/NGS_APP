@@ -6,7 +6,7 @@ from flask import Flask
 from flask import request, render_template, url_for, redirect, flash, send_from_directory, make_response, jsonify
 from flask_wtf import FlaskForm
 import sqlite3
-from flask_login import LoginManager, UserMixin, login_user, login_required, logout_user, current_user
+# from flask_login import LoginManager, UserMixin, login_user, login_required, logout_user, current_user
 from flask_sqlalchemy import SQLAlchemy
 from flask_sslify import SSLify
 from collections import defaultdict
@@ -18,7 +18,6 @@ from app.models import Petition, SampleTable
 
 # db = SQLAlchemy(app)
 
-@app.route('/')
 @app.route('/petition_menu')
 def petition_menu():
 
@@ -28,14 +27,14 @@ def petition_menu():
         petitions=All_petitions)
 
 @app.route('/download_petition_example')
-@login_required
+#@login_required
 def download_petition_example():
     uploads = os.path.join(app.config['STATIC_URL_PATH'], "example")
     petition = "petition_example.xlsx"
     return send_from_directory(directory=uploads, path=petition, as_attachment=True)
 
 @app.route('/upload_petition', methods=['GET', 'POST'])
-@login_required
+#@login_required
 def upload_petition():
     '''
         Function that checks an input xlsx file with sample petition information.
@@ -73,7 +72,7 @@ def upload_petition():
                     extraction_date = today.strftime("%d/%m/%Y")
                 else:
                     extraction_date = str(pd.to_datetime(extraction_date).strftime("%d/%m/%Y"))
-
+                petition_date = "."
                 # Now, sample information
                 df_samples = pd.read_excel(input_xlsx, sheet_name=0,
                     engine='openpyxl', header=4)
@@ -94,7 +93,6 @@ def upload_petition():
 
                 is_yet_registered = False
                 for index, row in df_samples.iterrows():
-
                     if 'CODI DE LA MOSTRA AP' in row:
                         if pd.isnull(row['CODI DE LA MOSTRA AP']):
                             continue
@@ -139,7 +137,9 @@ def upload_petition():
                             CIP_code = row['NÚMERO CIP']
                         Petition_date = "."
                         if 'DATA PETICIÓ TÈCNICA' in row:
-                            Petition_date = row['DATA PETICIÓ TÈCNICA']
+                            # Petition_date = row['DATA PETICIÓ TÈCNICA']
+                            Petition_date = str(pd.to_datetime(row['DATA PETICIÓ TÈCNICA']).strftime("%d/%m/%Y"))
+
                         Date_original_biopsy = "."
                         if 'DATA BIÒPSIA ORIGINAL' in row:
                             Date_original_biopsy = str(row['DATA BIÒPSIA ORIGINAL'])
@@ -149,12 +149,12 @@ def upload_petition():
                         nanodrop_conc = row['CONCENTRACIÓ NANODROP (ng/µL)']
                         nanodrop_ratio= row['RATIO 260/280 NANODROP']
                         physician_name= row['METGE SOL·LICITANT']
-                        billing_unit  = row['UNITAT DE FACTURACIÓ']
-                        comments      = row['COMENTARIS']
-                        Petition_id    = ("PID_{}").format(extraction_date.replace("/", ""))
+                        billing_unit = row['UNITAT DE FACTURACIÓ']
+                        comments = row['COMENTARIS']
+                        Petition_id = ("PID_{}").format(extraction_date.replace("/", ""))
 
-                        petition = Petition( Petition_id=Petition_id, User_id=current_user.id,
-                        Date=extraction_date, Tumour_origin=tumour_type,
+                        petition = Petition( Petition_id=Petition_id, User_id=".",
+                        Date=extraction_date, Petition_date=Petition_date, Tumour_origin=tumour_type,
                         AP_code=ap_code, HC_code=hc_code, CIP_code=CIP_code,
                         Tumour_pct=tumour_pct, Volume=res_volume, Conc_nanodrop=nanodrop_conc,
                         Ratio_nanodrop=nanodrop_ratio,Tape_postevaluation=post_tape_eval,
@@ -162,7 +162,7 @@ def upload_petition():
                         Medical_indication=tumour_type, Date_original_biopsy=Date_original_biopsy)
 
                         # Check if petition is already available
-                        found = Petition.query.filter_by(User_id=current_user.id).filter_by(AP_code=ap_code)\
+                        found = Petition.query.filter_by(AP_code=ap_code)\
                             .filter_by(HC_code=hc_code).first()
                         if not found:
                             db.session.add(petition)
@@ -186,7 +186,7 @@ def upload_petition():
 
 
 @app.route('/upload_legacy_petition', methods = ['GET', 'POST'])
-@login_required
+#@login_required
 def upload_legacy_petition():
 
     is_ok = True
@@ -233,14 +233,14 @@ def upload_legacy_petition():
                             medical_doctor = sample_dict[sample]['Medical_doctor']
                             billing_unit   = sample_dict[sample]['Billing_unit']
 
-                            petition = Petition( Petition_id=Petition_id, User_id=current_user.id, Date=date,
+                            petition = Petition( Petition_id=Petition_id, User_id=".", Date=date,
                             AP_code=ap_code, HC_code=hc_code, Tumour_pct=tumoral_pct, Volume=residual_volume,
                             Conc_nanodrop=conc_nanodrop, Ratio_nanodrop=ratio_nanodrop,
                             Tape_postevaluation=tape_postevaluation,Medical_doctor=medical_doctor,
                             Billing_unit=billing_unit)
 
                             # Check if petition is already available
-                            found = Petition.query.filter_by(User_id=current_user.id).filter_by(AP_code=ap_code)\
+                            found = Petition.query.filter_by(AP_code=ap_code)\
                                 .filter_by(HC_code=hc_code).first()
                             if not found:
                                 db.session.add(petition)
@@ -457,7 +457,7 @@ def validate_petition_document(file):
         return is_ok, sample_dict, errors
 
 @app.route('/create_petition', methods = ['GET', 'POST'])
-@login_required
+#@login_required
 def create_petition():
     errors   = []
     is_ok = True
@@ -557,7 +557,7 @@ def create_petition():
 
         if is_ok == True:
             Petition_id = "PID_"+ date.replace("/", "")
-            petition = Petition( Petition_id= Petition_id, User_id=current_user.id, Date=date, AP_code=ap_code, HC_code=hc_code,
+            petition = Petition( Petition_id= Petition_id, User_id=".", Date=date, AP_code=ap_code, HC_code=hc_code,
             Tumour_pct=tumoral_pct, Volume=residual_volume, Conc_nanodrop=conc_nanodrop, Ratio_nanodrop=ratio_nanodrop,
             Medical_doctor=medical_doctor, Tape_postevaluation=tape_posteval, Billing_unit=billing_unit)
 
@@ -573,7 +573,7 @@ def create_petition():
 
 
 @app.route('/update_petition', methods = ['GET', 'POST'])
-@login_required
+#@login_required
 def update_petition():
     errors   = []
     is_ok = True
@@ -600,6 +600,13 @@ def update_petition():
         else:
             errors.append("Es requereix el codi CIP")
             flash("Es requereix el codi CIP", "warning")
+            # is_ok = False
+        tumour_pct = ""
+        if request.form.get('edit_tumoral_pct'):
+            tumour_pct = request.form['edit_tumoral_pct']
+        else:
+            errors.append("Es requereix l'origen tumoral")
+            flash("Es requereix l'origen tumoral", "warning")
             # is_ok = False
 
 
@@ -650,7 +657,7 @@ def update_petition():
                 petition.Tumour_origin = tumour_origin
                 petition.billing_unit = billing_unit
                 petition.medical_doctor = medical_doctor
-
+                petition.Tumour_pct = tumour_pct
                 # Petition_id = "PID_"+ date.replace("/", "")
                 # petition = Petition( Petition_id= Petition_id, 
                 # User_id=current_user.id, Date=date, 
@@ -681,7 +688,7 @@ def update_petition():
 
 
 @app.route('/remove_sample/<id>', methods=["POST"])
-@login_required
+#@login_required
 def remove_sample(id):
     errors   = []
     if request.method == "POST":

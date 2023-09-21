@@ -6,7 +6,7 @@ from flask import Flask
 from flask import request, render_template, url_for, redirect, flash
 from flask_wtf import FlaskForm
 import sqlite3
-from flask_login import LoginManager, UserMixin, login_user, login_required, logout_user, current_user
+# from flask_login import LoginManager, UserMixin, login_user, login_required, logout_user, current_user
 from flask_sqlalchemy import SQLAlchemy
 from flask_sslify import SSLify
 from collections import defaultdict

@@ -98,6 +98,8 @@ div.header-other-pages {
     margin-top:10px;
     margin-bottom:40px;
   }
+
+  
 }
 
 @page {
@@ -117,14 +119,32 @@ div.header-other-pages {
    right           : 0;
    bottom          : 0;
    text-align: center;
+   margin-bottom   : -5cm;
+   height          : 6.5cm;
+   font-size       : 9px;
+   display: block; text-align: center;
+   
+  }
+}
+
+/* @page:first{
+  @bottom-center { content: none; }
+} */
+
+
+/* @page:first {
+  @bottom-center {
+   content: counter(page) " / " counter(pages);
+   position: fixed;
+   right           : 0;
+   bottom          : 0;
+   text-align: center;
    margin-bottom   : -4cm;
    height          : 6.5cm;
    font-size       : 9px;
    display: block; text-align: center;
   }
-}
-
-
+} */
 
 
 p {

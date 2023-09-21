@@ -52,7 +52,8 @@ class Config(object):
     NGS_PIPELINE_EXE = os.path.join(pipeline_main, "gc_ngs_pipeline.py")
     # SOMATIC_REPORT_TEMPLATES = os.path.join(main_dir, "reporting_templates", "1.3")
     # SOMATIC_REPORT_TEMPLATES = os.path.join(main_dir, "reporting_templates", "1.5")
-    SOMATIC_REPORT_TEMPLATES = os.path.join(main_dir, "reporting_templates", "1.6")
+    # SOMATIC_REPORT_TEMPLATES = os.path.join(main_dir, "reporting_templates", "1.6")
+    SOMATIC_REPORT_TEMPLATES = os.path.join(main_dir, "reporting_templates", "1.7")
 
 
     SOMATIC_REPORT_IMG = os.path.join(main_dir, "reporting_templates", "img")

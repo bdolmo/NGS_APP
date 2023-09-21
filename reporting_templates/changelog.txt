@@ -1,0 +1,24 @@
+==============================
+Version 7 Reporting PDF Lung Cancer 
+Release Date: July 11, 2023
+==============================
+
+Changelog:
+
+1.0 New Features and Updates
+1.1 ENAC 15189 Logo Certification
+ - The reporting PDF now includes the ENAC logo certification to demonstrate our commitment to quality and standard compliance.
+ 
+1.2 Removal of CERTIFICACIÓ section 
+
+1.3 Gene Fusions and CNAs
+ - A clear and prominent disclaimer is now added indicating that gene fusions and CNAs (Copy Number Alterations) are OUT OF THE SCOPE of the present certification.
+
+1.4 Document Layout and Structure
+ - Adjusted document layout and structure for better flow and coherence.
+
+
+==============================
+End of Changelog
+==============================
+

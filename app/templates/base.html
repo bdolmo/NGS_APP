@@ -637,8 +637,8 @@
           myDropzone.removeAllFiles(true);
         };
     </script>
-      <nav class="navbar navbar-expand-sm bg-dark navbar-dark fixed-top mb-3">
-        <a class="navbar-brand" href="{{ url_for('main') }}">UDMMP</a>
+      <nav class="navbar navbar-expand-sm bg-dark navbar-dark fixed-top mb-3" >
+        <a class="navbar-brand" href="{{ url_for('main') }}"><b>NGS</b>Platform</a>
         <button class="navbar-toggler" type="button" data-toggle="collapse"
           data-target="#navbar_ugmp" aria-controls="navbar_ugmp" aria-expanded="false" aria-label="Toggle navigation">
           <span class="navbar-toggler-icon"></span>
@@ -651,7 +651,7 @@
             <li class="nav-item active" >
             </li>
 
-          {% if current_user.is_authenticated %}
+          {% if session["username"] %}
           <li class="nav-item active ml-4">
             <a class="nav-link" href="{{ url_for('petition_menu') }}">
                 <i class="fas fa-newspaper fa-xs"></i> Peticions
@@ -686,25 +686,25 @@
             </a>
           </li>
           </ul>
-            <a class="nav-link" style="color:white;" href="{{ url_for('profile') }}">
-                <i class="fas fa-user fa"></i> USUARI: {{ current_user.username }}
+            <a class="nav-link" style="color:white;" href="">
+                <i class="fas fa-user fa"></i>  {{ session["username"]}}
                 <span class="sr-only">(current)</span>
             </a>
-            <a class="btn btn-secondary mr-1" style="color:white;" href="{{ url_for('logout') }}">
+            <a class="btn btn-secondary mr-1" style="color:white;" href="{{url_for('logout')}}">
               <i class="fas fa-door-closed fa-sm"></i> Tanca sessió
             </a>
           {% else %}
           </ul>
-            <a class="nav-link" style="color:white;" href="{{ url_for('profile') }}">
-              <i class="fas fa-user fa"></i> USUARI: {{ current_user.username }}
+            <a class="nav-link" style="color:white;" href="">
+              <i class="fas fa-user fa"></i> {{ session["username"] }}
                 <span class="sr-only">(current)</span>
             </a>
-            <a class="btn btn-secondary mr-1" style="color:white;" href="{{ url_for('login') }}">
-              <i class="fas fa-id-card fa-sm"></i> Identificació
+            <a class="btn btn-secondary mr-1" style="color:white;" href="{{ url_for('login_external') }}">
+              <!-- <i class="fas fa-id-card fa-sm"></i> -->
             </a>
           {% endif %}
 
-          <a class="btn " style="color:white;" href="{{ url_for('register') }}"> Registre</a>
+          <a class="btn " style="color:white;" href="{{ url_for('apps') }}"> <i class="fas fa-home"></i>Home</a>
 
         </div>
       </nav>

@@ -1,7 +1,8 @@
-from app import app, mail
+from app import app
 import os
 import sys
 import re
+import requests
 from datetime import date,datetime
 from flask import Flask
 from flask_sqlalchemy import SQLAlchemy
@@ -11,41 +12,15 @@ from flask import request, render_template, url_for, redirect, flash, session
 from flask_wtf import FlaskForm, RecaptchaField, Form
 from wtforms import StringField,SubmitField,PasswordField,validators
 from wtforms.validators import InputRequired, Email, DataRequired
-from flask_login import LoginManager, UserMixin, login_user, login_required, logout_user, current_user
+# from flask_login import LoginManager, UserMixin, login_user, login_required, logout_user, current_user
 from itsdangerous.url_safe import URLSafeTimedSerializer as Serializer
-from flask_mail import Message
+# from flask_mail import Message
+import jwt
 db = SQLAlchemy(app)
 
-login_manager = LoginManager()
-login_manager.login_view = 'login'
-login_manager.login_message=" Si us plau, identifica't a través d'aquest formulari"
-login_manager.login_message_category="info"
 
-login_manager.init_app(app)
-# Usermixin has some interesting methods to speed up the coding part of logins..
-# Primary key must be 'id'
 
-class RequestResetForm(FlaskForm):
- # password = PasswordField("Password",[validators.DataRequired(), validators.Length(min=6, max=25)] )
-  email    = StringField("Email", [validators.DataRequired(), validators.Email()] )
-  submit   = SubmitField("Reestablir")
-
-  def validate_email(self, email):
-    user = User.query.filter_by(email=email.data).first()
-    if user is None:
-      flash ("No existeix cap usuari amb el correu electrònic entrat")
-
-class ResetPasswordForm(FlaskForm):
-  password = PasswordField("Password",[validators.DataRequired(), validators.Length(min=6, max=25)] )
-  confirm_password = PasswordField("Password",[validators.DataRequired(), validators.EqualTo('password')] )
-  submit   = SubmitField("Reinicialitza la contrassenya")
-
-  def validate_email(self, email):
-    user = User.query.filter_by(email=email.data).first()
-    if user is None:
-      flash ("No existeix cap usuari amb el correu electrònic entrat")
-
-class User(db.Model, UserMixin):
+class User(db.Model):
     __tablename__ = 'USERS'
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
     username = db.Column(db.String(30), unique=True)
@@ -56,181 +31,97 @@ class User(db.Model, UserMixin):
     last_login = db.Column(db.String(30))
     registered_on = db.Column(db.String(30))
 
-    def get_reset_token(self, expires_sec=1800):
-      s = Serializer(app.config['SECRET_KEY'], expires_sec )
-      return s.dumps({'user_id': self.id} ).decode('utf-8')
+    # def get_reset_token(self, expires_sec=1800):
+    #   s = Serializer(app.config['SECRET_KEY'], expires_sec )
+    #   return s.dumps({'user_id': self.id} ).decode('utf-8')
 
-    @staticmethod
-    def verify_reset_token(token):
-      s = Serializer(app.config['SECRET_KEY'] )
-      try:
-        user_id = s.loads(token)['user_id']
-      except:
-        return None
-      return User.query.get(user_id)
+    # @staticmethod
+    # def verify_reset_token(token):
+    #   s = Serializer(app.config['SECRET_KEY'] )
+    #   try:
+    #     user_id = s.loads(token)['user_id']
+    #   except:
+    #     return None
+    #   return User.query.get(user_id)
 
     def avatar(self, size):
         digest = md5(self.email.lower().encode('utf-8')).hexdigest()
         return 'https://www.gravatar.com/avatar/{}?d=identicon&s={}'.format(
             digest, size)
 
-@login_manager.user_loader
-def load_user(user_id):
-    return User.query.get(int(user_id))
 
-class RegisterForm(FlaskForm):
-  username = StringField("Username",[validators.InputRequired("Si us plau, entra un nom d'usuari"), validators.Length(min=4, max=20)] )
-  password = PasswordField("Password",[validators.DataRequired(), validators.Length(min=6, max=25)] )
-  email    = StringField("Email", [validators.DataRequired(), validators.Email()] )
-  organization =  StringField("Organization", [validators.Length(min=6, max=35)] )
-  recaptcha = RecaptchaField()
 
-class LoginForm(FlaskForm):
-  username = StringField("Username",[validators.InputRequired("Si us plau, entra un nom d'usuari"), validators.Length(min=4, max=20)] )
-  password = PasswordField("Password",[validators.DataRequired(), validators.Length(min=6, max=25)] )
-  email    = StringField("Email", [validators.DataRequired(), validators.Email()] )
-  organization =  StringField("Organization", [validators.Length(min=6, max=35)] )
-  recaptcha = RecaptchaField()
+@app.route('/login_external')
+def login_external():
+    """
+    Redirects to the main page.
 
-class ProfileForm(FlaskForm):
-  username = StringField("Username",[validators.InputRequired("Si us plau, entra un nom d'usuari"), validators.Length(min=4, max=20)] )
-  password = PasswordField("Password",[validators.DataRequired(), validators.Length(min=6, max=25)] )
-  confirm_password = PasswordField("Password",[validators.DataRequired(), validators.EqualTo('password')] )
-  email    = StringField("Email", [validators.DataRequired(), validators.Email()] )
-  organization =  StringField("Organization", [validators.Length(min=6, max=35)] )
-  submit   = SubmitField("Envia")
+    :returns: Returns the html of the main page.
+    :rtype: render_template
+    """
+    URL_HOME = f'http://172.16.78.83:5000/'
+    # Redirect to html
+    app_dict = {"app": "ngs_app"}
+    info_user = requests.post(URL_HOME + "consult_user_app", json=app_dict)
+    user_info_data = info_user.json()
 
-class LoginForm(FlaskForm):
-  username = StringField("Username",[validators.Length(min=4, max=20)] )
-  password = PasswordField("Password",[validators.DataRequired(), validators.Length(min=6, max=25)] )
-  submit   = SubmitField("Envia")
+    rols = user_info_data['rol'].split(";")
+    if 'admin' in rols:
+        session['rol'] = "admin"
 
-@app.route('/')
-@app.route('/login', methods=['POST', 'GET'] )
-def login():
+    session["username"] = user_info_data['user']
+    session['user'] = user_info_data['user']
+    session["idClient"] = user_info_data['id_client']
+    # session["last_access_date"] = user_info_data['last_access_date']
 
-  if current_user.is_authenticated:
-    return redirect(url_for('menu'))
+    dicc_delete = {"id": user_info_data['id_client']}
+    requests.post(URL_HOME + "delete_user_app", json=dicc_delete)
 
-  form = LoginForm()
-  if form.validate_on_submit():
+    # print(session['rol'], "START")
 
-    user = User.query.filter_by(username=form.username.data).filter_by(password=form.password.data).first()
-    if not user:
-      flash("No existeix cap usuari amb el nom i contrassenya entrats", "warning")
-      return render_template("login.html", title="Login", form=form)
+    return redirect(url_for('ngs_applications'))
 
-    if user.username == form.username.data and user.password == form.password.data:
-      # session['user_id'] = user.id
-      # session['username'] = user.username
-      now = datetime.now()
-      dt = now.strftime("%d/%m/%y-%H:%M:%S")
-      user.last_login = dt
-      db.session.commit()
-      flash(" Benvingut " + form.username.data, "success")
-      login_user(user)
-      return redirect(url_for('ngs_applications'))
-  return render_template("login.html", title="Login", form=form)
+
+@app.route('/receive_token')
+def receive_token():
+    received_token = request.args.get('token')
+    secret_key = '12345'  # Debe ser la misma clave utilizada para generar el token
+
+    try:
+        decoded_token = jwt.decode(received_token, secret_key, algorithms=['HS256'])
+        session['username'] = decoded_token.get('user_tok', 'Usuario no encontrado')
+        session['user'] = decoded_token.get('user_tok', 'Usuario no encontrado')
+        session['rols'] = decoded_token.get('rols_tok', 'Usuario no encontrado')
+        session['email'] = decoded_token.get('email_tok', 'Usuario no encontrado')
+        session['idClient'] = decoded_token.get('id_client_tok', 'Usuario no encontrado')
+        session['rol'] = decoded_token.get('rol_tok', 'Usuario no encontrado')
+        print(session['user'])
+        print(session['rols'])
+        print(session['email'])
+        print(session['idClient'])
+        print(session['rol'])
+        return redirect(url_for('ngs_applications'))
+    except Exception:
+        return redirect('/logout')
+
+
+@app.route('/apps')
+def apps():
+    tocken_cookies = {'user_tok': session['user'], 'rols_tok': session['rols'], 'email_tok': session['email'],
+                      'id_client_tok': session['idClient'], 'rol_tok': 'None'}
+    secret_key = '12345'
+    token = jwt.encode(tocken_cookies, secret_key, algorithm='HS256')
+    url = f'http://172.16.78.83:5000/apps/token?token={token}'
+
+    return redirect(url)
+
 
 @app.route('/logout')
-@login_required
 def logout():
-  logout_user()
-  return redirect(url_for('ngs_applications'))
+  URL_HOME = f'http://172.16.78.83:5000/logout'
+  session['username'] = None
+  session['user'] = None
+  session['rol'] = None
 
-@app.route('/profile')
-@login_required
-def profile():
-  form = ProfileForm()
-  return render_template("profile.html", title="Login", form=form)
+  return redirect(URL_HOME)
 
-@app.route("/edit_account/<user_id>", methods=['POST', 'GET'])
-@login_required
-def edit_account(user_id):
-  user = User.query.get(user_id)
-
-  form = ProfileForm()
-  if form.validate_on_submit():
-
-    user.username     = form.username.data
-    user.password     = form.password.data
-    user.email        = form.email.data
-    user.organization = form.organization.data
-    db.session.commit()
-    flash("El compte s'ha modificat!", "success")
-    return redirect(url_for("profile"))
-  return redirect(url_for("profile"))
-
-
-@app.route("/delete_account/<user_id>")
-@login_required
-def delete_account(user_id):
-  user = User.query.get(user_id)
-  if user:
-    db.session.delete(user)
-    db.session.commit()
-    flash("El compte s'ha eliminat amb èxit", "success")
-    return redirect(url_for("login"))
-  return redirect(url_for("profile"))
-
-@app.route('/register', methods=['POST', 'GET'] )
-def register():
-
-  form = RegisterForm(request.form)
-  if form.validate_on_submit():
-    now = datetime.now()
-
-    dt = now.strftime("%d/%m/%y-%H:%M:%S")
-
-    if not User.query.filter_by(username=form.username.data).filter_by(password=form.password.data).first():
-      user = User(username= form.username.data, password=form.password.data,
-      email=form.email.data, organization=form.organization.data, role="Basic",
-      last_login=dt, registered_on=dt)
-
-      db.session.add(user)
-      db.session.commit()
-      flash("S'ha enregistrat correctament un nou usuari", "success")
-      return redirect(url_for("login"))
-  return render_template("register.html", form = form, title="Registre")
-
-def send_reset_email(user):
-  token = user.get_reset_token()
-  msg = Message("Restablir contrassenya",
-    sender="bernatdelolmo@gmail.com",
-    recipients=[user.email])
-  msg.body = f'''Per reinicialitzar la contrassenya, clica a la següent url:
-{url_for('reset_token', token=token, _external=True)}
- Si no has fet aquesta petició, simplement ignora aquest missatge
-'''
-  mail.send(msg)
-
-@app.route('/reset_password', methods=["GET", "POST"])
-def reset_request():
-  if current_user.is_authenticated:
-    return redirect(url_for('menu'))
-  form = RequestResetForm()
-  if form.validate_on_submit():
-    user = User.query.filter_by(email=form.email.data).first()
-    send_reset_email(user)
-    flash("El correu s'ha enviat amb instruccions per reinicialitzar la contrassenya", "info")
-    return redirect(url_for("login"))
-  return render_template("reset_request.html", title="Reset request", form=form)
-
-@app.route('/reset_password/<token>', methods=["GET", "POST"])
-def reset_token(token):
-  if current_user.is_authenticated:
-    return redirect(url_for('menu'))
-  user = User.verify_reset_token(token)
-  if not user:
-    flash("Token invàlid o s'ha expirat", "warning")
-    return redirect(url_for('reset_request'))
-  form = ResetPasswordForm()
-  if form.validate_on_submit():
-    # now = datetime.now()
-    # dt = now.strftime("%d/%m/%y-%H:%M:%S")
-    user.password = form.password.data
-
-    db.session.commit()
-    flash("S'ha modificat correctament la contrassenya", "success")
-    return redirect(url_for('login'))
-  return render_template("reset_token.html", title="Reset request", form=form)

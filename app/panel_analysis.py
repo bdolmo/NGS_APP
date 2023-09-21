@@ -17,14 +17,14 @@ from flask import (
 from flask_wtf import FlaskForm, RecaptchaField, Form
 from flask_dropzone import Dropzone
 from wtforms import Form, StringField, PasswordField, validators
-from flask_login import (
-    LoginManager,
-    UserMixin,
-    login_user,
-    login_required,
-    logout_user,
-    current_user,
-)
+# from flask_login import (
+#     LoginManager,
+#     UserMixin,
+#     login_user,
+#     login_required,
+#     logout_user,
+#     current_user,
+# )
 from flask_sqlalchemy import SQLAlchemy
 from flask_sslify import SSLify
 from sqlalchemy.sql import and_, or_
@@ -97,10 +97,11 @@ def allowed_input_filesize(filesize):
         return False
 
 
-@app.route("/")
-@app.route("/main")
-def main():
-    return render_template("main.html", title="Pàgina inicial")
+# @app.route("/")
+# @loggin_required
+# @app.route("/main")
+# def main():
+#     return render_template("main.html", title="Pàgina inicial")
 
 
 @app.route("/test_upload", methods=["POST", "GET"])
@@ -113,14 +114,14 @@ def test_upload():
 
 
 @app.route("/stop_job/<queue_id>")
-@login_required
+#@login_required
 def stop_job(queue_id):
     send_stop_job_command(r, queue_id)
     return redirect(url_for("status"))
 
 
 @app.route("/remove_job/<queue_id>/<job_id>")
-@login_required
+#@login_required
 def remove_job(queue_id, job_id):
     try:
         registry.remove(queue_id, delete_job=True)
@@ -173,14 +174,14 @@ def remove_job(queue_id, job_id):
 
 
 @app.route("/panels_app")
-@login_required
+#@login_required
 def panels_app():
     url = f"{ngs_app_url}"
     return redirect(url, code=302)
 
 
 @app.route("/targeted_seq_analysis")
-@login_required
+#@login_required
 def complete_analysis():
 
     url = f"{app.config['GENE_PANEL_API']}/show_all"
@@ -212,21 +213,21 @@ def pipeline_docs(file):
 
 
 @app.route("/lowpass_analysis")
-@login_required
+#@login_required
 def lowpass_analysis():
     """ """
     return render_template("lowpass_analysis.html", title=" NGS - Lowpass")
 
 
 @app.route("/ngs_applications")
-@login_required
+#@login_required
 def ngs_applications():
     """ """
     return render_template("ngs_applications.html", title=" NGS - Aplicacions")
 
 
 @app.route("/status")
-@login_required
+#@login_required
 def status():
     """ """
 
@@ -275,7 +276,7 @@ def status():
 
 
 @app.route("/show_compendium_run/<run_id>")
-@login_required
+#@login_required
 def show_compendium_run(run_id):
     """ """
     url = f"{compendium_url}/view_run/{run_id}"
@@ -283,7 +284,7 @@ def show_compendium_run(run_id):
 
 
 @app.route("/remove_job_data/<job_id>")
-@login_required
+#@login_required
 def remove_job_data(job_id):
     """ """
     job_entry = Job.query.filter_by(Job_id=job_id).first()
@@ -332,7 +333,7 @@ def remove_job_data(job_id):
 
 
 @app.route("/submit_ngs_analysis", methods=["GET", "POST"])
-@login_required
+#@login_required
 def submit_ngs_job():
     """ """
     errors = []
@@ -342,8 +343,8 @@ def submit_ngs_job():
     is_ok = True
     total_samples = 0
     user_id = "."
-    if current_user.id:
-        user_id = current_user.id
+    # if current_user.id:
+    #     user_id = current_user.id
 
     if request.method == "POST":
         # First, checking input FASTQ files

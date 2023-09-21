@@ -111,6 +111,7 @@ class Petition(db.Model):
     Petition_id    = db.Column(db.String(20))
     User_id        = db.Column(db.String(20))
     Date           = db.Column(db.String(20))
+    Petition_date  = db.Column(db.String(20))
     Tumour_origin  = db.Column(db.String(20))
     AP_code        = db.Column(db.String(20))
     HC_code        = db.Column(db.String(20))
@@ -124,12 +125,15 @@ class Petition(db.Model):
     Billing_unit   = db.Column(db.String(50))
     Medical_indication   = db.Column(db.String(50))
     Date_original_biopsy   = db.Column(db.String(50))
+    Petition_date   = db.Column(db.String(50))
 
-    def __init__(self, Petition_id, User_id, Date, Tumour_origin, AP_code, HC_code, CIP_code, Tumour_pct,
+
+    def __init__(self, Petition_id, User_id, Date, Petition_date,Tumour_origin, AP_code, HC_code, CIP_code, Tumour_pct,
         Volume, Conc_nanodrop, Ratio_nanodrop, Tape_postevaluation, Medical_doctor,
         Billing_unit, Medical_indication, Date_original_biopsy):
         self.Petition_id = Petition_id
         self.Date   = Date
+        self.Petition_date = Petition_date
         self.User_id = User_id
         self.Tumour_origin = Tumour_origin
         self.AP_code= AP_code
@@ -274,6 +278,7 @@ class SampleTable(db.Model):
     cnv_json   = db.Column(db.String(100000))
     latest_short_report_pdf = db.Column(db.String(80))
     last_short_report_emission_date = db.Column(db.String(80))
+    petition_date = db.Column(db.String(80))
 
     def __repr__(self):
         return '<Sample %r>' % self.lab_id

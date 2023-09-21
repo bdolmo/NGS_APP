@@ -60,7 +60,9 @@
                       <th>Codi CIP</th>
                       <th>Codi AP</th>
                       <th>Num. HC</th>
-                      <th>Data Extracció</th>
+                      <!-- <th>Data Biòpsia Original</th> -->
+                      <!-- <th>Data Extracció</th> -->
+                      <th>Data Petició</th>
                       <th>%Tumoral</th>
                       <th>Metge sol·licitant</th>
                       <th>Unitat de facturació</th>
@@ -75,6 +77,8 @@
                       <td id="cip_code">{{ p.CIP_code }}</td>
                       <td id="ap_code"><b>{{ p.AP_code }}</b></td>
                       <td id="hc_code">{{ p.HC_code }}</td>
+                      <!-- <td id="petition_date">{{ p.Date_original_biopsy | replace("00:00:00","") }}</td> -->
+                      <!-- <td id="petition_date">{{ p.Date }}</td> -->
                       <td id="petition_date">{{ p.Date }}</td>
                       <td id="tumor_pct">{{ p.Tumour_pct }}</td>
                       <td id="medical_doctor">{{ p.Medical_doctor }}</td>
@@ -108,9 +112,9 @@
                       <div class="col-sm">
                         <h6><b>Origen tumoral</b></h6>
                         <div class="input-group mb-3">
-                          <div class="input-group-prepend">
+                          <!-- <div class="input-group-prepend">
                             <span class="input-group-text" id="basic-addon1">Origen tumoral</span>
-                          </div>
+                          </div> -->
                           <input id="edit_origin_tumor" value="" type="text" name="edit_origin_tumor" class="form-control" placeholder="">
                         </div>
                       </div>
@@ -127,22 +131,50 @@
                         </div>
                       </div>
                     </div>
+
+                    <div class="row mt-3">
+
+                      <div class="col-sm">
+                        <h6><b>Data origen biòpsia</b><small>(MM/DD/YYYY)</small></h6>
+                        <div class="form-group">
+                          <div id="datepicker" data-provide="datepicker">
+                            <input class="form-control" name="Date" type="date" value="" id="edit_biopsy_petition_date">
+                            <div class="input-group-addon">
+                                <span class="glyphicon glyphicon-th"></span>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+
+                      <div class="col-sm">
+                        <h6><b>Data petició</b> <small>(MM/DD/YYYY)</small></h6>
+                        <div class="form-group">
+                          <div id="datepicker" data-provide="datepicker">
+                            <input class="form-control" name="Date" type="date" value="" id="edit_petition_date">
+                            <div class="input-group-addon">
+                                <span class="glyphicon glyphicon-th"></span>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+
                     <div class="row mt-3">
                       <div class="col-sm ">
                         <h6><b>Codi d'Anatomia Patològica</b></h6>
                         <div class="input-group mb-3">
-                          <div class="input-group-prepend">
+                          <!-- <div class="input-group-prepend">
                             <span class="input-group-text" id="basic-addon1">Codi AP</span>
-                          </div>
+                          </div> -->
                           <input id="edit_ap_code" value="" type="text" name="edit_ap_code" class="form-control" placeholder="">
                         </div>
                       </div>
                       <div class="col-sm">
                         <h6><b>Número d'Història clínica</b></h6>
                         <div class="input-group mb-3">
-                          <div class="input-group-prepend">
+                          <!-- <div class="input-group-prepend">
                             <span class="input-group-text" id="basic-addon1">Num. HC</span>
-                          </div>
+                          </div> -->
                           <input id="edit_hc_code" type="text" name="edit_hc_code" class="form-control" placeholder="">
                         </div>
                       </div>
@@ -151,9 +183,9 @@
                       <div class="col-sm">
                         <h6><b>Número CIP</b></h6>
                         <div class="input-group mb-3">
-                          <div class="input-group-prepend">
+                          <!-- <div class="input-group-prepend">
                             <span class="input-group-text" id="basic-addon1">Num. CIP</span>
-                          </div>
+                          </div> -->
                           <input id="edit_cip_code" type="text" name="edit_cip_code" class="form-control" placeholder="">
                         </div>
                       </div>
@@ -214,9 +246,9 @@
                       <div class="col-sm ">
                         <h6><b>Codi d'Anatomia Patològica</b></h6>
                         <div class="input-group mb-3">
-                          <div class="input-group-prepend">
+                          <!-- <div class="input-group-prepend">
                             <span class="input-group-text" id="basic-addon1">Codi AP</span>
-                          </div>
+                          </div> -->
                           <input type="text" name="AP_code" class="form-control" placeholder="" aria-label="Username" aria-describedby="basic-addon1">
                         </div>
                       </div>
@@ -225,9 +257,9 @@
                       <div class="col-sm">
                         <h6><b>Número d'Història clínica</b></h6>
                         <div class="input-group mb-3">
-                          <div class="input-group-prepend">
+                          <!-- <div class="input-group-prepend">
                             <span class="input-group-text" id="basic-addon1">Num. HC</span>
-                          </div>
+                          </div> -->
                           <input type="text" name="HC_code" class="form-control" placeholder="" aria-label="Username" aria-describedby="basic-addon1">
                         </div>
                       </div>
@@ -361,12 +393,10 @@
         if (td.id == "petition_date") {
           myarr = td.innerText.split("/");
           mydate = myarr[2]+"-"+myarr[1]+"-"+myarr[0];
-
           let petition_date = petition_div.querySelector("#edit_petition_date");
           petition_date.value = mydate;
           console.log(mydate)
           console.log(petition_date);
-
         }
         if (td.id == "medical_doctor") {
           let medical_doctor = petition_div.querySelector("#edit_medical_doctor");

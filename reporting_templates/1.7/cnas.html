@@ -1,0 +1,54 @@
+
+{% if cnas|length == 0 %}
+  <div style="margin:0 auto;margin-bottom:5px;position:relative;top:20px;">
+    <p style="font-size:14px;"><b> ALTERACIONS DE NÚMERO DE CÒPIA (CNAs)</b></p>
+    <p style="font-family: arial, sans-serif;color:black;font-size:12px;">La detecció de CNAs no està emparada per l'acreditació d'ENAC.</p>
+    <p style="font-family: arial, sans-serif;color:black;font-size:12px;"> No s'han detectat alteracions de número de còpia</p>
+  </div>
+{% else %}
+
+<table style="width:100%;margin:0 auto;position:relative;top:-2.5cm;">
+  <caption>
+    <div class="row" style="width:100%;margin:0 auto;">
+      <div class="col" style="width:100%;margin:0px;color:#2c4fa1;">
+        <p style="font-size:14px;font-family: arial, sans-serif;color:black;">
+            <!-- <img src="fourdot.png" alt="" style="width:16px;height:15px;"> -->
+          <b>ALTERACIONS DE NÚMERO DE CÒPIA (CNAs)</b>
+          <p style="font-family: arial, sans-serif;color:black;font-size:12px;">La detecció de CNAs no està emparada per l'acreditació d'ENAC.</p>
+        </p>
+      </div>
+    </div>
+  </caption>
+  <thead>
+
+  <tr style="color:white;background-color:#365c85;font-size:12px;padding:0px;margin:0px;">
+    <th style="color:white;background-color:#123279;"> GENS</th>
+    <th style="color:black;background-color:#dbe9ec"> Ratio (log2)</th>
+    <th style="color:black;background-color:#dbe9ec"> N Còpies</th>
+    <th style="color:black;background-color:#dbe9ec"> N Regions afectades</th>
+    <th style="color:black;background-color:#dbe9ec"> Tipus</th>
+  </tr>
+  </thead>
+  <tbody>
+    {% for cna in cnas|sort(attribute='cn', reverse = True) %}
+      <tr style="background-color:white;padding:5px;font-size:11px;border-bottom: 1pt solid lightgrey;">
+        <td style="padding:5px;" ><b><i>{{ cna.genes }} </i></b></td>
+        <td style="padding:5px;"> {{ cna.ratio }}</td>
+        <td style="padding:5px;">{{ cna.cn }}<br>
+        <td style="padding:5px;">{{ cna.qual }} </td>
+        {% set svtype = "" %}
+        
+        {% if cna.svtype == "DEL" %}
+          {% set svtype="Deleció" %}
+        {% else %}
+          {% set svtype="Amplificació" %}
+        {% endif %}
+
+        <td style="padding:5px;">{{ svtype }} </td>
+      </tr>
+    {% endfor %}
+  </tbody>
+</table>
+
+{% endif %}
+<p style="page-break-before: always"></p>

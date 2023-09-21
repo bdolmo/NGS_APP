@@ -6,12 +6,12 @@
   <div class="modal-dialog modal-xl">
     <div class="modal-content">
       <div class="modal-header" style="background-color:rgb(248, 248, 248);">
-        <h4 class="modal-title" id="">IGV - </h4>
+        <h4 class="modal-title" id=""><b>IGV</b> </h4>
         <button type="button" class="close" data-dismiss="modal" aria-label="Close">
           <span aria-hidden="true">&times;</span>
         </button>
       </div>
-      <div class="modal-body" style="margin:0 auto;">
+      <div class="modal-body" style="margin:0 auto;width:100%;height:100%">
           <div id='igvDiv' style="width:100%;"></div>
       </div>
     </div>
@@ -52,10 +52,10 @@
 <div class="bg-light border-right vh-100" id="sidebar-wrapper"style="position:fixed;width:15%;">
   <div class="list-group list-group-flush">
     <div href="#" class="list-group-item list-group-item-action" style="background-color:#d9f7f7;">
-      <div style="font-size:24px;"><img class="card-img rounded-circle" style="width:32px;height:32px;font-size:28px;" src="{{ current_user.avatar(128) }}">
-    {{ current_user.username }}</div>
+      <div style="font-size:24px;"><img class="card-img rounded-circle" style="width:32px;height:32px;font-size:28px;" src="">
+    {{ session["username"] }}</div>
     <i style="color:green;" class="fas fa-circle"></i><span style="font-size:13px;"> Online</span>
-    <p style="font-size:13px;"><b>Últim accés:</b> {{ current_user.last_login }} </p>
+    <p style="font-size:13px;"><b>Últim accés:</b>  </p>
    </div>
     <div href="#" class="list-group-item list-group-item-action bg-light">
       <div class="row">
@@ -457,25 +457,34 @@
             <br>
         </div>
 
-        <div style="margin-top:15px;background-color:#e8f4f8;width:29%;padding:10px;">
+        <div style="margin-top:15px;background-color:#e8f4f8;width:100%;padding:10px;">
           <form id="report_form">
-            <input type="hidden" id="run_id" name="run_id" value="{{ sample_info.run_id }}">
-            <input type="hidden" id="sample" name="sample" value="{{ sample_info.lab_id }}">
-            <input type="hidden" id="sample_id" name="sample_id" value="{{ sample_info.lab_id }}">
-            <input style="display:inline;" type="checkbox" id="substitute_report" name="substitute_report">
-            <label style="display:inline;" for="substitute_report"> Marcar com a informe de substitució</label>
-            <br>
-            <input style="display:inline;" type="checkbox" id="lowqual_sample" name="lowqual_sample">
-            <label style="display:inline;" for="lowqual_sample"> La mostra no compleix els criteris mínims de qualitat </label>
-            <br>
-            <button type="submit" id="report_button" class="btn btn-secondary btn-sm mt-2">
-              <i class="fas fa-file-alt" style="color:white;"> </i> Generar informe
-            </button>
+            <div class="row">
+              <div class="col-5">
+                <input type="hidden" id="run_id" name="run_id" value="{{ sample_info.run_id }}">
+                <input type="hidden" id="sample" name="sample" value="{{ sample_info.lab_id }}">
+                <input type="hidden" id="sample_id" name="sample_id" value="{{ sample_info.lab_id }}">
+                <input style="display:inline;" type="checkbox" id="substitute_report" name="substitute_report">
+                <label style="display:inline;" for="substitute_report"> Marcar com a informe de substitució</label>
+                <br>
+                <input style="display:inline;" type="checkbox" id="lowqual_sample" name="lowqual_sample">
+                <label style="display:inline;" for="lowqual_sample"> La mostra no compleix els criteris mínims de qualitat </label>
+                <br>
+                <button type="submit" id="report_button" class="btn btn-secondary btn-sm mt-2">
+                  <i class="fas fa-file-alt" style="color:white;"> </i> Generar informe
+                </button>
+
+              </div>
+              <div class="col-7">
+                <label for="comments">Comentaris:</label>
+                <textarea class="form-control" id="comments" name="comments" rows="3"></textarea>
+              </div>
+            </div>
           </form>
         </div>
         <hr>
 
-        <div class="table-responsive">
+        <div class="table-responsive-">
           <table id="therapeutic_table" class="table table-sm table-striped table-bordered dt-responsive wrap" style="width:100%;background-color:white;">
             <div id="delete_multiple_button" style="margin-bottom:15px;display:none;">
               <hr>
@@ -526,7 +535,7 @@
                 </div>
               </div>
 
-              <div class="modal fade bd-example-modal-lg" id="edit_report_{{var.id}}" tabindex="-1" aria-labelledby="modal_edit_report_{{var.id}}" aria-hidden="true">
+              <div class="modal fade bd-example-modal" id="edit_report_{{var.id}}" tabindex="-1" aria-labelledby="modal_edit_report_{{var.id}}" aria-hidden="true">
                 <form action="{{ url_for('update_therapeutic_variant', run_id=sample_info.run_id, sample=sample_info.lab_id, sample_id=sample_info.id, var_id=var.id, var_classification=var.classification) }}" method="POST" enctype="multipart/form-data" id="update_therapeutic_variant">
                   <div class="modal-dialog modal-lg">
                     <div class="modal-content">
@@ -537,6 +546,17 @@
                         </button>
                       </div>
                       <div class="modal-body">
+                        <div class="row mt-3 mb-3">
+                          <div class="col">
+                            <h6><b>Mou a:</b></h6>
+                            <div class="custom-control custom-radio custom-control-inline">
+                              <input type="radio" class="custom-control-input" name="variant_category" value="3" id="rare_variant_rare_{{var.id}}" checked>
+                              <label class="custom-control-label" for="rare_variant_rare_{{var.id}}">
+                                VUS
+                              </label>
+                            </div>
+                          </div>
+                        </div>
                         <div class="row">
                           <div class="col-sm">
                             <h6><b>Afegeix a la <i>Blacklist</i></b></h6>
@@ -556,7 +576,7 @@
                         </div>
 
                         </div>
-                        <div class="d-flex justify-content-center align-items-center mt-5">
+                        <div class="d-flex justify-content-center align-items-center mt-2">
                           <button class="btn btn-primary mt-2 mb-2" style="width:15%;" type="submit" id="edit_therapeutic">Desa canvis</button>
                         </div>
                       </div>
@@ -761,19 +781,19 @@
                     <div class="modal-body">
                       <div class="row mt-3 mb-3">
                         <div class="col">
-                          <h6><b>Categoria</b></h6>
+                          <h6><b>Mou a:</b></h6>
                           <div class="custom-control custom-radio custom-control-inline">
                             <input type="radio" class="custom-control-input" name="variant_category" value="2" id="actionable_variant_rare_{{var.id}}">
                             <label class="custom-control-label" for="actionable_variant_rare_{{var.id}}">
                               Variants d'alt impacte
                             </label>
                           </div>
-                          <div class="custom-control custom-radio custom-control-inline">
+                          <!-- <div class="custom-control custom-radio custom-control-inline">
                             <input type="radio" class="custom-control-input" name="variant_category" value="3" id="rare_variant_rare_{{var.id}}" checked>
                             <label class="custom-control-label" for="rare_variant_rare_{{var.id}}">
                               VUS
                             </label>
-                          </div>
+                          </div> -->
                         </div>
                       </div>
                       <hr>
@@ -796,7 +816,7 @@
                         </div>
                       </div>
                       </div>
-                      <div class="d-flex justify-content-center align-items-center mt-5">
+                      <div class="d-flex justify-content-center align-items-center mt-2">
                         <button class="btn btn-primary mt-2 mb-2" style="width:15%;" type="submit" id="edit_therapeutic">Desa canvis</button>
                       </div>
                     </div>
@@ -1111,7 +1131,9 @@
       document.getElementById("message_span").innerHTML = data["info"];
       console.log(data["info"]);
       $('#tier_modal').modal('hide');
-    });
+    }).then(() => {
+            window.location.reload();
+        });
   }
 
 
