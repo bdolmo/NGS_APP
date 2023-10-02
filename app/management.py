@@ -16,61 +16,62 @@ from datetime import datetime
 import pandas as pd
 import docx
 import re
+from app.models import Panel, PanelIsoforms, Genes
 
-db = SQLAlchemy(app)
-class Panel(db.Model):
-    __tablename__  = 'PANELS'
-    Id             = db.Column(db.Integer, primary_key=True, autoincrement=True)
-    Panel          = db.Column(db.String(20))
-    Panel_bed      = db.Column(db.String(20))
-    Version        = db.Column(db.String(20))
-    Subpanels      = db.Column(db.String(20))
-    Size           = db.Column(db.Float())
-    Genome_version = db.Column(db.String(20))
-    Total_rois     = db.Column(db.Integer())
-    Total_genes    = db.Column(db.Integer())
-    Last_modified  = db.Column(db.String(20))
-    Read_num_filter= db.Column(db.Float())
-    Call_rate_filter  = db.Column(db.String(20))
-    Call_rate_perc    = db.Column(db.Float())
-    Lost_exons_filter = db.Column(db.String(20))
-    Lost_exons_perc   = db.Column(db.Float())
-    Enrichment_perc_filter = db.Column(db.Float())
-    Variant_call   = db.Column(db.String(20))
-    Language   = db.Column(db.String(20))
+# db = SQLAlchemy(app)
+# class Panel(db.Model):
+#     __tablename__  = 'PANELS'
+#     Id             = db.Column(db.Integer, primary_key=True, autoincrement=True)
+#     Panel          = db.Column(db.String(20))
+#     Panel_bed      = db.Column(db.String(20))
+#     Version        = db.Column(db.String(20))
+#     Subpanels      = db.Column(db.String(20))
+#     Size           = db.Column(db.Float())
+#     Genome_version = db.Column(db.String(20))
+#     Total_rois     = db.Column(db.Integer())
+#     Total_genes    = db.Column(db.Integer())
+#     Last_modified  = db.Column(db.String(20))
+#     Read_num_filter= db.Column(db.Float())
+#     Call_rate_filter  = db.Column(db.String(20))
+#     Call_rate_perc    = db.Column(db.Float())
+#     Lost_exons_filter = db.Column(db.String(20))
+#     Lost_exons_perc   = db.Column(db.Float())
+#     Enrichment_perc_filter = db.Column(db.Float())
+#     Variant_call   = db.Column(db.String(20))
+#     Language   = db.Column(db.String(20))
 
-class PanelIsoforms(db.Model):
-  __tablename__ = 'PANEL_ISOFORMS'
-  id             = db.Column(db.Integer, primary_key=True)
-  chromosome     = db.Column(db.String(50))
-  start          = db.Column(db.String(50))
-  end            = db.Column(db.String(50))
-  ensg_id        = db.Column(db.String(50))
-  enst_id        = db.Column(db.String(50))
-  gene_name      = db.Column(db.String(50))
-  genome_version = db.Column(db.String(50))
-  panel          = db.Column(db.String(50))
-  panel_version  = db.Column(db.String(50))
+# class PanelIsoforms(db.Model):
+#   __tablename__ = 'PANEL_ISOFORMS'
+#   id             = db.Column(db.Integer, primary_key=True)
+#   chromosome     = db.Column(db.String(50))
+#   start          = db.Column(db.String(50))
+#   end            = db.Column(db.String(50))
+#   ensg_id        = db.Column(db.String(50))
+#   enst_id        = db.Column(db.String(50))
+#   gene_name      = db.Column(db.String(50))
+#   genome_version = db.Column(db.String(50))
+#   panel          = db.Column(db.String(50))
+#   panel_version  = db.Column(db.String(50))
 
-class Genes(db.Model):
-  __tablename__ = 'GENES'
-  id          = db.Column(db.Integer, primary_key=True)
-  gene        = db.Column(db.String(50))
-  hg19_chr    = db.Column(db.String(50))
-  hg19_start  = db.Column(db.String(50))
-  hg19_end    = db.Column(db.String(50))
-  hg38_chr    = db.Column(db.String(50))
-  hg38_start  = db.Column(db.String(50))
-  hg38_end    = db.Column(db.String(50))
-  ensg_id     = db.Column(db.String(50))
-  ensg_version= db.Column(db.String(50))
-  enst_id     = db.Column(db.String(50))
-  enst_version= db.Column(db.String(50))
-  ensp_id     = db.Column(db.String(50))
-  ensp_version= db.Column(db.String(50))
-  mane        = db.Column(db.String(50))
-  mane_transcript  = db.Column(db.String(50))
-  canonical     = db.Column(db.String(50))
+# class Genes(db.Model):
+#   __tablename__ = 'GENES'
+#   id          = db.Column(db.Integer, primary_key=True)
+#   gene        = db.Column(db.String(50))
+#   hg19_chr    = db.Column(db.String(50))
+#   hg19_start  = db.Column(db.String(50))
+#   hg19_end    = db.Column(db.String(50))
+#   hg38_chr    = db.Column(db.String(50))
+#   hg38_start  = db.Column(db.String(50))
+#   hg38_end    = db.Column(db.String(50))
+#   ensg_id     = db.Column(db.String(50))
+#   ensg_version= db.Column(db.String(50))
+#   enst_id     = db.Column(db.String(50))
+#   enst_version= db.Column(db.String(50))
+#   ensp_id     = db.Column(db.String(50))
+#   ensp_version= db.Column(db.String(50))
+#   mane        = db.Column(db.String(50))
+#   mane_transcript  = db.Column(db.String(50))
+#   canonical     = db.Column(db.String(50))
 
 def validate_gene_isoform_format(file):
     count_line = 0

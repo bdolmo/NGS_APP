@@ -1,5 +1,21 @@
 from app import db
 
+class User(db.Model):
+    __tablename__ = 'USERS'
+    id = db.Column(db.Integer, primary_key=True, autoincrement=True)
+    username = db.Column(db.String(30), unique=True)
+    password = db.Column(db.String(8))
+    email = db.Column(db.String(30))
+    role = db.Column(db.String(30))
+    organization = db.Column(db.String(30))
+    last_login = db.Column(db.String(30))
+    registered_on = db.Column(db.String(30))
+
+    def avatar(self, size):
+        digest = md5(self.email.lower().encode('utf-8')).hexdigest()
+        return 'https://www.gravatar.com/avatar/{}?d=identicon&s={}'.format(
+            digest, size)
+
 class PanelContent(db.Model):
     __tablename__  = 'PANEL_CONTENT2'
     Id             = db.Column(db.Integer, primary_key=True, autoincrement=True)

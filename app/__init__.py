@@ -17,7 +17,6 @@ app.config.from_object("config.DevelopmentConfig")
 # mail = Mail(app)
 # CORS(app)
 
-# mongo = PyMongo(app)
 db = SQLAlchemy(app)
 
 from app import panel_analysis, petitions, user, results, management, search, gene_panels

@@ -3,12 +3,12 @@ from pathlib import Path
 
 main_dir = os.path.dirname(os.path.abspath(__file__))
 
-pipeline_main = "/home/gencardio/Desktop/GC_NGS_PIPELINE"
-ann_dir = "/home/gencardio/Desktop/ANN_DIR/"
-ref_dir = "/home/gencardio/Desktop/REF_DIR/"
-db_dir = "/home/gencardio/Desktop/NGS_APP/app"
-db = "/home/gencardio/Desktop/NGS_APP/app/NGS.db"
-data_dir = "/home/gencardio/Desktop/NGS_APP/app"
+pipeline_main = "/home/udmmp/Desktop/GC_NGS_PIPELINE"
+ann_dir = "/ngs-annotations/ANN_DIR/"
+ref_dir = "/ngs-annotations/REF_DIR/"
+db_dir = "/home/ngs-db/NGS_DB/"
+db = "/home/ngs-db/NGS_DB/NGS.db"
+data_dir = "/home/udmmp/Desktop/NGS_APP/app"
 ngs_app_url = "http://172.16.78.84:8000"
 gene_panels_api_url = "http://172.16.78.84:8000/api/gene_panels"
 compendium_url = "http://172.16.78.84:8001"
@@ -24,7 +24,7 @@ class Config(object):
     WORKING_DIRECTORY = os.path.join(main_dir, "data")
     ALLOWED_FASTQ_EXTENSIONS = ["fastq.gz", "fq.gz"]
     MAX_INPUT_FILESIZE = 50 * 1024 * 1024
-    SQLALCHEMY_DATABASE_URI = "sqlite:////home/gencardio/Desktop/NGS_APP/app/NGS.db"
+    SQLALCHEMY_DATABASE_URI = "sqlite:////home/udmmp/Desktop/NGS_APP/app/NGS.db"
     WTF_CSRF_SECRET_KEY = "a csrf secret key"
     RECAPTCHA_PUBLIC_KEY = "6Lcl-vsZAAAAAl1wU3t4-5jrYxwYrevk-6qN4mSi"
     RECAPTCHA_PRIVATE_KEY = "6Lcl-vsZAAAAACPMXWnGFFy5eRaseJGOKwKoMr_p"
@@ -40,7 +40,7 @@ class Config(object):
         Path(main_dir)
         / "app/bait_resources/GENCODE/hg19/gencode.v39lift37.annotation.only.genes.gff3.gz"
     )
-    PANEL_DIR = "/home/gencardio/Desktop/GC_NGS_PIPELINE/gene_panels/GenOncology-Dx.v1"
+    PANEL_DIR = "/home/udmmp/Desktop/GC_NGS_PIPELINE/gene_panels/GenOncology-Dx.v1"
     ANN_DIR = ann_dir
     REF_DIR = ref_dir
     DB_DIR = db_dir
@@ -50,12 +50,7 @@ class Config(object):
     REF_YAML = os.path.join(pipeline_main, "reference_resources.yaml")
     BIN_YAML = os.path.join(pipeline_main, "binary_resources.yaml")
     NGS_PIPELINE_EXE = os.path.join(pipeline_main, "gc_ngs_pipeline.py")
-    # SOMATIC_REPORT_TEMPLATES = os.path.join(main_dir, "reporting_templates", "1.3")
-    # SOMATIC_REPORT_TEMPLATES = os.path.join(main_dir, "reporting_templates", "1.5")
-    # SOMATIC_REPORT_TEMPLATES = os.path.join(main_dir, "reporting_templates", "1.6")
     SOMATIC_REPORT_TEMPLATES = os.path.join(main_dir, "reporting_templates", "1.7")
-
-
     SOMATIC_REPORT_IMG = os.path.join(main_dir, "reporting_templates", "img")
     SOMATIC_REPORT_CSS = os.path.join(
         main_dir, "reporting_templates", "css", "style.css"

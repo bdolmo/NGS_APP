@@ -16,40 +16,24 @@ from wtforms.validators import InputRequired, Email, DataRequired
 from itsdangerous.url_safe import URLSafeTimedSerializer as Serializer
 # from flask_mail import Message
 import jwt
-db = SQLAlchemy(app)
+from app.models import User
 
+# db = SQLAlchemy(app)
+# class User(db.Model):
+#     __tablename__ = 'USERS'
+#     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
+#     username = db.Column(db.String(30), unique=True)
+#     password = db.Column(db.String(8))
+#     email = db.Column(db.String(30))
+#     role = db.Column(db.String(30))
+#     organization = db.Column(db.String(30))
+#     last_login = db.Column(db.String(30))
+#     registered_on = db.Column(db.String(30))
 
-
-class User(db.Model):
-    __tablename__ = 'USERS'
-    id = db.Column(db.Integer, primary_key=True, autoincrement=True)
-    username = db.Column(db.String(30), unique=True)
-    password = db.Column(db.String(8))
-    email = db.Column(db.String(30))
-    role = db.Column(db.String(30))
-    organization = db.Column(db.String(30))
-    last_login = db.Column(db.String(30))
-    registered_on = db.Column(db.String(30))
-
-    # def get_reset_token(self, expires_sec=1800):
-    #   s = Serializer(app.config['SECRET_KEY'], expires_sec )
-    #   return s.dumps({'user_id': self.id} ).decode('utf-8')
-
-    # @staticmethod
-    # def verify_reset_token(token):
-    #   s = Serializer(app.config['SECRET_KEY'] )
-    #   try:
-    #     user_id = s.loads(token)['user_id']
-    #   except:
-    #     return None
-    #   return User.query.get(user_id)
-
-    def avatar(self, size):
-        digest = md5(self.email.lower().encode('utf-8')).hexdigest()
-        return 'https://www.gravatar.com/avatar/{}?d=identicon&s={}'.format(
-            digest, size)
-
-
+#     def avatar(self, size):
+#         digest = md5(self.email.lower().encode('utf-8')).hexdigest()
+#         return 'https://www.gravatar.com/avatar/{}?d=identicon&s={}'.format(
+#             digest, size)
 
 @app.route('/login_external')
 def login_external():

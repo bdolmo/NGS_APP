@@ -17,7 +17,7 @@ import subprocess
 from collections import defaultdict, OrderedDict
 from app.models import Panel, Genes, PanelContent
 
-db = SQLAlchemy(app)
+# db = SQLAlchemy(app)
 
 @app.route('/')
 @app.route('/show_panels')

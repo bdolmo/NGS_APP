@@ -25,15 +25,6 @@ import plotly.express as px
 from plotly.subplots import make_subplots
 from app.models import Job, VersionControl, SampleTable, SampleVariants, Variants, TherapeuticTable, OtherVariantsTable, RareVariantsTable, BiomakerTable, SummaryQcTable, DisclaimersTable, AllCnas
 
-# @app.route('/cancel_redis_job')
-# def cancel_redis_job(job_id):
-#     if request.method == 'POST':
-#         if request.form['cancel_job']:
-#             queue_id = request.form['cancel_job']
-#             cancel_job(queue_id)
-
-db = SQLAlchemy(app)
-
 @app.route('/')
 @app.route('/search_menu')
 def search_menu():
@@ -41,7 +32,8 @@ def search_menu():
 
 class Variant:
 
-    def __init__(self,sample_id,lab_id,ext1_id,ext2_id,tumour_purity,run_id,gene,exon,intron,isoform,hgvsg,hgvsc,hgvsp,vartype,read_support,depth,allele_frequency,consequence,classification):
+    def __init__(self,sample_id,lab_id,ext1_id,ext2_id,tumour_purity,run_id,gene,exon,
+        intron,isoform,hgvsg,hgvsc,hgvsp,vartype,read_support,depth,allele_frequency,consequence,classification):
         self.sample_id = sample_id
         self.lab_id = lab_id
         self.ext1_id= ext1_id
