@@ -122,7 +122,7 @@ def login_required(f):
     @wraps(f)
     def decorated_function(*args, **kwargs):
         if not session.get("username"):
-            URL_HOME = f'http://172.16.78.83:5000/logout'
+            URL_HOME = f'http://172.16.83.23:5000/logout'
             return redirect(URL_HOME)
             # return render_template("login.html", title="Identificació")
         return f(*args, **kwargs)
@@ -138,7 +138,7 @@ def main():
 @app.route("/return_home")
 @login_required
 def return_home():
-    home_url = "http://172.16.78.83:5000"
+    home_url = "http://172.16.83.23:5000"
     return redirect(home_url)
 
 
@@ -206,12 +206,15 @@ def download_summary_qc(run_id):
     uploads = os.path.join(app.config["STATIC_URL_PATH"], run_id, "GenOncology-Dx")
     summary_qc_xlsx = "GenOncology-Dx_qc.xlsx"
     test_path = os.path.join(uploads, summary_qc_xlsx)
+    print(test_path)
     if not os.path.isfile(test_path):
         summary_qc_xlsx = f"{run_id}_qc.xlsx"
         test_path = os.path.join(uploads, summary_qc_xlsx)
     if not os.path.isfile(test_path):
         summary_qc_xlsx = f"{run_id}_qc.xlsx"
         uploads = os.path.join(app.config["STATIC_URL_PATH"], run_id)
+
+    print(uploads, summary_qc_xlsx)
     return send_from_directory(
         directory=uploads, path=summary_qc_xlsx, as_attachment=True
     )
@@ -221,7 +224,7 @@ def download_summary_qc(run_id):
 #@login_required
 def download_sample_bam(run_id, sample):
 
-    sample_object = SampleTable.query.filter_by(lab_id=sample).first()
+    sample_object = SampleTable.query.filter_by(lab_id=sample, run_id=run_id).first()
     # print(sample.bam)
     bam_dir = os.path.dirname(sample_object.bam)
     bam_file = sample_object.bam
@@ -231,14 +234,14 @@ def download_sample_bam(run_id, sample):
     uploads = os.path.join(
         app.config["STATIC_URL_PATH"], run_id, "GenOncology-Dx", sample, "BAM_FOLDER"
     )
-
+    
     expected_bam_path = os.path.join(uploads, bam_file)
     if not os.path.isfile(expected_bam_path):
         uploads = os.path.join(
             app.config["STATIC_URL_PATH"], run_id, sample, "BAM_FOLDER"
         )
 
-    # print(uploads)
+    print(uploads, bam_file)
     # bam_file = f"{lab_id}.rmdup.bam"
     return send_from_directory(directory=uploads, path=bam_file, as_attachment=True)
 
@@ -246,7 +249,7 @@ def download_sample_bam(run_id, sample):
 @app.route("/download_sample_bai/<run_id>/<sample>")
 #@login_required
 def download_sample_bai(run_id, sample):
-    sample_object = SampleTable.query.filter_by(lab_id=sample).first()
+    sample_object = SampleTable.query.filter_by(lab_id=sample, run_id=run_id).first()
 
     bam_dir = os.path.dirname(sample_object.bam)
     bai_file = f"{sample}.rmdup.bam.bai"
@@ -256,12 +259,13 @@ def download_sample_bai(run_id, sample):
     )
 
     expected_bai_path = os.path.join(uploads, bai_file)
+    print(expected_bai_path)
     if not os.path.isfile(expected_bai_path):
         uploads = os.path.join(
             app.config["STATIC_URL_PATH"], run_id, sample, "BAM_FOLDER"
         )
 
-    print(bai_file)
+    print(uploads, bai_file)
     return send_from_directory(directory=uploads, path=bai_file, as_attachment=True)
 
 
@@ -985,11 +989,11 @@ def myvariant_request(hgvsg: str) -> dict:
     return response_dict
 
 
-@app.route("/show_therapeutic_details/<sample>/<entry_id>/<var_classification>")
+@app.route("/show_therapeutic_details/<sample>/<run_id>/<entry_id>/<var_classification>")
 #@login_required
-def show_therapeutic_details(sample, entry_id, var_classification):
+def show_therapeutic_details(sample, run_id, entry_id, var_classification):
 
-    sample_info = SampleTable.query.filter_by(lab_id=sample).first()
+    sample_info = SampleTable.query.filter_by(lab_id=sample, run_id=run_id).first()
 
     if var_classification == "Therapeutic":
         variant = TherapeuticTable.query.filter_by(id=entry_id).first()

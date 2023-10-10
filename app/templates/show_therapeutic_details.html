@@ -614,8 +614,6 @@
                 format: 'bam',
                 url : "{{ url_for('download_sample_bam', run_id=sample_info.run_id, sample=sample_info.lab_id) }}" ,
                 indexURL: "{{ url_for('download_sample_bai', run_id=sample_info.run_id, sample=sample_info.lab_id) }}"
-                // url: 'gs://genomics-public-data/platinum-genomes/bam/NA12878_S1.bam',
-                // indexURL: 'gs://genomics-public-data/platinum-genomes/bam/NA12878_S1.bam.bai'
               }
             ]
         };

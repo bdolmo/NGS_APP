@@ -95,14 +95,14 @@ def apps():
                       'id_client_tok': session['idClient'], 'rol_tok': 'None'}
     secret_key = '12345'
     token = jwt.encode(tocken_cookies, secret_key, algorithm='HS256')
-    url = f'http://172.16.78.83:5000/apps/token?token={token}'
+    url = f'http://172.16.83.23:5000/apps/token?token={token}'
 
     return redirect(url)
 
 
 @app.route('/logout')
 def logout():
-  URL_HOME = f'http://172.16.78.83:5000/logout'
+  URL_HOME = f'http://172.16.83.23:5000/logout'
   session['username'] = None
   session['user'] = None
   session['rol'] = None
