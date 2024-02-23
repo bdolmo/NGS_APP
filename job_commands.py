@@ -89,9 +89,9 @@ def launch_ngs_analysis(params):
         raise Exception(error)
 
     # Remove raw fastq files
-    fastq_list = glob.glob(os.path.join(params['OUTPUT_DIR'], '*fastq.gz'))
-    for fq in fastq_list:
-        os.remove(fq)
+    # fastq_list = glob.glob(os.path.join(params['OUTPUT_DIR'], '*fastq.gz'))
+    # for fq in fastq_list:
+    #     os.remove(fq)
 
     print('Task complete')
     if output:

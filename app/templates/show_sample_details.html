@@ -2,6 +2,106 @@
 
 {% block body %}
 
+
+
+<div id="edit_sample" class="modal fade">
+  <!-- <form action="" method="POST" enctype="multipart/form-data" id="update_petition"> -->
+    <div class="modal-dialog modal-lg">
+      <div class="modal-content">
+        <div class="modal-header" style="background-color:rgb(248, 248, 248);">
+          <h4 class="modal-title" id="edit_petition_name">Dades demogràfiques</h4>
+          <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+            <span aria-hidden="true">&times;</span>
+          </button>
+        </div>
+        <div class="modal-body">
+          <div class="row mt-3">
+            <div class="col-sm">
+              <h6><b>Lab ID</b></h6>
+              <div class="input-group mb-3">
+                <input id="modal_edit_lab_id" value="" type="text" name="modal_edit_lab_id" class="form-control" placeholder="">
+              </div>
+            </div>
+
+            <div class="col-sm">
+              <h6><b>Nº Petició</b></h6>
+              <div class="input-group mb-3">
+                <input id="modal_edit_ext1_id" value="" type="text" name="modal_edit_ext1_id" class="form-control" placeholder="">
+              </div>
+            </div>
+
+            <div class="col-sm">
+              <h6><b>HC</b></h6>
+              <div class="input-group mb-3">
+                <input id="modal_edit_ext2_id" value="" type="text" name="modal_edit_ext2_id" class="form-control" placeholder="">
+              </div>
+            </div>
+            <div class="col-sm">
+              <h6><b>CIP</b></h6>
+              <div class="input-group mb-3">
+                <input id="modal_edit_ext3_id" value="" type="text" name="modal_edit_ext3_id" class="form-control" placeholder="">
+              </div>
+            </div>
+          </div>
+
+          <div class="row mt-3">
+            <div class="col-sm">
+              <h6><b>Tipus de mostra</b></h6>
+              <div class="input-group mb-3">
+                <input id="modal_edit_sample_type" value="" type="text" name="modal_edit_sample_type" class="form-control" placeholder="">
+              </div>
+            </div>
+            <div class="col-sm ">
+              <h6><b>%Tumoral</b></h6>
+              <select class="custom-select" name="modal_edit_tumoral_pct" id="modal_edit_tumoral_pct">
+                {% for n in range(0, 100, 5) %}
+                <option value="{{n}}">{{n}}</option>
+                {% endfor %}
+              </select>
+            </div>
+            <div class="col-sm ">
+              <h6><b>Metge sol·licitant</b></h6>
+              <input id="modal_edit_physician_name" type="text" name="modal_edit_physician_name" class="form-control" >
+            </div>
+            <div class="col-sm ">
+              <h6><b>Hospital</b></h6>
+              <input id="modal_edit_hospital" type="text" name="modal_edit_hospital" class="form-control" >
+            </div>
+          </div>
+
+          <div class="row mt-3">
+            <div class="col-sm">
+              <h6><b>Data biòpsia original</b> <small>(MM/DD/YYYY)</small></h6>
+              <div class="form-group">
+                <div id="datepicker" data-provide="datepicker">
+                  <input class="form-control" name="Date" type="date" value="" id="modal_edit_biopsy_date">
+                  <div class="input-group-addon">
+                      <span class="glyphicon glyphicon-th"></span>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div class="col-sm">
+              <h6><b>Data de rebuda</b> <small>(MM/DD/YYYY)</small></h6>
+              <div class="form-group">
+                <div id="datepicker" data-provide="datepicker">
+                  <input class="form-control" name="Date" type="date" value="" id="modal_edit_recieved_date">
+                  <div class="input-group-addon">
+                      <span class="glyphicon glyphicon-th"></span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="d-flex justify-content-center align-items-center mt-1 mb-2">
+          <button class="btn btn-primary mt-2 mb-2" style="width:15%;" type="submit" id="change_sample_info_button">Desa</button>
+        </div>
+      </div>
+    </div>
+  <!-- </form> -->
+</div>
+
 <div class="modal fade bd-example-modal-xl" id="show_igv" tabindex="-1" aria-hidden="true">
   <div class="modal-dialog modal-xl">
     <div class="modal-content">
@@ -130,7 +230,7 @@
   <nav aria-label="breadcrumb ">
     <ol class="breadcrumb mt-3">
       <li class="breadcrumb-item"><a href="{{ url_for('status') }}">Resultats</a></li>
-      <li class="breadcrumb-item"><a href="{{ url_for('show_run_details', run_id=sample_info.run_id) }}">{{ sample_info.run_id }}</a></li>
+      <li class="breadcrumb-item"><a href="{{ url_for('show_run_details', run_id=sample_info.run_id) }}" id="run_id_tag">{{ sample_info.run_id }}</a></li>
       <li class="breadcrumb-item active" aria-current="page"><h5>{{ sample_info.lab_id }}</h5></li>
     </ol>
   </nav>
@@ -182,34 +282,91 @@
     {% endif %}
     <div class="card card-body border-0 mt-2" style="outline-bottom: 1px solid grey;background-color:white;">
       <div class="row" style="font-size:16px;">
-        <div class="col">
+        <div class="col-4">
           <h5><i class="fas fa-id-card"></i> Pacient</h5>
-          <hr>
-          <p><b>Lab ID: </b>  {{ sample_info.lab_id }} </p>
-          <p><b>AP ID: </b>  {{ sample_info.ext1_id }}</p>
-          <p><b>Núm. HC: </b> {{ sample_info.ext2_id }}</p>
+          <hr style="margin:0px;">
+          <div class="row">
+            <div class="col">
+              <div style="display:inline-block;margin:0px;">
+                <b style="display:inline-block;">Lab ID: </b>
+                <div style="display:inline-block;" id="edit_lab_id">{{ sample_info.lab_id }}</div>
+              </div> 
+              <div style="margin:0px;">
+                <b style="display:inline-block;">AP ID: </b>
+                <div style="display:inline-block;margin:0px;" id="edit_ext1_id"> {{ sample_info.ext1_id }}</div>
+              </div>
+            </div>
+            <div class="col">
+              <div style="margin:0px;">
+                <b style="display:inline-block;">CIP: </b>
+                <div style="display:inline-block;margin:0px;" id="edit_ext3_id"> {{ sample_info.ext3_id }}</div>
+              </div>
+              <div style="margin:0px;">
+                <b style="display:inline-block;">Núm. HC: </b>
+                <div style="display:inline-block;margin:0px;" id="edit_ext2_id"> {{ sample_info.ext2_id }}</div>
+              </div>
+            </div>
+          </div>
         </div>
-        <div class="col">
+
+        <div class="col-4">
           <h5><i class="fas fa-vials"></i> Mostra</h5>
-          <hr>
-          <p><b>Tipus de mostra: </b>bloc de parafina</p>
-          <p><b>Data de rebuda:</b>  {{ sample_info.extraction_date }}</p>
-          <p><b>Puresa tumoral:</b>  {{ sample_info.tumour_purity }}%</p>
+          <hr style="margin:0px;">
+          <div class="row">
+            <div class="col">
+              <div style="display:inline-block;margin:0px;">
+                <b>Tipus de mostra: </b>
+                <div style="display:inline-block;" id="edit_sample_type">bloc de parafina</div>
+              </div>
+              <div style="margin:0px;">
+                <b>Data de rebuda: </b>
+                <div style="display:inline-block;" id="edit_recieved_date"> {{ petition_info.Petition_date }}</div>
+              </div>
+            </div>
+            <div class="col">
+              <div style="display:inline-block;margin:0px;"> 
+                <b>Origen tumoral: </b>
+                <div style="display:inline-block;" id="edit_tumor_origin"> {{ petition_info.Tumour_origin }}</div>  
+              </div>
+              <div style="display:inline-block;margin:0px;"> 
+                <b>Puresa tumoral: </b>
+                <div style="display:inline-block;" id="edit_tumoral_pct"> {{ sample_info.tumour_purity }}%</div>  
+              </div>
+              <div style="display:inline-block;margin:0px;"> 
+                <b>Data biòpsia: </b>
+                <div style="display:inline-block;" id="edit_biopsy_date"> {{ petition_info.Date_original_biopsy }}</div>  
+              </div>
+
+            </div>
+          </div>
         </div>
         <div class="col">
           <h5><i class="fas fa-hospital"></i> Centre sanitari</h5>
-          <hr>
-          <p><b>Hospital:  .</b></p>
-          <p><b>Metge sol·licitant:</b>  {{ sample_info.physician_name }}</p>
+          <hr style="margin:0px;">
+          <div style="margin:0px;">
+            <b>Hospital:</b>
+            <div style="display:inline-block;" id="edit_hospital">.</div>
+          </div>
+          <div style="display:inline-block;margin:0px;">
+            <b>Metge sol·licitant:</b> 
+            <div style="display:inline-block;" id="edit_physician_name">{{ petition_info.Medical_doctor }}</div>
+          </div>
         </div>
         <div class="col">
           <h5><i class="fas fa-server"></i> Anàlisi NGS</h5>
-          <hr>
-          <p><b>Data d'anàlisi:</b>  {{ sample_info.analysis_date }}</p>
-          <p><b>Panell:</b>  {{ sample_info.panel }}</p>
+          <hr style="margin:0px;">
+          <div style="display:inline-block;margin:0px;">
+            <div style="display:inline-block;margin:0px;"><b>Data d'anàlisi:</b>  {{ sample_info.analysis_date }}</div>
+            <div style="display:inline-block;margin:0px;"><b>Panell:</b>  {{ sample_info.panel }}</div>
+          </div>
+          <div style="display:inline-block;margin:0px;">
+            <div style="display:inline-block;margin:0px;"><b>Pipeline:</b> {{ pipeline_details.pipeline_version }}</div>
+          </div>
         </div>
-      </div>
+       </div>
+      <a class="btn btn-sm btn-secondary" style="float:left;width:80px;padding:0px;color:white;" onclick="updatePatient()"><i class="fas fa-edit"></i>Modifica</a>
     </div>
+        
     <div class="card border-1 mt-2">
       <h5 class="card-header">Distribució de variants</h5>
       <div class=" card-body " style="outline-bottom: 1px solid grey;background-color:white;">
@@ -323,7 +480,6 @@
             </thead>
             <tbody>
               <tr>
-
                 {% set total_bases_before = fastp_dict['summary']['before_filtering']['total_bases'] %}
                 {% set total_bases_after = fastp_dict['summary']['after_filtering']['total_bases'] %}
                 {% set bases_trimmed = total_bases_before-total_bases_after %}
@@ -477,7 +633,7 @@
               </div>
               <div class="col-7">
                 <label for="comments">Comentaris:</label>
-                <textarea class="form-control" id="comments" name="comments" rows="3"></textarea>
+                <textarea class="form-control" id="comments" name="comments" rows="2"></textarea>
               </div>
             </div>
           </form>
@@ -494,11 +650,11 @@
             </div>
             <thead>
               <tr>
-                  <th></th>
-                  <th>Accions</th>
-                  <th>Gen</th>
-                  <th>Variant</th>
-                  <th>Altres</th>
+                <th></th>
+                <th>Accions</th>
+                <th>Gen</th>
+                <th>Variant</th>
+                <th>Altres</th>
               </tr>
             </thead>
             <tbody>
@@ -529,7 +685,7 @@
                   {% set var_json = var.var_json  %}
                   <a onclick='showIgvVariant({{ var_json }});' role="button">
                     <div>
-                      <i class="fas fa-image fa" style="border-radius:3px;margin:0px;padding:2px;color:white;background-color:#0d98ba"></i> <small><b>IGV</b></small
+                      <i class="fas fa-image fa" style="border-radius:3px;margin:0px;padding:2px;color:white;background-color:#0d98ba"></i> <small><b>IGV</b></small>
                     </div>
                   </a>
                 </div>
@@ -869,7 +1025,6 @@
               BLACKLIST
             </span>
             {% endif %}
-
           </td>
           <td>
             <div class="row">
@@ -908,8 +1063,8 @@
         </tbody>
       </table>
     </div>
-    <div class="tab-pane fade pt-5" id="CNA" role="tabpanel" aria-labelledby="CNA-tab">
 
+    <div class="tab-pane fade pt-5" id="CNA" role="tabpanel" aria-labelledby="CNA-tab">
       <table id="cnas_table" class="table table-sm table-striped table-bordered dt-responsive nowrap" style="width:100%;background-color:white;">
         <thead>
             <tr>
@@ -979,6 +1134,7 @@
         </tbody>
       </table>
     </div>
+
     <div class="tab-pane fade pt-5" id="Fusions" role="tabpanel" aria-labelledby="Fusion-tab">
       <table id="fusions_table" class="table table-sm table-striped table-bordered dt-responsive nowrap" style="width:100%;background-color:white;">
         <thead>
@@ -1077,6 +1233,113 @@
 
 {% block script %}
 <script>
+
+  function updatePatient() {   
+    edit_lab_id = document.getElementById("edit_lab_id").innerText;
+    edit_ext1_id = document.getElementById("edit_ext1_id").innerText;
+    edit_ext2_id = document.getElementById("edit_ext2_id").innerText;
+    edit_ext3_id = document.getElementById("edit_ext3_id").innerText;
+
+    edit_sample_type = document.getElementById("edit_sample_type").innerText;
+    edit_recieved_date = document.getElementById("edit_recieved_date").innerText;
+    edit_tumoral_pct = document.getElementById("edit_tumoral_pct").innerText;
+    edit_hospital = document.getElementById("edit_hospital").innerText;
+    edit_physician = document.getElementById("edit_physician_name").innerText;
+    edit_biopsy_date = document.getElementById("edit_biopsy_date").innerText;
+
+    myarr = edit_biopsy_date.split("/");
+    if (myarr.length == 3) {
+      biopsy_date = myarr[2]+"-"+myarr[1]+"-"+myarr[0];
+    }
+    else {
+      biopsy_date = edit_biopsy_date
+    }
+
+
+    myarr = edit_recieved_date.split("/");
+
+    if (myarr.length == 3) {
+      recieved_date = myarr[2]+"-"+myarr[1]+"-"+myarr[0];
+    }
+    else {
+      recieved_date = edit_recieved_date
+    }
+
+
+    document.getElementById("modal_edit_lab_id").value = edit_lab_id;
+    document.getElementById("modal_edit_ext1_id").value = edit_ext1_id;
+    document.getElementById("modal_edit_ext2_id").value = edit_ext2_id;
+    document.getElementById("modal_edit_ext3_id").value = edit_ext3_id;
+    document.getElementById("modal_edit_sample_type").value = edit_sample_type;
+    document.getElementById("modal_edit_hospital").value = edit_hospital;
+    document.getElementById("modal_edit_physician_name").value = edit_physician;
+    document.getElementById("modal_edit_biopsy_date").value = biopsy_date;
+    document.getElementById("modal_edit_recieved_date").value = recieved_date;
+
+    if (edit_tumoral_pct != ".") {
+      edit_tumoral_pct = edit_tumoral_pct.replace("%", "");
+      document.getElementById("modal_edit_tumoral_pct").value = edit_tumoral_pct;
+    }
+    $('#edit_sample').modal('show');
+  }
+
+
+  button_tier_modal = document.getElementById("change_sample_info_button");
+  button_tier_modal.addEventListener("click", updatePatient2);
+
+  function updatePatient2() {
+    lab_id = document.getElementById("modal_edit_lab_id").value;
+    ap_id = document.getElementById("modal_edit_ext1_id").value;
+    hc_id = document.getElementById("modal_edit_ext2_id").value;
+    cip_id = document.getElementById("modal_edit_ext3_id").value;
+    sample_type = document.getElementById("modal_edit_sample_type").value;
+    hospital = document.getElementById("modal_edit_hospital").value;
+    tumor_pct =  document.getElementById("modal_edit_tumoral_pct").value;
+    physician_name = document.getElementById("modal_edit_physician_name").value;
+
+    recieved_date = document.getElementById("modal_edit_recieved_date").value;
+    biopsy_date = document.getElementById("modal_edit_biopsy_date").value;
+
+    old_lab_id = document.getElementById("edit_lab_id").innerText;
+    old_ext1_id = document.getElementById("edit_ext1_id").innerText;
+    run_id = document.getElementById("run_id_tag").innerText;
+
+    let data_json = {
+      run_id: run_id,
+      old_lab_id: old_lab_id,
+      old_ext1_id: old_ext1_id,
+      lab_id: lab_id,
+      ext1_id: ap_id,
+      ext2_id: hc_id,
+      ext3_id: cip_id,
+      sample_type: sample_type,
+      hospital: hospital,
+      tumor_pct: tumor_pct,
+      physician_name: physician_name,
+      recieved_date: recieved_date,
+      biopsy_date: biopsy_date
+    }
+
+    fetch('/update_patient_info', {
+      method: "POST",
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body:JSON.stringify(data_json)
+    })
+    .then((response) => response.json())
+    .then((data) => {
+      document.getElementById("message_div").style.display = "block";
+      document.getElementById("message_span").innerHTML = data["info"];
+      console.log(data["info"]);
+      $('#edit_sample').modal('hide');
+    }).then(() => {
+      window.location.reload();
+    });
+
+
+  }
+
 
   function loadTierModal(event) {
 

@@ -97,13 +97,6 @@ def allowed_input_filesize(filesize):
         return False
 
 
-# @app.route("/")
-# @loggin_required
-# @app.route("/main")
-# def main():
-#     return render_template("main.html", title="Pàgina inicial")
-
-
 @app.route("/test_upload", methods=["POST", "GET"])
 def test_upload():
     if request.method == "POST":
@@ -120,15 +113,15 @@ def stop_job(queue_id):
     return redirect(url_for("status"))
 
 
-@app.route("/remove_job/<queue_id>/<job_id>")
+@app.route("/remove_job/<queue_id>/<job_id>/<panel>")
 #@login_required
-def remove_job(queue_id, job_id):
+def remove_job(queue_id, job_id, panel):
     try:
         registry.remove(queue_id, delete_job=True)
     except Exception as e:
         print(str(e))
 
-    job_entry = Job.query.filter_by(Job_id=job_id).first()
+    job_entry = Job.query.filter_by(Job_id=job_id, Panel=panel).first()
     if job_entry:
         db.session.delete(job_entry)
         db.session.commit()
@@ -356,7 +349,7 @@ def submit_ngs_job():
         if request.files:
             fastq_files = request.files.getlist("fastqs")
             total_samples = int(len(fastq_files) / 2)
-            run_dir = app.config["WORKING_DIRECTORY"] + ""
+            run_dir = app.config["UPLOADS"] + ""
             if float(free_gb) < 20:
                 is_ok = False
                 msg = (
@@ -411,7 +404,7 @@ def submit_ngs_job():
             flash("Es requereix un Job ID", "warning")
             is_ok = False
 
-        run_dir = os.path.join(app.config["WORKING_DIRECTORY"], job_id)
+        run_dir = os.path.join(app.config["UPLOADS"], job_id)
 
         # Now checking optinal parameters
         if request.form.get("gatk"):
@@ -518,7 +511,7 @@ def submit_ngs_job():
 
             # Hard coded
             if "GenOncology" in panel_name:
-                panel_bed = "/home/gencardio/Desktop/GC_NGS_PIPELINE/gene_panels/GenOncology-Dx.v1/GenOncology-Dx.v1.bed"
+                panel_bed = "/home/udmmp/GC_NGS_PIPELINE/gene_panels/GenOncology-Dx.v1/GenOncology-Dx.v1.bed"
             ann_dir = app.config["ANN_DIR"]
             ref_dir = app.config["REF_DIR"]
             db_sqlite = app.config["DB"]
@@ -538,7 +531,7 @@ def submit_ngs_job():
                 "PANEL_NAME": panel_name,
                 "PANEL_VERSION": panel_version,
                 "GENOME": "hg19",
-                "THREADS": "6",
+                "THREADS": "12",
                 "VARCLASS": var_analysis,
                 "RUN_DIR": run_dir,
                 "RUN_NAME": os.path.basename(run_dir),
@@ -589,129 +582,3 @@ def submit_ngs_job():
 
     res = make_response(jsonify({"message": "File upload error"}), 400)
     return res
-
-
-# @app.route('/submit_lowpass_analysis', methods=['GET', 'POST'])
-# def submit_lowpass_analysis():
-#     '''
-#     '''
-#     total_samples = 0
-#     is_ok = True
-#     if request.method == "POST":
-#         input_file_type = ""
-#         if request.form.get('select_file_type'):
-#             input_file_type = request.form.get('select_file_type')
-#             if input_file_type == "0":
-#                 flash(" No s'ha seleccionat cap format d'arxiu", "warning")
-#             if input_file_type == "1":
-#                 input_file_type = "fastq"
-#             elif input_file_type == "2":
-#                 input_file_type = "bam"
-#
-#         bin_size = "50000"
-#         if request.form.get('bin_size'):
-#             bin_size = request.form['bin_size']
-#
-#         lower_limit_dup = 1.4
-#         if request.form.get('lower_limit_dup'):
-#             lower_limit_dup = str(float(request.form['lower_limit_dup']))
-#
-#         upper_limit_del = 0.6
-#         if request.form.get('upper_limit_del'):
-#             upper_limit_del = str(float(request.form['upper_limit_del']))
-#
-#         msg = (" INFO: bin_size: {} lower_limit_dup: {} upper_limit_del: {}")\
-#             .format(bin_size, lower_limit_dup, upper_limit_del )
-#
-#         job_id = ""
-#         if request.form.get('job_id'):
-#             job_id = request.form['job_id']
-#             exists = Job.query.filter_by(Job_id=job_id, User_id=current_user.id).first()
-#             if exists:
-#                 flash("Ja existeix un Job ID amb el nom entrat", "warning")
-#                 is_ok = False
-#         else:
-#             #errors.append("Es requereix un Job ID")
-#             flash("Es requereix un Job ID", "warning")
-#             is_ok = False
-#
-#         if is_ok == True:
-#             run_dir     = app.config['WORKING_DIRECTORY'] + "/" + job_id
-#             if not os.path.isdir(run_dir):
-#                 os.mkdir(run_dir)
-#             if request.files:
-#                 input_files = request.files.getlist("input_files")
-#                 total_samples = len(input_files)
-#                 for file in input_files:
-#                     status = True
-#                     if file.filename != "":
-#                         # if "Undetermined" in fastq.filename:
-#                         #     continue
-#                         if input_file_type == "bam":
-#                             if not file.filename.endswith(".bam") and not file.filename.endswith(".bai"):
-#                                 msg= f"El fitxer {file.filename} no és un bam"
-#                                 flash(msg, "warning")
-#                                 status=False
-#                         #file, status = validate_fastq(input_files, file)
-#                         if status == True:
-#                             pass
-#                         else:
-#                             is_ok = False
-#                     else:
-#                         msg = ("No s'han introduït els fitxer {}").format(input_file_type)
-#                         flash(msg, "warning")
-#                         is_ok = False
-#                 if is_ok == True:
-#                     for file in input_files:
-#                         full_file_path = str(Path(run_dir)/file.filename)
-#                         if not os.path.isfile(full_file_path):
-#                             file.save(os.path.join(run_dir, file.filename))
-#             else:
-#                 msg = ("No s'han introduït els fitxer {}").format(input_file_type)
-#                 flash(msg, "warning")
-#                 is_ok = False
-#
-#             if is_ok == False:
-#                 return redirect(url_for('lowpass_analysis'))
-#
-#             # Hard coded
-#             panel_dir   = app.config['PANEL_DIR']
-#             ann_dir     = app.config['ANN_DIR']
-#             ref_dir     = app.config['REF_DIR']
-#             db_dir      = app.config['DB_DIR']
-#             ann_yaml    = app.config['ANN_YAML']
-#             docker_yaml = app.config['DOCKER_YAML']
-#             ref_yaml    = app.config['REF_YAML']
-#             bin_yaml    = app.config['BIN_YAML']
-#
-#             params = {
-#                 'PIPELINE_EXE' : app.config['NGS_PIPELINE_EXE'],
-#                 'USER_ID'  : current_user.id,
-#                 'GENOME'   : 'hg19',
-#                 'THREADS'  : '4',
-#                 'RUN_DIR'  : run_dir,
-#                 'ANN_DIR'  : ann_dir,
-#                 'REF_DIR'  : ref_dir,
-#                 'DB_DIR'   : db_dir,
-#                 'ANN_YAML' : ann_yaml,
-#                 'REF_YAML' : ref_yaml,
-#                 'BIN_YAML'   : bin_yaml,
-#                 'DOCKER_YAML': docker_yaml
-#             }
-#             task = q.enqueue( launch_lowpass_analysis, job_id, params, job_timeout=50000)
-#             registry = q.failed_job_registry
-#
-#
-#             jobs = q.jobs
-#             q_len = len (q)
-#             message =  f"Task {task.id} added to queue at {task.enqueued_at}. {q_len} Tasks in queue "
-#             print(message)
-#
-#             # Here we should update the jobs database
-#             job = Job( User_id =current_user.id, Job_id =job_id, Queue_id=task.id,
-#                 Date=task.enqueued_at, Analysis="Lowpass", Panel="None", Samples=total_samples, Status="Running")
-#             db.session.add(job)
-#             db.session.commit()
-#             return redirect(url_for('status'))
-#
-#     return redirect(url_for('lowpass_analysis'))

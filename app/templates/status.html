@@ -92,7 +92,7 @@
                   <td>{{ job.Samples }}</td>
                   <td style="background-color: #F5F5F5">
                   {% if (job.Status=="queued") %}
-                  <a href="{{ url_for('remove_job', queue_id=job.Queue_id, job_id=job.Job_id) }}" role="button" onclick="return confirm('Segur que vols eliminar aquest RUN?');">
+                  <a href="{{ url_for('remove_job', queue_id=job.Queue_id, job_id=job.Job_id, panel=job.Panel) }}" role="button" onclick="return confirm('Segur que vols eliminar aquest RUN?');">
                     <i class="fas fa-trash" style="color: red"></i>
                   </a>
                   {% endif %}
@@ -100,29 +100,24 @@
                   <a href="{{ url_for('stop_job', queue_id=job.Queue_id) }}" role="button" onclick="return confirm('Segur que vols aturar aquest RUN?');">
                     <i class="fas fa-stop-circle" style="color: blue"></i>
                   </a>
-                  <!-- <a href="{{ url_for('remove_job', queue_id=job.Queue_id, job_id=job.Job_id) }}" role="button" onclick="return confirm('Segur que vols eliminar aquest RUN?');">
-                    <i class="fas fa-trash" style="color: red"></i>
-                  </a> -->
-
                   {% endif %}
                   {% if (job.Status=="finished") %}
-                    <a href="{{ url_for('remove_job', queue_id=job.Queue_id, job_id=job.Job_id) }}" role="button" onclick="return confirm('Segur que vols eliminar aquest RUN?');">
+                    <a href="{{ url_for('remove_job', queue_id=job.Queue_id, job_id=job.Job_id, panel=job.Panel) }}" role="button" onclick="return confirm('Segur que vols eliminar aquest RUN?');">
                       <i class="fas fa-trash" style="color: red"></i>
                     </a>
                   {% endif %}
                   {% if (job.Status=="failed") %}
-                  <a href="{{ url_for('remove_job', queue_id=job.Queue_id, job_id=job.Job_id) }}" role="button" onclick="return confirm('Segur que vols eliminar aquest RUN?');">
+                  <a href="{{ url_for('remove_job', queue_id=job.Queue_id, job_id=job.Job_id, panel=job.Panel) }}" role="button" onclick="return confirm('Segur que vols eliminar aquest RUN?');">
                     <i class="fas fa-trash" style="color: red"></i>
                   </a>
                   {% endif %}
                   {% if (job.Status=="stopped") %}
-                  <a href="{{ url_for('remove_job', queue_id=job.Queue_id, job_id=job.Job_id) }}" role="button" onclick="return confirm('Segur que vols eliminar aquest RUN?');">
+                  <a href="{{ url_for('remove_job', queue_id=job.Queue_id, job_id=job.Job_id, panel=job.Panel) }}" role="button" onclick="return confirm('Segur que vols eliminar aquest RUN?');">
                     <i class="fas fa-trash" style="color: red"></i>
                   </a>
                   {% endif %}
-
                   {% if (job.Status=="scheduled") %}
-                  <a href="{{ url_for('remove_job', queue_id=job.Queue_id, job_id=job.Job_id) }}" role="button" onclick="return confirm('Segur que vols eliminar aquest RUN?');">
+                  <a href="{{ url_for('remove_job', queue_id=job.Queue_id, job_id=job.Job_id, panel=job.Panel) }}" role="button" onclick="return confirm('Segur que vols eliminar aquest RUN?');">
                     <i class="fas fa-trash" style="color: red"></i>
                   </a>
                   {% endif %}

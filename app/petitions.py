@@ -6,7 +6,6 @@ from flask import Flask
 from flask import request, render_template, url_for, redirect, flash, send_from_directory, make_response, jsonify
 from flask_wtf import FlaskForm
 import sqlite3
-# from flask_login import LoginManager, UserMixin, login_user, login_required, logout_user, current_user
 from flask_sqlalchemy import SQLAlchemy
 from flask_sslify import SSLify
 from collections import defaultdict
@@ -44,7 +43,7 @@ def upload_petition():
     error_list    =  []
     if request.method == "POST":
         petitions = request.files.getlist("petition_document")
-        petition_dir = app.config['WORKING_DIRECTORY'] + "/petitions"
+        petition_dir = app.config['PETITIONS_DIR'] + "/petitions"
         if not os.path.isdir(petition_dir):
             os.mkdir(petition_dir)
 

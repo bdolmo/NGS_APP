@@ -209,8 +209,10 @@ def adapters_plot(r1_adapters_dict, r2_adapters_dict):
 
 def snv_plot(snv_dict):
 
+    ffpe_artifacts = ["C>T", "G>A"]
     labels_list = []
     values_list = []
+    colors_list = []  # List to store colors for each bar
 
     for var1 in snv_dict:
         for var2 in snv_dict[var1]:
@@ -218,6 +220,12 @@ def snv_plot(snv_dict):
             value = snv_dict[var1][var2]
             labels_list.append(label)
             values_list.append(value)
+            # Determine color based on whether it's an FFPE artifact
+            if label in ffpe_artifacts:  # Assuming ffpe_artifacts is a list of artifact labels
+                colors_list.append('rgba(255,0,0,0.5)')  # Red color for FFPE artifacts
+            else:
+                colors_list.append('rgba(35,203,167,0.5)')  # Original color for other SNVs
+
 
     layout = go.Layout(
         paper_bgcolor="rgba(0,0,0,0)",
@@ -226,17 +234,20 @@ def snv_plot(snv_dict):
         height=270,
         margin=dict(l=0, r=0, b=0, t=0),
     )
+
+    # Rest of your code remains the same...
     fig = go.Figure(
         data=[
             go.Bar(
                 x=labels_list,
                 y=values_list,
-                marker_color="rgba(35,203,167,0.5)",
+                marker_color=colors_list,  # Use the colors list here
                 marker_line_color="black",
             )
         ],
         layout=layout,
     )
+
     fig.update_layout(
         # xaxis_title="Tipus",
         yaxis_title="Total",

@@ -20,14 +20,6 @@ from flask import (
     session
 )
 from flask_wtf import FlaskForm
-# from flask_login import (
-#     LoginManager,
-#     UserMixin,
-#     login_user,
-#     login_required, 
-#     logout_user,
-#     current_user,
-# )
 from flask_sqlalchemy import SQLAlchemy
 from flask_sslify import SSLify
 from collections import defaultdict
@@ -68,6 +60,7 @@ from app.models import (
     AllCnas,
     LostExonsTable,
     PipelineDetails,
+    Petition
 )
 from app.plots import var_location_pie, cnv_plot, basequal_plot, adapters_plot, snv_plot, vaf_plot
 
@@ -168,6 +161,111 @@ def show_run_details(run_id):
     )
 
 
+@app.route('/update_patient_info', methods=["POST"])
+@login_required
+def update_patient_info():
+    if request.method == "POST":
+        data = request.get_json()
+        run_id = data["run_id"]
+        old_lab_id = data["old_lab_id"]
+        old_ext1_id = data["old_ext1_id"]
+        lab_id = data["lab_id"]
+        ext1_id = data["ext1_id"]
+        ext2_id = data["ext2_id"]
+        ext3_id = data["ext3_id"]
+        sample_type = data["sample_type"]
+        hospital = data["hospital"]
+        tumor_pct = data["tumor_pct"]
+        physician_name = data["physician_name"]
+        recieved_date = data["recieved_date"]
+        biopsy_date = data["biopsy_date"]
+
+        # change to YYYY-MM-DD
+        tmp_date = biopsy_date.split("/")
+        if len(tmp_date) == 3:
+            biopsy_date = tmp_date[1]+"-"+tmp_date[0]+"-"+tmp_date[2]
+
+        # change to YYYY-MM-DD
+        tmp_date = recieved_date.split("/")
+        if len(tmp_date) == 3:
+            recieved_date = tmp_date[1]+"-"+tmp_date[0]+"-"+tmp_date[2]
+
+        print("merda" , biopsy_date, recieved_date)
+        sample = SampleTable.query.filter_by(lab_id=old_lab_id, run_id=run_id).first()
+        if sample:
+            sample.lab_id = lab_id
+            sample.ext1_id = ext1_id
+            sample.ext2_id = ext2_id
+            sample.ext3_id = ext3_id
+            sample.sample_type = sample_type
+            sample.medical_center = hospital
+            sample.tumour_purity = tumor_pct
+            sample.physician_name = physician_name
+            db.session.commit()
+        
+        petition = (
+            Petition.query.filter_by(AP_code=old_ext1_id).first()
+        )
+        if petition:
+            petition.AP_code = ext1_id
+            petition.HC_code = ext2_id
+            petition.CIP_code = ext3_id
+            petition.Tumour_pct = tumor_pct
+            petition.Medical_doctor = physician_name
+
+            if biopsy_date:
+                petition.Date_original_biopsy = biopsy_date
+            if recieved_date:
+
+                petition.Petition_date = recieved_date
+            db.session.commit()
+
+        tvars = TherapeuticTable.query.filter_by(lab_id=old_lab_id, run_id=run_id).all()
+        for variant in tvars:
+            print(variant.gene)
+            variant.lab_id=lab_id
+            variant.ext1_id=ext1_id
+            variant.ext2_id=ext2_id
+            db.session.commit()
+
+        ovars = OtherVariantsTable.query.filter_by(lab_id=old_lab_id, run_id=run_id).all()
+        for variant in ovars:
+            variant.lab_id=lab_id
+            variant.ext1_id=ext1_id
+            variant.ext2_id=ext2_id
+            # db.session.commit()
+
+        rvars = RareVariantsTable.query.filter_by(lab_id=old_lab_id, run_id=run_id).all()
+        for variant in rvars:
+            variant.lab_id=lab_id
+            variant.ext1_id=ext1_id
+            variant.ext2_id=ext2_id
+            db.session.commit()
+
+        cnas = AllCnas.query.filter_by(lab_id=old_lab_id, run_id=run_id).all()
+        for cna in cnas:
+            cna.lab_id=lab_id
+            cna.ext1_id=ext1_id
+            cna.ext2_id=ext2_id
+            db.session.commit()
+
+        fusions = AllFusions.query.filter_by(lab_id=old_lab_id, run_id=run_id).all()
+        for fusion in fusions:
+            fusion.lab_id=lab_id
+            fusion.ext1_id=ext1_id
+            fusion.ext2_id=ext2_id
+            db.session.commit()
+
+        summaries = SummaryQcTable.query.filter_by(lab_id=old_lab_id, run_id=run_id).all()
+        for summary in summaries:
+            summary.lab_id = lab_id
+            summary.ext1_id=ext1_id
+            summary.ext2_id=ext2_id
+            db.session.commit()
+
+        message = {"info": "S'han realitzat els canvis correctament"}
+        return make_response(jsonify(message), 200)
+
 @app.route("/modify_tier", methods=["POST"])
 #@login_required
 def modify_tier():
@@ -177,19 +275,16 @@ def modify_tier():
         # print(data)
         tier = data["tier"]
         var_id = data["var_id"]
-        print(data["var_id"])
         var = TherapeuticTable.query.filter_by(id=var_id).first()
         if not var:
             var = OtherVariantsTable.query.filter_by(id=var_id).first()
 
-        print(var)
         if var:
             if tier == "4":
                 var.tier_catsalut = "None"
             else:
                 var.tier_catsalut = tier
             db.session.commit()
-            print(var)
             if tier == "4":
                 message = {"info": f"S'ha eliminat la tier per la La variant {var.hgvsg }", "tier": tier}
             else:
@@ -300,7 +395,7 @@ def download_all_reports(run_id):
     run_samples = SampleTable.query.filter_by(run_id=run_id).all()
     run_id_zip_name = f"{run_id}.zip"
     run_id_zip_path = os.path.join(
-        app.config["WORKING_DIRECTORY"], run_id, run_id_zip_name
+        app.config["UPLOADS"], run_id, run_id_zip_name
     )
 
     zipf = zipfile.ZipFile(run_id_zip_path, "w", zipfile.ZIP_DEFLATED)
@@ -326,11 +421,7 @@ def download_all_reports(run_id):
             if os.path.isfile(sample.latest_short_report_pdf):
                 report_pdf_path = sample.latest_short_report_pdf
                 zipf.write(report_pdf_path, os.path.basename(report_pdf_path))
-
     zipf.close()
-
-    print(run_id_zip_name)
-
     return send_file(
         run_id_zip_path,
         mimetype="zip",
@@ -356,9 +447,20 @@ def show_sample_details(run_id, sample, sample_id, active):
     sample_info = (
         SampleTable.query.filter_by(lab_id=sample).filter_by(run_id=run_id).first()
     )
+    if sample_info.ext1_id == ".":
+        sample_info.ext1_id = sample_info.lab_id
+
+    petition_info = (
+        Petition.query.filter_by(AP_code=sample_info.ext1_id).first()
+    )
+    if not petition_info:
+        petition_info = (
+            Petition.query.filter_by(AP_code=sample_info.lab_id).first()
+        )
     summary_qc = (
         SummaryQcTable.query.filter_by(lab_id=sample).filter_by(run_id=run_id).first()
     )
+    pipeline_details = PipelineDetails.query.filter_by(run_id=run_id).first()
     therapeutic_variants = (
         TherapeuticTable.query.filter_by(lab_id=sample)
         .filter_by(run_id=run_id)
@@ -399,11 +501,9 @@ def show_sample_details(run_id, sample, sample_id, active):
     n_samples = len(unique_samples)
 
     for var in therapeutic_variants:
-
         n_var = TherapeuticTable.query.filter_by(gene=var.gene, hgvsg=var.hgvsg).count()
         var.db_detected_number = n_var
         var.db_sample_count = n_samples
-
         if var.tier_catsalut != "None":
             if var.tier_catsalut == "1":
                 if var not in tier_variants["tier_I"]:
@@ -424,13 +524,6 @@ def show_sample_details(run_id, sample, sample_id, active):
                 bad_qual_variants.append(var)
 
     for var in other_variants:
-
-        # gene  = db.Column(db.String(120))
-        # enst_id  = db.Column(db.String(120))
-        # hgvsp = db.Column(db.String(120))
-        # hgvsg =  db.Column(db.String(120))
-        # hgvsc =  db.Column(db.String(120))
-
         n_var = OtherVariantsTable.query.filter_by(gene=var.gene, hgvsg=var.hgvsg).count()
         var.db_detected_number = n_var
         var.db_sample_count = n_samples
@@ -552,19 +645,31 @@ def show_sample_details(run_id, sample, sample_id, active):
     bar_plot = ""
     plot_cnv = cnv_plot(cnv_plotdata)
     pie_plot, bar_plot = var_location_pie(rare_variants)
-
     read1_adapters_dict = fastp_dict["adapter_cutting"]["read1_adapter_counts"]
     read2_adapters_dict = fastp_dict["adapter_cutting"]["read2_adapter_counts"]
     r1_adapters_plot = adapters_plot(read1_adapters_dict, read2_adapters_dict)
+
+    if petition_info:
+        tmp_date =petition_info.Date_original_biopsy.replace("-", "/").replace(" 00:00:00", "")
+        tmp_date_list = tmp_date.split("/")
+        newdate = f"{tmp_date_list[2]}/{tmp_date_list[1]}/{tmp_date_list[0]}"
+        petition_info.Date_original_biopsy = newdate
+
+        tmp_date =petition_info.Petition_date.replace("-", "/").replace(" 00:00:00", "")
+        tmp_date_list = tmp_date.split("/")
+        newdate = f"{tmp_date_list[2]}/{tmp_date_list[1]}/{tmp_date_list[0]}"
+        petition_info.Petition_date = newdate
 
     return render_template(
         "show_sample_details.html",
         title=sample,
         active=active,
+        petition_info=petition_info,
         sample_info=sample_info,
         sample_variants=sample_variants,
         summary_qc_dict=summary_qc_dict,
         fastp_dict=fastp_dict,
+        pipeline_details=pipeline_details,
         # therapeutic_variants=therapeutic_variants,
         other_variants=other_variants,
         relevant_variants=relevant_variants,
@@ -1133,6 +1238,15 @@ def generate_new_report(
     )
     cnas = AllCnas.query.filter_by(lab_id=sample).filter_by(run_id=run_id).all()
 
+    print(sample_info.ext1_id)
+    petition_info = Petition.query.filter_by(AP_code=sample_info.ext1_id).first()
+    if petition_info:
+        tmp_date = petition_info.Petition_date.split("-")
+        petition_info.Petition_date = f"{tmp_date[2]}/{tmp_date[1]}/{tmp_date[0]}"
+
+        tmp_date = petition_info.Date_original_biopsy.split("-")
+        petition_info.Date_original_biopsy = f"{tmp_date[2]}/{tmp_date[1]}/{tmp_date[0]}"
+
     cna_list = []
     seen_cnas = set()
     for cna in cnas:
@@ -1256,6 +1370,7 @@ def generate_new_report(
         sample_info=sample_info,
         relevant_variants=relevant_variants,
         tier_list=tier_list,
+        petition_info=petition_info,
         high_impact_variants=high_impact_variants,
         lost_exons=filtered_lost_exons,
         summary_qc_dict=summary_qc_dict,
@@ -1292,6 +1407,7 @@ def generate_new_report(
         relevant_variants=relevant_variants,
         tier_list=tier_list,
         high_impact_variants=high_impact_variants,
+        petition_info=petition_info,
         lost_exons=filtered_lost_exons,
         summary_qc_dict=summary_qc_dict,
         fastp_dict=fastp_dict,
