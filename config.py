@@ -47,11 +47,14 @@ class Config(object):
     DB_DIR = db_dir
     DB = db
     ANN_YAML = os.path.join(pipeline_main, "annotation_resources.yaml")
+    ANN_YAML_HG19 = os.path.join(pipeline_main, "annotation_resources_hg19.yaml")
+    ANN_YAML_HG38 = os.path.join(pipeline_main, "annotation_resources_hg38.yaml")
+
     DOCKER_YAML = os.path.join(pipeline_main, "docker_resources.yaml")
     REF_YAML = os.path.join(pipeline_main, "reference_resources.yaml")
     BIN_YAML = os.path.join(pipeline_main, "binary_resources.yaml")
     NGS_PIPELINE_EXE = os.path.join(pipeline_main, "gc_ngs_pipeline.py")
-    SOMATIC_REPORT_TEMPLATES = os.path.join(main_dir, "reporting_templates", "1.8")
+    SOMATIC_REPORT_TEMPLATES = os.path.join(main_dir, "reporting_templates", "1.9")
     SOMATIC_REPORT_IMG = os.path.join(main_dir, "reporting_templates", "img")
     SOMATIC_REPORT_CSS = os.path.join(
         main_dir, "reporting_templates", "css", "style.css"

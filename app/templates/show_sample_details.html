@@ -70,6 +70,10 @@
           </div>
 
           <div class="row mt-3">
+            <div class="col-3">
+              <h6><b>Origen tumoral</b></h6>
+              <input id="modal_edit_tumor_origin" type="text" name="modal_edit_tumor_origin" class="form-control" >
+            </div>
             <div class="col-sm">
               <h6><b>Data biòpsia original</b> <small>(MM/DD/YYYY)</small></h6>
               <div class="form-group">
@@ -287,14 +291,16 @@
           <hr style="margin:0px;">
           <div class="row">
             <div class="col">
+
+              <div style="margin:0px;">
+                <b style="display:inline-block;">Peitició: </b>
+                <div style="display:inline-block;margin:0px;" id="edit_ext1_id"> {{ sample_info.ext1_id }}</div>
+              </div>
+
               <div style="display:inline-block;margin:0px;">
                 <b style="display:inline-block;">Lab ID: </b>
                 <div style="display:inline-block;" id="edit_lab_id">{{ sample_info.lab_id }}</div>
               </div> 
-              <div style="margin:0px;">
-                <b style="display:inline-block;">AP ID: </b>
-                <div style="display:inline-block;margin:0px;" id="edit_ext1_id"> {{ sample_info.ext1_id }}</div>
-              </div>
             </div>
             <div class="col">
               <div style="margin:0px;">
@@ -620,12 +626,18 @@
                 <input type="hidden" id="run_id" name="run_id" value="{{ sample_info.run_id }}">
                 <input type="hidden" id="sample" name="sample" value="{{ sample_info.lab_id }}">
                 <input type="hidden" id="sample_id" name="sample_id" value="{{ sample_info.lab_id }}">
+                <input type="hidden" id="tumor_origin" name="tumor_origin" value="{{ petition_info.Tumour_origin }}">
                 <input style="display:inline;" type="checkbox" id="substitute_report" name="substitute_report">
                 <label style="display:inline;" for="substitute_report"> Marcar com a informe de substitució</label>
                 <br>
                 <input style="display:inline;" type="checkbox" id="lowqual_sample" name="lowqual_sample">
                 <label style="display:inline;" for="lowqual_sample"> La mostra no compleix els criteris mínims de qualitat </label>
                 <br>
+
+                <input style="display:inline;" type="checkbox" id="no_enac" name="no_enac">
+                <label style="display:inline;" for="no_enac"> Procediment no acreditat per ENAC </label>
+                <br>
+
                 <button type="submit" id="report_button" class="btn btn-secondary btn-sm mt-2">
                   <i class="fas fa-file-alt" style="color:white;"> </i> Generar informe
                 </button>
@@ -1246,6 +1258,8 @@
     edit_hospital = document.getElementById("edit_hospital").innerText;
     edit_physician = document.getElementById("edit_physician_name").innerText;
     edit_biopsy_date = document.getElementById("edit_biopsy_date").innerText;
+    edit_tumor_origin = document.getElementById("edit_tumor_origin").innerText;
+
 
     myarr = edit_biopsy_date.split("/");
     if (myarr.length == 3) {
@@ -1275,6 +1289,7 @@
     document.getElementById("modal_edit_physician_name").value = edit_physician;
     document.getElementById("modal_edit_biopsy_date").value = biopsy_date;
     document.getElementById("modal_edit_recieved_date").value = recieved_date;
+    document.getElementById("modal_edit_tumor_origin").value = edit_tumor_origin;
 
     if (edit_tumoral_pct != ".") {
       edit_tumoral_pct = edit_tumoral_pct.replace("%", "");
@@ -1296,6 +1311,7 @@
     hospital = document.getElementById("modal_edit_hospital").value;
     tumor_pct =  document.getElementById("modal_edit_tumoral_pct").value;
     physician_name = document.getElementById("modal_edit_physician_name").value;
+    tumor_origin = document.getElementById("modal_edit_tumor_origin").value;
 
     recieved_date = document.getElementById("modal_edit_recieved_date").value;
     biopsy_date = document.getElementById("modal_edit_biopsy_date").value;
@@ -1317,7 +1333,8 @@
       tumor_pct: tumor_pct,
       physician_name: physician_name,
       recieved_date: recieved_date,
-      biopsy_date: biopsy_date
+      biopsy_date: biopsy_date,
+      tumor_origin: tumor_origin
     }
 
     fetch('/update_patient_info', {

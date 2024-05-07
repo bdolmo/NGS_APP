@@ -1,0 +1,1 @@
+python3 /home/udmmp/GC_NGS_PIPELINE/gc_ngs_pipeline.py all -s targeted --panel /ngs-db/PANELS_DB/data/SUDD_147/suddxl.v3.147.ROI.analysis.bed --panel_name SUDD_147 --panel_version 3 -r hg19 -t 12 --var_class germline -i /home/udmmp/Desktop/test_runs/SUDD_147 -o /home/udmmp/Desktop/test_runs/SUDD_147 --db /ngs-db/NGS_DB/NGS.db --user_id 7 --run_id RUN20240325-CGC64001

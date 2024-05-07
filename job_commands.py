@@ -61,17 +61,16 @@ def launch_ngs_analysis(params):
 
     cmd = [
         'python3', params['PIPELINE_EXE'], 'all', '-s', 'targeted', '--panel',
-        params['PANEL'], '--panel_name', params['PANEL_NAME'], '--panel_version',
+        params['PANEL'], '--bwamem2', '--panel_name', params['PANEL_NAME'], '--panel_version',
         params['PANEL_VERSION'], '-r', params['GENOME'], '-t', params['THREADS'],
         '--var_class', params['VARCLASS'], '-i', params['INPUT_DIR'], '-o',
         params['OUTPUT_DIR'], lab_data, '--db', params['DB'], '--user_id',
         params['USER_ID'], '--ann_yaml', params['ANN_YAML'], '--docker_yaml',
         params['DOCKER_YAML'], '--ref_yaml', params['REF_YAML'], '--bin_yaml',
-        params['BIN_YAML'], '--run_id', params['RUN_NAME']
+        params['BIN_YAML'], '--run_id', params['RUN_NAME'], '--bwamem2'
     ]
     cmd = [str(item) for item in cmd]
     print(' '.join([str(item) for item in cmd]))
-
     
     commands_file = os.path.join(data_dir, 'pipeline_logs.txt')
     with open(commands_file, 'a') as f:

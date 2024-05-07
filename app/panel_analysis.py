@@ -45,10 +45,16 @@ from app.models import (
 )
 import requests
 import json
-
+import sys
 r = redis.Redis()
 q = Queue(connection=r)
 registry = FinishedJobRegistry("default", connection=r)
+
+
+sys.path.append("/home/udmmp/AutoLauncherNGS")
+sys.path.append("/home/udmmp/NGS_APP")
+sys.path.append("/home/udmmp/AutoLauncherNGS/modules")
+sys.path.append("/home/udmmp/NGS_APP/modules")
 
 
 def validate_fastq(fastq_files, fastq):
@@ -455,17 +461,13 @@ def submit_ngs_job():
 
             if not os.path.isdir(run_dir):
                 os.mkdir(run_dir)
-            print(panel)
-            print(panel)
+
             if panel == "GenOncology-Dx.v1":
                 panel_dir = os.path.join(run_dir, "GenOncology-Dx")
             else:
                 panel_dir = os.path.join(run_dir, panel_name)
             if not os.path.isdir(panel_dir):
                 os.mkdir(panel_dir)
-
-            print(panel_dir)
-            print(panel_dir)
 
             # --panel_name SUDD_85 --panel_version v3
             var_analysis = "germline"
@@ -515,7 +517,7 @@ def submit_ngs_job():
             ann_dir = app.config["ANN_DIR"]
             ref_dir = app.config["REF_DIR"]
             db_sqlite = app.config["DB"]
-            ann_yaml = app.config["ANN_YAML"]
+            ann_yaml = app.config["ANN_YAML_HG19"]
             docker_yaml = app.config["DOCKER_YAML"]
             ref_yaml = app.config["REF_YAML"]
             bin_yaml = app.config["BIN_YAML"]
@@ -531,7 +533,7 @@ def submit_ngs_job():
                 "PANEL_NAME": panel_name,
                 "PANEL_VERSION": panel_version,
                 "GENOME": "hg19",
-                "THREADS": "12",
+                "THREADS": "16",
                 "VARCLASS": var_analysis,
                 "RUN_DIR": run_dir,
                 "RUN_NAME": os.path.basename(run_dir),

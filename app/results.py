@@ -179,6 +179,7 @@ def update_patient_info():
         physician_name = data["physician_name"]
         recieved_date = data["recieved_date"]
         biopsy_date = data["biopsy_date"]
+        tumor_origin = data["tumor_origin"]
 
         # change to YYYY-MM-DD
         tmp_date = biopsy_date.split("/")
@@ -190,7 +191,6 @@ def update_patient_info():
         if len(tmp_date) == 3:
             recieved_date = tmp_date[1]+"-"+tmp_date[0]+"-"+tmp_date[2]
 
-        print("merda" , biopsy_date, recieved_date)
         sample = SampleTable.query.filter_by(lab_id=old_lab_id, run_id=run_id).first()
         if sample:
             sample.lab_id = lab_id
@@ -201,6 +201,7 @@ def update_patient_info():
             sample.medical_center = hospital
             sample.tumour_purity = tumor_pct
             sample.physician_name = physician_name
+            sample.tumor_origin = tumor_origin
             db.session.commit()
         
         petition = (
@@ -212,7 +213,8 @@ def update_patient_info():
             petition.CIP_code = ext3_id
             petition.Tumour_pct = tumor_pct
             petition.Medical_doctor = physician_name
-
+            petition.Tumour_origin = tumor_origin
+            petition.Medical_indication = tumor_origin
             if biopsy_date:
                 petition.Date_original_biopsy = biopsy_date
             if recieved_date:
@@ -222,7 +224,6 @@ def update_patient_info():
 
         tvars = TherapeuticTable.query.filter_by(lab_id=old_lab_id, run_id=run_id).all()
         for variant in tvars:
-            print(variant.gene)
             variant.lab_id=lab_id
             variant.ext1_id=ext1_id
             variant.ext2_id=ext2_id
@@ -655,10 +656,14 @@ def show_sample_details(run_id, sample, sample_id, active):
         newdate = f"{tmp_date_list[2]}/{tmp_date_list[1]}/{tmp_date_list[0]}"
         petition_info.Date_original_biopsy = newdate
 
-        tmp_date =petition_info.Petition_date.replace("-", "/").replace(" 00:00:00", "")
-        tmp_date_list = tmp_date.split("/")
-        newdate = f"{tmp_date_list[2]}/{tmp_date_list[1]}/{tmp_date_list[0]}"
-        petition_info.Petition_date = newdate
+        try:
+            tmp_date =petition_info.Petition_date.replace("-", "/").replace(" 00:00:00", "")
+        except:
+            pass
+        else:
+            tmp_date_list = tmp_date.split("/")
+            newdate = f"{tmp_date_list[2]}/{tmp_date_list[1]}/{tmp_date_list[0]}"
+            petition_info.Petition_date = newdate
 
     return render_template(
         "show_sample_details.html",
@@ -1197,8 +1202,8 @@ def download_report(run_id, sample):
 
 
 def generate_new_report(
-    sample: str, sample_id: str, run_id: str, substitute_report: bool, lowqual_sample: bool,
-    comments: str
+    sample: str, sample_id: str, run_id: str, tumor_origin:str, substitute_report: bool, lowqual_sample: bool,
+    no_enac: bool, comments: str
 ):
     """ """
 
@@ -1238,14 +1243,29 @@ def generate_new_report(
     )
     cnas = AllCnas.query.filter_by(lab_id=sample).filter_by(run_id=run_id).all()
 
-    print(sample_info.ext1_id)
+    petition_dict = {
+        "Petition_date" : "",
+        "Date_original_biopsy": ""
+    }
+
     petition_info = Petition.query.filter_by(AP_code=sample_info.ext1_id).first()
     if petition_info:
+
+        print(petition_info.Petition_date)
         tmp_date = petition_info.Petition_date.split("-")
-        petition_info.Petition_date = f"{tmp_date[2]}/{tmp_date[1]}/{tmp_date[0]}"
+        if len(tmp_date) == 1:
+            tmp_date = petition_info.Petition_date.split("/")
+
+        petition_dict["Petition_date"] = f"{tmp_date[0]}/{tmp_date[1]}/{tmp_date[2]}"
 
         tmp_date = petition_info.Date_original_biopsy.split("-")
-        petition_info.Date_original_biopsy = f"{tmp_date[2]}/{tmp_date[1]}/{tmp_date[0]}"
+        if len(tmp_date) == 1:
+            tmp_date = petition_info.Date_original_biopsy.split("/")
+
+        petition_dict["Date_original_biopsy"] = f"{tmp_date[2]}/{tmp_date[1]}/{tmp_date[0]}"
+
+    if not tumor_origin:
+        tumor_origin = "PULMÓ"
 
     cna_list = []
     seen_cnas = set()
@@ -1352,7 +1372,8 @@ def generate_new_report(
             "-", "/"
         )
 
-    lost_genes = ["BRAF", "EGFR", "FGFR1", "FGFR2", "FGFR3", "KRAS", "MET", "ERBB2", "TP53", "NRAS", "ROS1", "ALK"]
+    lost_genes = ["BRAF", "EGFR", "FGFR1", "FGFR2", "FGFR3", "KRAS", 
+        "MET", "ERBB2", "TP53", "NRAS", "ROS1", "ALK"]
 
     filtered_lost_exons = []
     for lost_exon in lost_exons:
@@ -1365,12 +1386,13 @@ def generate_new_report(
     # render template
     rendered = template.render(
         title="Somatic_report",
+        tumor_origin=tumor_origin,
         rare_variants=rare_variants,
         actionable_variants=actionable_variants,
         sample_info=sample_info,
         relevant_variants=relevant_variants,
         tier_list=tier_list,
-        petition_info=petition_info,
+        petition_info=petition_dict,
         high_impact_variants=high_impact_variants,
         lost_exons=filtered_lost_exons,
         summary_qc_dict=summary_qc_dict,
@@ -1383,6 +1405,7 @@ def generate_new_report(
         latest_report_pdf_name=latest_report_pdf_name,
         report_date=report_date,
         low_concentration=low_concentration,
+        no_enac=no_enac,
         comments=comments
     )
 
@@ -1401,13 +1424,14 @@ def generate_new_report(
     template = env.get_template("report_short.html")
     rendered_short = template.render(
         title="Somatic_report",
+        tumor_origin=tumor_origin,
         rare_variants=rare_variants,
         actionable_variants=actionable_variants,
         sample_info=sample_info,
         relevant_variants=relevant_variants,
         tier_list=tier_list,
         high_impact_variants=high_impact_variants,
-        petition_info=petition_info,
+        petition_info=petition_dict,
         lost_exons=filtered_lost_exons,
         summary_qc_dict=summary_qc_dict,
         fastp_dict=fastp_dict,
@@ -1419,6 +1443,7 @@ def generate_new_report(
         latest_report_pdf_name=latest_report_pdf_name,
         report_date=report_date,
         low_concentration=low_concentration,
+        no_enac=no_enac,
         comments=comments
     )
 
@@ -1469,22 +1494,27 @@ def generate_new_report(
 def create_somatic_report():
 
     if request.method == "POST":
-
         run_id = request.form["run_id"]
         sample = request.form["sample"]
         sample_id = request.form["sample_id"]
         comments = request.form["comments"]
-        print(comments)
+        tumor_origin = request.form["tumor_origin"]
         lowqual_sample = False
         if "lowqual_sample" in request.form:
             if request.form["lowqual_sample"]:
                 lowqual_sample = True
+
+        no_enac = False
+        if "no_enac" in request.form:
+            if request.form["no_enac"]:
+                no_enac = True
+
         substitute_report = False
         if request.form.get("substitute_report"):
             substitute_report = True
 
-        message = generate_new_report(sample, sample_id, run_id, 
-            substitute_report, lowqual_sample, comments)
+        message = generate_new_report(sample, sample_id, run_id, tumor_origin,
+            substitute_report, lowqual_sample, no_enac, comments)
 
         return make_response(jsonify(message), 200)
 
@@ -1502,7 +1532,8 @@ def create_all_somatic_reports():
         comments = ""
 
         for sample in samples:
-            generate_new_report(sample.lab_id, sample.lab_id, run_id, substitute_report, lowqual_sample, comments)
+            generate_new_report(sample.lab_id, sample.lab_id, run_id, sample.tumor_origin, 
+                substitute_report, lowqual_sample, no_enac, comments)
     return redirect(url_for("show_run_details", run_id=run_id))
     message = {
         "message_text": f"S'han generat correctament els informes",

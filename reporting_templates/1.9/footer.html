@@ -7,14 +7,16 @@
         {% if lowqual_msg %}
         <img src="" alt="" style="width:66px;height:76px;margin:0px;padding:0px;">
         {% else %}
-        <img src="ISO 15189_WEB 1 exp_1496 _ LE2732.png" alt="" style="width:66px;height:76px;margin:0px;padding:0px;">
-
+          {% if no_enac %}
+          {% else %}
+            <img src="ISO 15189_WEB 1 exp_1496 _ LE2732.png" alt="" style="width:66px;height:76px;margin:0px;padding:0px;">
+          {% endif %}
         {% endif %}
       </div>
       <div style="flex: 1; text-align: center;margin-top:0px;">
-          <img src="logo_AP.png" alt="" style="width:42px;height:45px;margin:0px;padding:0px;">
+        <img src="logo_AP.png" alt="" style="width:42px;height:45px;margin:0px;padding:0px;">
       </div>
-      <div style="flex: 1;"><p style="position:absolute;top: 20px;right:-1cm;float:right;font-size:6px;transform: rotate(-90deg);">LDG_INFO_004_V8</p></div>
+      <div style="flex: 1;"><p style="position:absolute;top: 20px;right:-1cm;float:right;font-size:6px;transform: rotate(-90deg);">LDG_INFO_004_V9</p></div>
   </div>
 </div>
 

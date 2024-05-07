@@ -68,18 +68,30 @@ def upload_petition():
                 extraction_date = df_date.columns.values[0]
                 if not extraction_date:
                     today = date.today()
-                    extraction_date = today.strftime("%d/%m/%Y")
+                    try:
+                        extraction_date = str(today.strftime("%d/%m/%Y"))
+                    except:
+                        pass
                 else:
-                    extraction_date = str(pd.to_datetime(extraction_date).strftime("%d/%m/%Y"))
+                    try:
+                        extraction_date = str(pd.to_datetime(extraction_date).strftime("%d/%m/%Y"))
+                    except:
+                        is_ok = False
                 petition_date = "."
                 # Now, sample information
                 df_samples = pd.read_excel(input_xlsx, sheet_name=0,
                     engine='openpyxl', header=4)
 
+
+# CODI DE LA MOSTRA AP	ORIGEN TUMORAL	PERCENTATGE TUMORAL	ÀREA TUMORAL (mm2)	VOLUM  (µL) RESIDUAL  APROXIMAT	CONCENTRACIÓ NANODROP (ng/µL)	RATIO 260/280 NANODROP	DATA BIÒPSIA ORIGINAL	DATA PETICIÓ TÈCNICA	NÚMERO CIP	NÚMERO D’HISTÒRIA CLÍNICA	METGE SOL·LICITANT	UNITAT DE FACTURACIÓ	COMENTARIS
+# 24P4241	PULMÓ	30%	6	90	86.4	1.87	4/5/2024	4/11/2024	GIPU0441114006	18575284	H.FIGUERES	ONCO	79ANYS HOME  B-240001638
+
+# MOSTRA AP	MOSTRA ORIGINAL	ORIGEN TUMORAL	PERCENTATGE TUMORAL	VOLUM  (µL) RESIDUAL  APROXIMAT	DATA BIÒPSIA ORIGINAL	DATA PETICIÓ TÈCNICA	PETICIONARI	PETICIÓ MODULAB	NÚMERO CIP	NÚMERO D’HISTÒRIA CLÍNICA	EDAT	SEXE	OBSERVACIONS
+
+                found_v9 = False
                 for index, row in df_samples.iterrows():
                     # Valid rows
                     if 'CODI DE LA MOSTRA AP' in row:
-
                         if pd.isnull(row['CODI DE LA MOSTRA AP']):
                             continue
 
@@ -89,9 +101,130 @@ def upload_petition():
 
                         print(row['PERCENTATGE TUMORAL'])
                         print("\n")
+                    if 'MOSTRA ORIGINAL' in row:
+                        found_v9 = True
 
                 is_yet_registered = False
                 for index, row in df_samples.iterrows():
+                    if found_v9:
+                        if pd.isnull(row['MOSTRA AP']):
+                            continue
+                        ap_code = str(row['MOSTRA AP']).rstrip(" ").lstrip(" ")
+                        
+                        if "Nota" in ap_code or "nan" in ap_code:
+                            continue
+                        ap_block = "."
+                        if 'MOSTRA ORIGINAL' in row:
+                            ap_block = row['MOSTRA ORIGINAL'].rstrip(" ").lstrip(" ")
+
+                        tumour_type = "."
+                        if 'ORIGEN TUMORAL' in row:
+                            tumour_type = row['ORIGEN TUMORAL']
+  
+                        tumour_pct = "."
+                        post_tape_eval= "."
+
+                        if pd.isna(row['PERCENTATGE TUMORAL']):
+                            row['PERCENTATGE TUMORAL'] = 100
+                        if row['PERCENTATGE TUMORAL'] < 1:
+                            tumour_pct = row['PERCENTATGE TUMORAL']*100
+                            tumour_pct = int(tumour_pct)
+                        elif int(row['PERCENTATGE TUMORAL']) > 100:
+                            tumour_pct = 100
+                        else:
+                            try:
+                                int(row['PERCENTATGE TUMORAL'])
+                            except:
+                                pass
+                            else:
+                                tumour_pct = int(row['PERCENTATGE TUMORAL'])
+                        tumour_area = "."
+                        res_volume = "."
+                        if 'ÀREA TUMORAL (mm2)' in row:
+                            tumour_area   = row['ÀREA TUMORAL (mm2)']
+                        if 'VOLUM  (µL) RESIDUAL  APROXIMAT' in row:
+                            res_volume    = row['VOLUM  (µL) RESIDUAL  APROXIMAT']
+
+                        Modulab_petition = "."
+                        if 'PETICIÓ MODULAB' in row:
+                            Modulab_petition = row['PETICIÓ MODULAB']
+                        CIP_code = "."
+                        if 'NÚMERO CIP' in row:
+                            CIP_code = row['NÚMERO CIP']
+                        Petition_date = "."
+                        if 'DATA PETICIÓ TÈCNICA' in row:
+                            # Petition_date = row['DATA PETICIÓ TÈCNICA']
+                            try:
+                                Petition_date = str(pd.to_datetime(row['DATA PETICIÓ TÈCNICA']).strftime("%d/%m/%Y"))
+                            except:
+                                is_ok = False
+
+                        Date_original_biopsy = "."
+                        if 'DATA BIÒPSIA ORIGINAL' in row:
+                            Date_original_biopsy = str(row['DATA BIÒPSIA ORIGINAL'])
+                        Peticionari = "."
+                        if 'PETICIONARI' in row:
+                            Peticionari = row['PETICIONARI']
+                        Petition_date = "."
+                        if 'DATA PETICIÓ TÈCNICA' in row:
+                            # Petition_date = row['DATA PETICIÓ TÈCNICA']
+                            try:
+                                Petition_date = str(pd.to_datetime(row['DATA PETICIÓ TÈCNICA']).strftime("%d/%m/%Y"))
+                            except:
+                                is_ok = False
+
+                        hc_code = "."
+                        if 'NÚMERO D’HISTÒRIA CLÍNICA' in row:
+                            hc_code = str(row['NÚMERO D’HISTÒRIA CLÍNICA']).replace('.0', '').rstrip("\n").lstrip("\n")
+                            hc_code = hc_code.replace(" ", "")
+                        age = "."
+                        if 'EDAT' in row:
+                            age = row['EDAT']
+                        sex = "."
+                        if 'SEXE' in row:
+                            sex = row['SEXE'].rstrip("\n").lstrip("\n")
+                        post_tape_eval= "."
+                        nanodrop_conc = "."
+                        nanodrop_ratio = "."
+                        if 'CONCENTRACIÓ NANODROP (ng/µL)' in row:
+                            nanodrop_conc = row['CONCENTRACIÓ NANODROP (ng/µL)']
+                        
+                        if 'RATIO 260/280 NANODROP' in row:
+                            nanodrop_ratio = row['RATIO 260/280 NANODROP']
+
+                        physician_name = "."
+                        billing_unit = "."
+                        comments = row['OBSERVACIONS']
+
+                        Petition_id = ("PID_{}").format(extraction_date.replace("/", ""))
+
+                        petition = Petition( Petition_id=Petition_id, User_id=".",
+                        Date=extraction_date, Petition_date=Petition_date, Tumour_origin=tumour_type,
+                        AP_code=ap_code, HC_code=hc_code, CIP_code=CIP_code, Sample_block=ap_block,
+                        Tumour_pct=tumour_pct, Volume=res_volume, Conc_nanodrop=nanodrop_conc,
+                        Ratio_nanodrop=nanodrop_ratio,Tape_postevaluation=post_tape_eval,
+                        Medical_doctor=physician_name,Billing_unit=billing_unit,
+                        Medical_indication=tumour_type, Date_original_biopsy=Date_original_biopsy,
+                        Age=age, Sex=sex, Service=Peticionari)
+
+                        # Check if petition is already available
+                        found = Petition.query.filter_by(AP_code=ap_code)\
+                            .filter_by(HC_code=hc_code).first()
+                        if not found:
+                            db.session.add(petition)
+                            db.session.commit()
+                            is_yet_registered = False
+                        else:
+                            print(ap_code + " " + hc_code)
+                            is_yet_registered = True
+
+
+# CODI DE LA MOSTRA AP	ORIGEN TUMORAL	PERCENTATGE TUMORAL	ÀREA TUMORAL (mm2)	VOLUM  (µL) RESIDUAL  APROXIMAT	CONCENTRACIÓ NANODROP (ng/µL)	RATIO 260/280 NANODROP	DATA BIÒPSIA ORIGINAL	DATA PETICIÓ TÈCNICA	NÚMERO CIP	NÚMERO D’HISTÒRIA CLÍNICA	METGE SOL·LICITANT	UNITAT DE FACTURACIÓ	COMENTARIS
+# 24P4241	PULMÓ	30%	6	90	86.4	1.87	4/5/2024	4/11/2024	GIPU0441114006	18575284	H.FIGUERES	ONCO	79ANYS HOME  B-240001638
+
+# MOSTRA AP	MOSTRA ORIGINAL	ORIGEN TUMORAL	PERCENTATGE TUMORAL	VOLUM  (µL) RESIDUAL  APROXIMAT	DATA BIÒPSIA ORIGINAL	DATA PETICIÓ TÈCNICA	PETICIONARI	PETICIÓ MODULAB	NÚMERO CIP	NÚMERO D’HISTÒRIA CLÍNICA	EDAT	SEXE	OBSERVACIONS
+
+
                     if 'CODI DE LA MOSTRA AP' in row:
                         if pd.isnull(row['CODI DE LA MOSTRA AP']):
                             continue
@@ -137,11 +270,31 @@ def upload_petition():
                         Petition_date = "."
                         if 'DATA PETICIÓ TÈCNICA' in row:
                             # Petition_date = row['DATA PETICIÓ TÈCNICA']
-                            Petition_date = str(pd.to_datetime(row['DATA PETICIÓ TÈCNICA']).strftime("%d/%m/%Y"))
+                            try:
+                                Petition_date = str(pd.to_datetime(row['DATA PETICIÓ TÈCNICA']).strftime("%d/%m/%Y"))
+                            except:
+                                is_ok = False
 
                         Date_original_biopsy = "."
                         if 'DATA BIÒPSIA ORIGINAL' in row:
                             Date_original_biopsy = str(row['DATA BIÒPSIA ORIGINAL'])
+                        
+                        # DEBUGGING
+                        age = "."
+                        if 'EDAT' in row:
+                            age = row['EDAT']
+                        sex = "."
+                        if 'SEXE' in row:
+                            sex = row['SEXE'].rstrip("\n").lstrip("\n")
+                        ap_block = "."
+                        if 'MOSTRA ORIGINAL' in row:
+                            ap_block = row['MOSTRA ORIGINAL'].rstrip(" ").lstrip(" ")
+
+                        Peticionari = "."
+                        if 'PETICIONARI' in row:
+                            Peticionari = row['PETICIONARI']
+                        
+
 
                         tumour_area   = row['ÀREA TUMORAL (mm2)']
                         res_volume    = row['VOLUM  (µL) RESIDUAL  APROXIMAT']
@@ -154,11 +307,11 @@ def upload_petition():
 
                         petition = Petition( Petition_id=Petition_id, User_id=".",
                         Date=extraction_date, Petition_date=Petition_date, Tumour_origin=tumour_type,
-                        AP_code=ap_code, HC_code=hc_code, CIP_code=CIP_code,
+                        AP_code=ap_code, HC_code=hc_code, CIP_code=CIP_code, Sample_block=ap_block,
                         Tumour_pct=tumour_pct, Volume=res_volume, Conc_nanodrop=nanodrop_conc,
                         Ratio_nanodrop=nanodrop_ratio,Tape_postevaluation=post_tape_eval,
                         Medical_doctor=physician_name,Billing_unit=billing_unit,
-                        Medical_indication=tumour_type, Date_original_biopsy=Date_original_biopsy)
+                        Medical_indication=tumour_type, Date_original_biopsy=Date_original_biopsy, Age=age, Sex=sex, Service=Peticionari)
 
                         # Check if petition is already available
                         found = Petition.query.filter_by(AP_code=ap_code)\
@@ -657,15 +810,6 @@ def update_petition():
                 petition.billing_unit = billing_unit
                 petition.medical_doctor = medical_doctor
                 petition.Tumour_pct = tumour_pct
-                # Petition_id = "PID_"+ date.replace("/", "")
-                # petition = Petition( Petition_id= Petition_id, 
-                # User_id=current_user.id, Date=date, 
-                # AP_code=ap_code, HC_code=hc_code,
-                # Tumour_origin=tumour_origin,
-                # Tumour_pct=".", Volume=residual_volume, 
-                # Conc_nanodrop=conc_nanodrop, Ratio_nanodrop=ratio_nanodrop,
-                # Medical_doctor=medical_doctor, Tape_postevaluation=tape_posteval, 
-                # Billing_unit=billing_unit)
 
                 # db.session.add(petition)
                 db.session.commit()

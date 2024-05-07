@@ -142,11 +142,14 @@ class Petition(db.Model):
     Medical_indication   = db.Column(db.String(50))
     Date_original_biopsy   = db.Column(db.String(50))
     Petition_date   = db.Column(db.String(50))
-
+    Service = db.Column(db.String(50))
+    Sample_block =  db.Column(db.String(50))
+    Sex = db.Column(db.String(50))
+    Age = db.Column(db.String(50)) 
 
     def __init__(self, Petition_id, User_id, Date, Petition_date,Tumour_origin, AP_code, HC_code, CIP_code, Tumour_pct,
         Volume, Conc_nanodrop, Ratio_nanodrop, Tape_postevaluation, Medical_doctor,
-        Billing_unit, Medical_indication, Date_original_biopsy):
+        Billing_unit, Medical_indication, Date_original_biopsy, Service, Sample_block, Sex, Age):
         self.Petition_id = Petition_id
         self.Date   = Date
         self.Petition_date = Petition_date
@@ -164,6 +167,11 @@ class Petition(db.Model):
         self.Billing_unit = Billing_unit
         self.Medical_indication = Medical_indication
         self.Date_original_biopsy = Date_original_biopsy
+        self.Service = Service
+        self.Sample_block = Sample_block
+        self.Age = Age
+        self.Sex = Sex
+
 
 class Panel(db.Model):
     __tablename__  = 'PANELS'
@@ -295,6 +303,11 @@ class SampleTable(db.Model):
     latest_short_report_pdf = db.Column(db.String(80))
     last_short_report_emission_date = db.Column(db.String(80))
     petition_date = db.Column(db.String(80))
+    tumor_origin = db.Column(db.String(80))
+    service = db.Column(db.String(50))
+    sample_block =  db.Column(db.String(50))
+    Sex = db.Column(db.String(50))
+    Age = db.Column(db.String(50))
 
     def __repr__(self):
         return '<Sample %r>' % self.lab_id
