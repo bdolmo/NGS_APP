@@ -2,6 +2,7 @@ from app import app, db
 import os
 import binascii
 import requests
+import re
 from rq import Queue, cancel_job
 from uuid import uuid4
 from functools import wraps
@@ -170,6 +171,7 @@ def update_patient_info():
         old_lab_id = data["old_lab_id"]
         old_ext1_id = data["old_ext1_id"]
         lab_id = data["lab_id"]
+        modulab_id = data["modulab_id"]
         ext1_id = data["ext1_id"]
         ext2_id = data["ext2_id"]
         ext3_id = data["ext3_id"]
@@ -180,16 +182,22 @@ def update_patient_info():
         recieved_date = data["recieved_date"]
         biopsy_date = data["biopsy_date"]
         tumor_origin = data["tumor_origin"]
+        sex = data["sex"]
+        age = data["age"]
+        service = data["service"]
+        sample_block = data["sample_block"]
+
+        print(sex, age, sample_block)
 
         # change to YYYY-MM-DD
-        tmp_date = biopsy_date.split("/")
-        if len(tmp_date) == 3:
-            biopsy_date = tmp_date[1]+"-"+tmp_date[0]+"-"+tmp_date[2]
+        # tmp_date = biopsy_date.split("/")
+        # if len(tmp_date) == 3:
+        #     biopsy_date = tmp_date[1]+"-"+tmp_date[0]+"-"+tmp_date[2]
 
         # change to YYYY-MM-DD
-        tmp_date = recieved_date.split("/")
-        if len(tmp_date) == 3:
-            recieved_date = tmp_date[1]+"-"+tmp_date[0]+"-"+tmp_date[2]
+        # tmp_date = recieved_date.split("/")
+        # if len(tmp_date) == 3:
+        #     recieved_date = tmp_date[1]+"-"+tmp_date[0]+"-"+tmp_date[2]
 
         sample = SampleTable.query.filter_by(lab_id=old_lab_id, run_id=run_id).first()
         if sample:
@@ -197,15 +205,23 @@ def update_patient_info():
             sample.ext1_id = ext1_id
             sample.ext2_id = ext2_id
             sample.ext3_id = ext3_id
+            sample.modulab_id = modulab_id
             sample.sample_type = sample_type
             sample.medical_center = hospital
             sample.tumour_purity = tumor_pct
             sample.physician_name = physician_name
             sample.tumor_origin = tumor_origin
+            sample.Sex = sex
+            sample.Age = age
+            sample.sample_block = sample_block
+            sample.service = service
+            sample.date_original_biopsy = biopsy_date
+            sample.petition_date = biopsy_date
             db.session.commit()
-        
+        print(ext1_id, ext2_id, ext3_id, biopsy_date)
+
         petition = (
-            Petition.query.filter_by(AP_code=old_ext1_id).first()
+            Petition.query.filter_by(AP_code=lab_id).first()
         )
         if petition:
             petition.AP_code = ext1_id
@@ -215,12 +231,22 @@ def update_patient_info():
             petition.Medical_doctor = physician_name
             petition.Tumour_origin = tumor_origin
             petition.Medical_indication = tumor_origin
+            petition.Modulab_id = modulab_id
+            petition.Sex = sex
+            petition.Age = age
+            petition.Sample_block = sample_block
+            petition.Service = service
+
             if biopsy_date:
                 petition.Date_original_biopsy = biopsy_date
-            if recieved_date:
+                sample.date_original_biopsy = biopsy_date
+                db.session.commit()
 
+            if recieved_date:
                 petition.Petition_date = recieved_date
+                sample.petition_date = biopsy_date
             db.session.commit()
+
 
         tvars = TherapeuticTable.query.filter_by(lab_id=old_lab_id, run_id=run_id).all()
         for variant in tvars:
@@ -445,6 +471,77 @@ def show_sample_details(run_id, sample, sample_id, active):
     other_variants = []
     rare_variants = []
 
+
+    # __tablename__ = 'PETITIONS'
+    # Id             = db.Column(db.Integer(), primary_key=True, autoincrement=True)
+    # Petition_id    = db.Column(db.String(20))
+    # User_id        = db.Column(db.String(20))
+    # Date           = db.Column(db.String(20))
+    # Petition_date  = db.Column(db.String(20))
+    # Tumour_origin  = db.Column(db.String(20))
+    # AP_code        = db.Column(db.String(20))
+    # HC_code        = db.Column(db.String(20))
+    # CIP_code       = db.Column(db.String(20))
+    # Tumour_pct     = db.Column(db.String(20))
+    # Volume         = db.Column(db.String(20))
+    # Conc_nanodrop  = db.Column(db.String(20))
+    # Ratio_nanodrop = db.Column(db.String(20))
+    # Tape_postevaluation = db.Column(db.String(20))
+    # Medical_doctor = db.Column(db.String(50))
+    # Billing_unit   = db.Column(db.String(50))
+    # Medical_indication   = db.Column(db.String(50))
+    # Date_original_biopsy   = db.Column(db.String(50))
+    # Petition_date   = db.Column(db.String(50))
+    # Service = db.Column(db.String(50))
+    # Sample_block =  db.Column(db.String(50))
+    # Sex = db.Column(db.String(50))
+    # Age = db.Column(db.String(50)) 
+
+
+# class SampleTable(db.Model):
+#     __tablename__ = 'SAMPLES'
+#     id = db.Column(db.Integer, primary_key=True)
+#     user_id = db.Column(db.String(20))
+#     lab_id  = db.Column(db.String(120))
+#     ext1_id = db.Column(db.String(80))
+#     ext2_id = db.Column(db.String(80))
+#     ext3_id = db.Column(db.String(80))
+#     run_id  = db.Column(db.String(80))
+#     petition_id  = db.Column(db.String(80))
+#     extraction_date =  db.Column(db.String(80))
+#     date_original_biopsy =  db.Column(db.String(80))
+#     concentration = db.Column(db.String(80))
+#     analysis_date =  db.Column(db.String(80))
+#     tumour_purity =  db.Column(db.String(80))
+#     sex  = db.Column(db.String(80))
+#     diagnosis = db.Column(db.String(80))
+    # physician_name  = db.Column(db.String(80))
+    # medical_center  = db.Column(db.String(80))
+    # medical_address = db.Column(db.String(80))
+    # sample_type  = db.Column(db.String(80))
+    # panel    = db.Column(db.String(80))
+    # subpanel = db.Column(db.String(80))
+    # roi_bed  = db.Column(db.String(80))
+    # software = db.Column(db.String(80))
+    # software_version = db.Column(db.String(80))
+    # bam = db.Column(db.String(80))
+    # merged_vcf = db.Column(db.String(80))
+    # report_pdf = db.Column(db.String(80))
+    # latest_report_pdf = db.Column(db.String(80))
+    # last_report_emission_date = db.Column(db.String(80))
+    # report_db  = db.Column(db.String(120))
+    # sample_db_dir = db.Column(db.String(120))
+    # cnv_json   = db.Column(db.String(100000))
+    # latest_short_report_pdf = db.Column(db.String(80))
+    # last_short_report_emission_date = db.Column(db.String(80))
+    # petition_date = db.Column(db.String(80))
+    # tumor_origin = db.Column(db.String(80))
+    # service = db.Column(db.String(50))
+    # sample_block =  db.Column(db.String(50))
+    # Sex = db.Column(db.String(50))
+    # Age = db.Column(db.String(50))
+
+
     sample_info = (
         SampleTable.query.filter_by(lab_id=sample).filter_by(run_id=run_id).first()
     )
@@ -458,6 +555,23 @@ def show_sample_details(run_id, sample, sample_id, active):
         petition_info = (
             Petition.query.filter_by(AP_code=sample_info.lab_id).first()
         )
+
+    if sample_info and petition_info:
+        sample_info.modulab_id = petition_info.Modulab_id
+        petition_info.Modulab_id = sample_info.modulab_id
+        sample_info.ext1_id = petition_info.AP_code
+        sample_info.ext2_id = petition_info.HC_code
+        sample_info.ext3_id = petition_info.CIP_code
+        sample_info.tumour_purity = petition_info.Tumour_pct
+        sample_info.Age = petition_info.Age
+        sample_info.Sex = petition_info.Sex
+        sample_info.service = petition_info.Service
+        sample_info.sample_block = petition_info.Sample_block
+        sample_info.petition_date = petition_info.Petition_date
+        sample_info.tumor_origin = petition_info.Tumour_origin
+        db.session.commit()
+
+
     summary_qc = (
         SummaryQcTable.query.filter_by(lab_id=sample).filter_by(run_id=run_id).first()
     )
@@ -592,7 +706,7 @@ def show_sample_details(run_id, sample, sample_id, active):
         instruction_dict["modified_on"] = c.Modified_on
         All_changes_dict[id]["action_data"] = instruction_dict
         All_changes_dict[id]["action_name"] = c.Action_name
-        if len(num_id_dict.keys()) == 5:
+        if len(num_id_dict.keys()) == 10:
             break
 
     merged_vcf = sample_info.merged_vcf
@@ -651,19 +765,33 @@ def show_sample_details(run_id, sample, sample_id, active):
     r1_adapters_plot = adapters_plot(read1_adapters_dict, read2_adapters_dict)
 
     if petition_info:
-        tmp_date =petition_info.Date_original_biopsy.replace("-", "/").replace(" 00:00:00", "")
-        tmp_date_list = tmp_date.split("/")
-        newdate = f"{tmp_date_list[2]}/{tmp_date_list[1]}/{tmp_date_list[0]}"
-        petition_info.Date_original_biopsy = newdate
 
-        try:
-            tmp_date =petition_info.Petition_date.replace("-", "/").replace(" 00:00:00", "")
-        except:
-            pass
-        else:
+        pattern = r'^\d{4}-\d{2}-\d{2}'
+        match = re.match(pattern, petition_info.Date_original_biopsy)
+        if match:
+            tmp_date =petition_info.Date_original_biopsy.replace("-", "/").replace(" 00:00:00", "")
+            tmp_date_list = tmp_date.split("/")
+            newdate = f"{tmp_date_list[2]}/{tmp_date_list[1]}/{tmp_date_list[0]}"
+            petition_info.Date_original_biopsy = newdate
+            db.session.commit()
+        print(petition_info.Petition_date)
+        match = re.match(pattern, petition_info.Petition_date)
+        if match:
+            tmp_date = petition_info.Petition_date.replace("-", "/").replace(" 00:00:00", "")
             tmp_date_list = tmp_date.split("/")
             newdate = f"{tmp_date_list[2]}/{tmp_date_list[1]}/{tmp_date_list[0]}"
             petition_info.Petition_date = newdate
+            db.session.commit()
+
+
+    #     try:
+    #         tmp_date =petition_info.Petition_date.replace("-", "/").replace(" 00:00:00", "")
+    #     except:
+    #         pass
+    #     else:
+    #         tmp_date_list = tmp_date.split("/")
+    #         newdate = f"{tmp_date_list[2]}/{tmp_date_list[1]}/{tmp_date_list[0]}"
+    #         petition_info.Petition_date = newdate
 
     return render_template(
         "show_sample_details.html",
@@ -1203,7 +1331,7 @@ def download_report(run_id, sample):
 
 def generate_new_report(
     sample: str, sample_id: str, run_id: str, tumor_origin:str, substitute_report: bool, lowqual_sample: bool,
-    no_enac: bool, comments: str
+    no_enac: bool, comments: str, repeat_notes: str
 ):
     """ """
 
@@ -1213,6 +1341,8 @@ def generate_new_report(
     sample_info = (
         SampleTable.query.filter_by(lab_id=sample).filter_by(run_id=run_id).first()
     )
+
+    
     rare_variants = (
         RareVariantsTable.query.filter_by(lab_id=sample)
         .filter_by(run_id=run_id)
@@ -1305,7 +1435,6 @@ def generate_new_report(
         if var_str in seen_vars:
             continue
         seen_vars.add(var_str)
-
         if var.tier_catsalut != "None":
             if var.tier_catsalut == "1":
                 tier_variants["tier_I"].append(var)
@@ -1356,6 +1485,8 @@ def generate_new_report(
         substituted_date = sample_info.last_report_emission_date
         if not substituted_date:
             substituted_date = report_date
+        report_date = now.strftime("%d/%m/%Y")
+
     else:
         if not sample_info.last_report_emission_date:
             report_date = now.strftime("%d/%m/%Y")
@@ -1406,7 +1537,8 @@ def generate_new_report(
         report_date=report_date,
         low_concentration=low_concentration,
         no_enac=no_enac,
-        comments=comments
+        comments=comments,
+        repeat_notes=repeat_notes
     )
 
     now = datetime.now()
@@ -1444,7 +1576,8 @@ def generate_new_report(
         report_date=report_date,
         low_concentration=low_concentration,
         no_enac=no_enac,
-        comments=comments
+        comments=comments,
+        repeat_notes=repeat_notes
     )
 
     new_report_name_short = f"{sample}.genetic.{dt}.pdf"
@@ -1498,6 +1631,7 @@ def create_somatic_report():
         sample = request.form["sample"]
         sample_id = request.form["sample_id"]
         comments = request.form["comments"]
+        repeat_notes = request.form["repeat_notes"]
         tumor_origin = request.form["tumor_origin"]
         lowqual_sample = False
         if "lowqual_sample" in request.form:
@@ -1514,7 +1648,7 @@ def create_somatic_report():
             substitute_report = True
 
         message = generate_new_report(sample, sample_id, run_id, tumor_origin,
-            substitute_report, lowqual_sample, no_enac, comments)
+            substitute_report, lowqual_sample, no_enac, comments, repeat_notes)
 
         return make_response(jsonify(message), 200)
 
@@ -1530,10 +1664,11 @@ def create_all_somatic_reports():
         lowqual_sample = False
         samples = SampleTable.query.filter_by(run_id=run_id).all()
         comments = ""
+        repeat_notes = ""
 
         for sample in samples:
             generate_new_report(sample.lab_id, sample.lab_id, run_id, sample.tumor_origin, 
-                substitute_report, lowqual_sample, no_enac, comments)
+                substitute_report, lowqual_sample, no_enac, comments, repeat_notes)
     return redirect(url_for("show_run_details", run_id=run_id))
     message = {
         "message_text": f"S'han generat correctament els informes",

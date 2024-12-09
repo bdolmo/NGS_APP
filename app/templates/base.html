@@ -7,7 +7,8 @@
        <meta charset="utf-8">
        <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
     
-       <script src="https://code.jquery.com/jquery-3.7.0.js"></script>
+       <!-- <script src="https://code.jquery.com/jquery-3.7.1.js"></script> -->
+       <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.7.1/jquery.min.js" integrity="sha512-v2CJ7UaYy4JwqLDIrZUI/4hqeoQieOmAZNXBeQyjo21dadnwR+8ZaIJVT8EE2iyI61OV8e6M8PP2/4hpQINQ/g==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
        <script src="https://cdn.datatables.net/1.13.8/js/jquery.dataTables.min.js"></script>
  
        <script src="https://cdn.jsdelivr.net/npm/igv@2.15.5/dist/igv.min.js"></script>
@@ -50,11 +51,13 @@
        <script type="text/javascript" language="javascript" src="https://cdn.datatables.net/rowgroup/1.1.4/js/dataTables.rowGroup.min.js"></script>
 
        <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+       <script src="https://cdnjs.cloudflare.com/ajax/libs/datepicker/1.0.10/datepicker.min.js" integrity="sha512-RCgrAvvoLpP7KVgTkTctrUdv7C6t7Un3p1iaoPr1++3pybCyCsCZZN7QEHMZTcJTmcJ7jzexTO+eFpHk4OCFAg==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+       <!-- <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-datepicker/1.10.0/js/bootstrap-datepicker.min.js" integrity="sha512-LsnSViqQyaXpD4mBBdRYeP6sRwJiJveh2ZIbW41EBrNmKxgr/LFZIiWT6yr+nycvhvauz8c2nYMhrP80YhG7Cw==" crossorigin="anonymous" referrerpolicy="no-referrer"></script> -->
        <!-- Charts JS -->
        <!-- <script src="https://cdn.jsdelivr.net/npm/chart.js"></script> -->
 <!-- 
        <script type="text/javascript" language="javascript" src="https://code.jquery.com/jquery-3.5.1.js"></script> -->
-       <script src="https://cdn.jsdelivr.net/npm/igv@2.12.6/dist/igv.min.js"></script>
+       <!-- <script src="https://cdn.jsdelivr.net/npm/igv@2.12.6/dist/igv.min.js"></script> -->
 
 
        <!-- <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
@@ -433,7 +436,21 @@
       </script>
 
       <style>
-
+@keyframes backgroundFade {
+    0% {
+        background-color: white; /* light blue */
+    }
+    50% {
+        background-color: rgb(209, 237, 255); /* medium blue */
+    }
+    100% {
+        background-color: white; /* light blue */
+    }
+}
+.animated-div {
+  border-left: 8px solid blue;
+  animation: backgroundFade 2.5s infinite;
+}
 
        div.custom_tooltip {
            position: absolute;

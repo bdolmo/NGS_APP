@@ -1,4 +1,16 @@
 <div class="row" style="margin-top:0px;top:-1cm">
+
+  {% if is_substitute %}
+  <div class="col" style="width:100%;margin:0px;">
+      <span style="border-left: 4px solid rgba(0, 106, 182, 0.895);border-radius: 5px;margin-top:0px;font-size:12px;font-family: arial,sans-serif;padding:1px;color:black;background-color:#e8f4f8">
+        <span>&#9432;</span> <b>Nota:</b> Aquest informe substitueix l'informe <b>{{ latest_report_pdf_name }}</b> emès en data <b>{{ substituted_date }}</b>.<br>{{ repeat_notes }}
+      </span>
+      <br>
+       
+      </span>
+  </div>
+  {% endif %}
+
   <div class="col" style="width:100%;margin:0px;">
     <p style="margin-bottom:0px;font-size:15px;font-family: arial, sans-serif;color:#2c4fa1;"><img src="fourdot.png" alt="" style="width:16px;height:15px;">
       <b>SERVEI GENÈTIC SOL·LICITAT</b>
@@ -29,12 +41,7 @@
     </div>
     {% endif %}
 
-    {% if is_substitute %}
-      <span style="border-left: 4px solid rgba(0, 106, 182, 0.895);margin-left:22px;border-radius: 5px;margin-top:0px;font-size:12px;font-family: arial,sans-serif;padding:4px;color:black;background-color:#e8f4f8">
-        <span>&#9432;</span> Aquest informe substitueix l'informe {{ latest_report_pdf_name }} emès en data {{ substituted_date }}
-      </span>
-      <div style="margin-top:10px"></div>
-    {% endif %}
+
 
     {% if lowqual_msg %}
       <span style="border-left: 4px solid orange;margin-left:22px;border-radius: 5px;margin-top:0px;font-size:12px;font-family: arial,sans-serif;padding:4px;color:black;background-color:#fff8e7">

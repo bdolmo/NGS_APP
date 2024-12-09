@@ -2,8 +2,6 @@
 
 {% block body %}
 
-
-
 <div id="edit_sample" class="modal fade">
   <!-- <form action="" method="POST" enctype="multipart/form-data" id="update_petition"> -->
     <div class="modal-dialog modal-lg">
@@ -26,7 +24,7 @@
             <div class="col-sm">
               <h6><b>Nº Petició</b></h6>
               <div class="input-group mb-3">
-                <input id="modal_edit_ext1_id" value="" type="text" name="modal_edit_ext1_id" class="form-control" placeholder="">
+                <input id="modal_edit_modulab_id" value="" type="text" name="modal_edit_modulab_id" class="form-control" placeholder="">
               </div>
             </div>
 
@@ -46,6 +44,41 @@
 
           <div class="row mt-3">
             <div class="col-sm">
+              <h6><b>Edat</b></h6>
+              <div class="input-group mb-3">
+                <input id="modal_edit_age" value="" type="text" name="modal_edit_age" class="form-control" placeholder="">
+              </div>
+            </div>
+            <div class="col-sm">
+              <h6><b>Sexe</b></h6>
+              <div class="input-group mb-3">
+                <input id="modal_edit_sex" value="" type="text" name="modal_edit_sex" class="form-control" placeholder="">
+              </div>
+            </div>
+            <div class="col-sm ">
+              <h6><b>Metge sol·licitant</b></h6>
+              <input id="modal_edit_physician_name" type="text" name="modal_edit_physician_name" class="form-control" >
+            </div>
+            <div class="col-sm ">
+              <h6><b>Hospital</b></h6>
+              <input id="modal_edit_hospital" type="text" name="modal_edit_hospital" class="form-control" >
+            </div>
+
+          </div>
+
+          <div class="row mt-3">
+            <div class="col-3">
+              <h6><b>Origen tumoral</b></h6>
+              <input id="modal_edit_tumor_origin" type="text" name="modal_edit_tumor_origin" class="form-control" >
+            </div>
+            <div class="col-3 ">
+              <h6><b>Bloc AP</b></h6>
+              <input id="modal_edit_sample_block" type="text" name="modal_edit_sample_block" class="form-control" >
+            </div>
+          </div>
+
+          <div class="row mt-3">
+            <div class="col-sm">
               <h6><b>Tipus de mostra</b></h6>
               <div class="input-group mb-3">
                 <input id="modal_edit_sample_type" value="" type="text" name="modal_edit_sample_type" class="form-control" placeholder="">
@@ -59,21 +92,16 @@
                 {% endfor %}
               </select>
             </div>
+
+
             <div class="col-sm ">
-              <h6><b>Metge sol·licitant</b></h6>
-              <input id="modal_edit_physician_name" type="text" name="modal_edit_physician_name" class="form-control" >
+              <h6><b>Servei sol·licitant</b></h6>
+              <input id="modal_edit_service" type="text" name="modal_edit_service" class="form-control" >
             </div>
-            <div class="col-sm ">
-              <h6><b>Hospital</b></h6>
-              <input id="modal_edit_hospital" type="text" name="modal_edit_hospital" class="form-control" >
-            </div>
+
           </div>
 
           <div class="row mt-3">
-            <div class="col-3">
-              <h6><b>Origen tumoral</b></h6>
-              <input id="modal_edit_tumor_origin" type="text" name="modal_edit_tumor_origin" class="form-control" >
-            </div>
             <div class="col-sm">
               <h6><b>Data biòpsia original</b> <small>(MM/DD/YYYY)</small></h6>
               <div class="form-group">
@@ -181,7 +209,7 @@
     <div href="#" class="list-group-item list-group-item-action bg-light">
       <div class="row">
         <div class="col">
-          <i class="fas fa-list"> </i> <b>Últimes 5 accions</b>
+          <i class="fas fa-list"> </i> <b>Últimes 10 accions</b>
         </div>
       </div>
       <div class="row">
@@ -293,14 +321,20 @@
             <div class="col">
 
               <div style="margin:0px;">
-                <b style="display:inline-block;">Peitició: </b>
-                <div style="display:inline-block;margin:0px;" id="edit_ext1_id"> {{ sample_info.ext1_id }}</div>
+                <b style="display:inline-block;">Petició: </b>
+                <div style="display:inline-block;margin:0px;" id="edit_modulab_id"> {{ sample_info.modulab_id }}</div>
+              </div>
+
+              <div style="margin:0px;">
+                <b style="display:inline-block;">Lab ID: </b>
+                <div style="display:inline-block;" id="edit_lab_id">{{ sample_info.lab_id }}</div>
               </div>
 
               <div style="display:inline-block;margin:0px;">
-                <b style="display:inline-block;">Lab ID: </b>
-                <div style="display:inline-block;" id="edit_lab_id">{{ sample_info.lab_id }}</div>
-              </div> 
+                <b style="display:inline-block;">Edat: </b>
+                <div style="display:inline-block;" id="edit_age">{{ sample_info.Age|int }} </div>
+              </div>
+
             </div>
             <div class="col">
               <div style="margin:0px;">
@@ -310,6 +344,10 @@
               <div style="margin:0px;">
                 <b style="display:inline-block;">Núm. HC: </b>
                 <div style="display:inline-block;margin:0px;" id="edit_ext2_id"> {{ sample_info.ext2_id }}</div>
+              </div>
+              <div style="display:inline-block;margin:0px;">
+                <b style="display:inline-block;">Sexe: </b>
+                <div style="display:inline-block;" id="edit_sex">{{ sample_info.Sex }}</div>
               </div>
             </div>
           </div>
@@ -326,21 +364,66 @@
               </div>
               <div style="margin:0px;">
                 <b>Data de rebuda: </b>
-                <div style="display:inline-block;" id="edit_recieved_date"> {{ petition_info.Petition_date }}</div>
+
+                {% set petition_date = "." %}
+                {% if petition_info.Petition_date %}
+                  {% set petition_date = petition_info.Petition_date %}
+                {% else %}
+                  {% set petition_date = sample_info.petition_date %}
+                {% endif %}
+
+                <div style="display:inline-block;" id="edit_recieved_date"> {{ petition_date }}</div>
               </div>
+              <div style="display:inline-block;margin:0px;"> 
+                <b>Bloc AP: </b>
+
+                  {% set sample_block = "." %}
+                  {% if petition_info.Sample_block %}
+                    {% set sample_block = petition_info.Sample_block %}
+                  {% else %}
+                    {% set sample_block = sample_info.sample_block %}
+                  {% endif %}
+
+                <div style="display:inline-block;" id="edit_sample_block"> {{ sample_block }}</div>  
+              </div>
+
             </div>
             <div class="col">
               <div style="display:inline-block;margin:0px;"> 
                 <b>Origen tumoral: </b>
-                <div style="display:inline-block;" id="edit_tumor_origin"> {{ petition_info.Tumour_origin }}</div>  
+
+                {% set tumour_origin = "." %}
+                {% if petition_info.Tumour_origin %}
+                  {% set tumour_origin = petition_info.Tumour_origin %}
+                {% else %}
+                  {% set tumour_origin = sample_info.tumor_origin %}
+                {% endif %}
+
+                <div style="display:inline-block;" id="edit_tumor_origin"> {{ tumour_origin }}</div>  
               </div>
               <div style="display:inline-block;margin:0px;"> 
                 <b>Puresa tumoral: </b>
-                <div style="display:inline-block;" id="edit_tumoral_pct"> {{ sample_info.tumour_purity }}%</div>  
+
+                {% set tumour_purity = "." %}
+                {% if petition_info.Tumour_pct %}
+                  {% set tumour_purity = petition_info.Tumour_pct %}
+                {% else %}
+                  {% set tumour_purity = sample_info.tumour_purity %}
+                {% endif %}
+
+                <div style="display:inline-block;" id="edit_tumoral_pct"> {{ tumour_purity}}%</div>  
               </div>
               <div style="display:inline-block;margin:0px;"> 
                 <b>Data biòpsia: </b>
-                <div style="display:inline-block;" id="edit_biopsy_date"> {{ petition_info.Date_original_biopsy }}</div>  
+
+                {% set biopsy_date = "." %}
+                {% if petition_info.Date_original_biopsy %}
+                  {% set biopsy_date = petition_info.Date_original_biopsy %}
+                {% else %}
+                  {% set biopsy_date = sample_info.date_original_biopsy %}
+                {% endif %}
+
+                <div style="display:inline-block;" id="edit_biopsy_date"> {{ biopsy_date }}</div>  
               </div>
 
             </div>
@@ -354,9 +437,15 @@
             <div style="display:inline-block;" id="edit_hospital">.</div>
           </div>
           <div style="display:inline-block;margin:0px;">
-            <b>Metge sol·licitant:</b> 
+            <b>Sol·licitant:</b> 
             <div style="display:inline-block;" id="edit_physician_name">{{ petition_info.Medical_doctor }}</div>
           </div>
+
+          <div style="display:inline-block;margin:0px;"> 
+            <b>Servei: </b>
+            <div style="display:inline-block;" id="edit_service"> {{ petition_info.Service }}</div>  
+          </div>
+
         </div>
         <div class="col">
           <h5><i class="fas fa-server"></i> Anàlisi NGS</h5>
@@ -622,7 +711,7 @@
         <div style="margin-top:15px;background-color:#e8f4f8;width:100%;padding:10px;">
           <form id="report_form">
             <div class="row">
-              <div class="col-5">
+              <div class="col-4">
                 <input type="hidden" id="run_id" name="run_id" value="{{ sample_info.run_id }}">
                 <input type="hidden" id="sample" name="sample" value="{{ sample_info.lab_id }}">
                 <input type="hidden" id="sample_id" name="sample_id" value="{{ sample_info.lab_id }}">
@@ -633,21 +722,34 @@
                 <input style="display:inline;" type="checkbox" id="lowqual_sample" name="lowqual_sample">
                 <label style="display:inline;" for="lowqual_sample"> La mostra no compleix els criteris mínims de qualitat </label>
                 <br>
-
                 <input style="display:inline;" type="checkbox" id="no_enac" name="no_enac">
                 <label style="display:inline;" for="no_enac"> Procediment no acreditat per ENAC </label>
                 <br>
-
                 <button type="submit" id="report_button" class="btn btn-secondary btn-sm mt-2">
                   <i class="fas fa-file-alt" style="color:white;"> </i> Generar informe
                 </button>
-
               </div>
-              <div class="col-7">
-                <label for="comments">Comentaris:</label>
-                <textarea class="form-control" id="comments" name="comments" rows="2"></textarea>
+              <div class="col-8">
+                <div class="row">
+                  <div class="col" id="modificacions_container" style="display: none;">
+                    <label for="repeat_notes">Llista de modificacions <small>(En cas de reemissió d'informe)</small>:</label>
+                    <textarea class="form-control" id="repeat_notes" name="repeat_notes" rows="2"></textarea>
+                  </div>
+                  <div class="col">
+                    <label for="comments">Altres comentaris de qualitat:</label>
+                    <textarea class="form-control" id="comments" name="comments" rows="2"></textarea>
+                  </div>
+                </div>
               </div>
             </div>
+            <div class="row">
+              <div class="col-5">
+              </div>
+              <div class="col-7">
+
+              </div>
+            </div>
+
           </form>
         </div>
         <hr>
@@ -849,7 +951,9 @@
                     {% if (var.variant_type == "Amplification" or var.variant_type == "Loss") %}
                       <b>CN:</b> {{ var.allele_frequency }}
                     {% else %}
-                      <b>VAF:</b> {{ var.allele_frequency }}
+                      {% set read_support = var.read_support|int %}
+                      {% set depth = var.depth|int %}
+                      <b>VAF (%):</b> {{ 100*(read_support/depth)|float|round(5)}}
                     {% endif %}
                   </div>
                 </div>
@@ -1041,7 +1145,13 @@
           <td>
             <div class="row">
               <div class="col">
-                <b>VAF:</b> {{ var.allele_frequency }}
+
+                {% set read_support = var.read_support|float %}
+                {% set depth = var.depth|float %}
+
+
+
+                <b>VAF (%):</b> {{ 100*(read_support/depth)|float|round(4)}}
               </div>
             </div>
             <div class="row">
@@ -1246,9 +1356,19 @@
 {% block script %}
 <script>
 
+
+  document.getElementById('substitute_report').addEventListener('change', function() {
+    var modificacionsContainer = document.getElementById('modificacions_container');
+    if (this.checked) {
+      modificacionsContainer.style.display = 'block';
+    } else {
+      modificacionsContainer.style.display = 'none';
+    }
+  });
+
   function updatePatient() {   
     edit_lab_id = document.getElementById("edit_lab_id").innerText;
-    edit_ext1_id = document.getElementById("edit_ext1_id").innerText;
+    edit_modulab_id = document.getElementById("edit_modulab_id").innerText;
     edit_ext2_id = document.getElementById("edit_ext2_id").innerText;
     edit_ext3_id = document.getElementById("edit_ext3_id").innerText;
 
@@ -1259,7 +1379,10 @@
     edit_physician = document.getElementById("edit_physician_name").innerText;
     edit_biopsy_date = document.getElementById("edit_biopsy_date").innerText;
     edit_tumor_origin = document.getElementById("edit_tumor_origin").innerText;
-
+    edit_age = document.getElementById("edit_age").innerText;
+    edit_sex = document.getElementById("edit_sex").innerText;
+    edit_sample_block = document.getElementById("edit_sample_block").innerText;
+    edit_service = document.getElementById("edit_service").innerText;
 
     myarr = edit_biopsy_date.split("/");
     if (myarr.length == 3) {
@@ -1281,7 +1404,7 @@
 
 
     document.getElementById("modal_edit_lab_id").value = edit_lab_id;
-    document.getElementById("modal_edit_ext1_id").value = edit_ext1_id;
+    document.getElementById("modal_edit_modulab_id").value = edit_modulab_id;
     document.getElementById("modal_edit_ext2_id").value = edit_ext2_id;
     document.getElementById("modal_edit_ext3_id").value = edit_ext3_id;
     document.getElementById("modal_edit_sample_type").value = edit_sample_type;
@@ -1290,6 +1413,12 @@
     document.getElementById("modal_edit_biopsy_date").value = biopsy_date;
     document.getElementById("modal_edit_recieved_date").value = recieved_date;
     document.getElementById("modal_edit_tumor_origin").value = edit_tumor_origin;
+    document.getElementById("modal_edit_age").value = edit_age;
+    document.getElementById("modal_edit_sex").value = edit_sex;
+
+    document.getElementById("modal_edit_sample_block").value = edit_sample_block;
+    document.getElementById("modal_edit_service").value = edit_service;
+
 
     if (edit_tumoral_pct != ".") {
       edit_tumoral_pct = edit_tumoral_pct.replace("%", "");
@@ -1304,7 +1433,8 @@
 
   function updatePatient2() {
     lab_id = document.getElementById("modal_edit_lab_id").value;
-    ap_id = document.getElementById("modal_edit_ext1_id").value;
+    modulab_id = document.getElementById("modal_edit_modulab_id").value;
+    // ap_id = document.getElementById("modal_edit_ext1_id").value;
     hc_id = document.getElementById("modal_edit_ext2_id").value;
     cip_id = document.getElementById("modal_edit_ext3_id").value;
     sample_type = document.getElementById("modal_edit_sample_type").value;
@@ -1316,8 +1446,19 @@
     recieved_date = document.getElementById("modal_edit_recieved_date").value;
     biopsy_date = document.getElementById("modal_edit_biopsy_date").value;
 
+    if (biopsy_date) {
+      let tmp = biopsy_date.split("-");
+      biopsy_date = tmp[2] + "/" + tmp[1] + "/" +tmp[0];
+    }
+
+    sex = document.getElementById("modal_edit_sex").value; 
+    age = document.getElementById("modal_edit_age").value; 
+
+    sample_block = document.getElementById("modal_edit_sample_block").value;
+    service = document.getElementById("modal_edit_service").value;
+
     old_lab_id = document.getElementById("edit_lab_id").innerText;
-    old_ext1_id = document.getElementById("edit_ext1_id").innerText;
+    old_ext1_id = document.getElementById("edit_lab_id").innerText;
     run_id = document.getElementById("run_id_tag").innerText;
 
     let data_json = {
@@ -1325,7 +1466,8 @@
       old_lab_id: old_lab_id,
       old_ext1_id: old_ext1_id,
       lab_id: lab_id,
-      ext1_id: ap_id,
+      modulab_id: modulab_id,
+      ext1_id: lab_id,
       ext2_id: hc_id,
       ext3_id: cip_id,
       sample_type: sample_type,
@@ -1334,7 +1476,12 @@
       physician_name: physician_name,
       recieved_date: recieved_date,
       biopsy_date: biopsy_date,
-      tumor_origin: tumor_origin
+      tumor_origin: tumor_origin,
+      sex: sex,
+      age: age,
+      sample_block: sample_block,
+      service: service
+
     }
 
     fetch('/update_patient_info', {

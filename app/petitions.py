@@ -186,6 +186,7 @@ def upload_petition():
                         post_tape_eval= "."
                         nanodrop_conc = "."
                         nanodrop_ratio = "."
+                        modulab_id = "."
                         if 'CONCENTRACIÓ NANODROP (ng/µL)' in row:
                             nanodrop_conc = row['CONCENTRACIÓ NANODROP (ng/µL)']
                         
@@ -205,7 +206,7 @@ def upload_petition():
                         Ratio_nanodrop=nanodrop_ratio,Tape_postevaluation=post_tape_eval,
                         Medical_doctor=physician_name,Billing_unit=billing_unit,
                         Medical_indication=tumour_type, Date_original_biopsy=Date_original_biopsy,
-                        Age=age, Sex=sex, Service=Peticionari)
+                        Age=age, Sex=sex, Service=Peticionari, Modulab_id=Modulab_petition)
 
                         # Check if petition is already available
                         found = Petition.query.filter_by(AP_code=ap_code)\

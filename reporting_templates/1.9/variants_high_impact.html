@@ -119,11 +119,16 @@
           </div>
           <div class="row" style="margin-bottom:0px;">
             <div class="col" style="width:45%;font-size:11px">
-              {% set var_vaf = var.allele_frequency %}
+              {% set float_raw_vaf = var.allele_frequency|float %}
+
+              {% set var_vaf_float = (100*float_raw_vaf)|round(1, 'floor')|float %}
+              {% set var_vaf = var_vaf_float|string %}
               {% if mark_vaf %} 
-                {% set var_vaf = "<b>" + var.allele_frequency +"*</b>" %}
+                {% set var_vaf = "<b>" + var_vaf + "*</b>" %}
+              {% else %}
+                {% set var_vaf = var_vaf_float|string %}
               {% endif %}
-              <p style="margin:0px;">VAF: {{ var_vaf }}</p>
+              <p style="margin:0px;">VAF (%): {{ var_vaf }}</p>
             </div>
             <div class="col" style="width:45%;font-size:11px">
               <p style="margin:0px;">Població: {{ var.max_af_pop }}</p>

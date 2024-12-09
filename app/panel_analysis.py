@@ -239,6 +239,8 @@ def status():
     }
 
     All_jobs = Job.query.all()
+    All_jobs.reverse()  # Reverse the order of jobs
+
     for job in All_jobs:
         print(job.Job_id, job.Status, job.Queue_id)
         # from redis, get queued status from id
@@ -267,6 +269,8 @@ def status():
         - status_dict["In queue"]
         - status_dict["Running"]
     )
+
+    status_dict["Total jobs"] = len(All_jobs)
 
     # Update job status
     return render_template(
@@ -545,7 +549,7 @@ def submit_ngs_job():
                 "DOCKER_YAML": docker_yaml
             }
 
-            task = q.enqueue(launch_ngs_analysis, params, job_timeout=500000)
+            task = q.enqueue(launch_ngs_analysis, params, job_timeout=-1)
             print(task.result)
             jobs = q.jobs
 

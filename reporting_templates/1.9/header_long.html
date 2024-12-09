@@ -21,7 +21,7 @@
         <p style="font-size:11px;margin:0px;color:#2c4fa1;"><b>Codi Lab:</b> {{ sample_info.lab_id }}</p>
       </div>
       <div class="col" style="margin:0px;">
-        <p style="font-size:11px;margin:0px;color:#2c4fa1;"><b>Data de rebuda:</b> {{ petition_info.Petition_date }}</p>
+        <p style="font-size:11px;margin:0px;color:#2c4fa1;"><b>Data de rebuda:</b> {{ sample_info.petition_date }}</p>
       </div>
     </div>
     <div class="row">
@@ -37,19 +37,30 @@
     </div>
     <div class="row">
       <div class="col" style="">
-        <p style="font-size:11px;margin:0px;color:#2c4fa1;"><b>Nº Petició:</b> {{ sample_info.ext1_id }}</p>
+        <p style="font-size:11px;margin:0px;color:#2c4fa1;"><b>Nº Petició:</b> {{ sample_info.modulab_id }}</p>
       </div>
       <div class="col" style="">
         <p style="font-size:11px;margin:0px;color:#2c4fa1;"><b>Puresa tumoral (%):</b> {{ sample_info.tumour_purity }}</p>
       </div>
       <div class="col" style="">
-        <p style="font-size:11px;margin:0px;color:#2c4fa1;"><b>Data biòpsia original:</b> {{ petition_info.Date_original_biopsy }}</p>
+        <p style="font-size:11px;margin:0px;color:#2c4fa1;"><b>Data biòpsia original:</b> {{ sample_info.date_original_biopsy }}</p>
       </div>
     </div>
+
     <div class="row">
-      <div class="col" style="">
-        <!-- <p style="font-size:11px;margin:0px;color:#2c4fa1;"><b>Codi AP:</b> {{ sample_info.ext1_id }}</p> -->
+      <div class="col" style="margin:0px;">
+        <p style="font-size:11px;margin:0px;color:#2c4fa1;"><b>Servei sol·licitant:</b> {{ sample_info.service }}</p>
       </div>
+      <div class="col" style="margin:0px;">
+        <p style="font-size:11px;margin:0px;color:#2c4fa1;"><b>Mostra original:</b>{{ sample_info.sample_block }}</p>
+      </div>
+      <div class="col" style="">
+        <p style="font-size:11px;margin:0px;color:#2c4fa1;"></p>
+      </div>
+    </div>
+
+    <div class="col" style="">
+      <!-- <p style="font-size:11px;margin:0px;color:#2c4fa1;"><b>Codi AP:</b> {{ sample_info.ext1_id }}</p> -->
     </div>
   </div>
   <!-- <hr style="border: 1px solid #e5e6eb;width:100%;"> -->
@@ -86,7 +97,7 @@
         <p style="font-size:11px;margin:0px;color:#2c4fa1;"><b>Codi Lab:</b> {{ sample_info.lab_id }}</p>
       </div>
       <div class="col" style="margin:0px;">
-        <p style="font-size:11px;margin:0px;color:#2c4fa1;"><b>Data de rebuda:</b> {{ petition_info.Petition_date  }}</p>
+        <p style="font-size:11px;margin:0px;color:#2c4fa1;"><b>Data de rebuda:</b> {{ sample_info.petition_date  }}</p>
       </div>
     </div>
     <div class="row">
@@ -102,18 +113,24 @@
     </div>
     <div class="row">
       <div class="col" style="">
-        <p style="font-size:11px;margin:0px;color:#2c4fa1;"><b>Nº Petició:</b> {{ sample_info.ext1_id }}</p>
+        <p style="font-size:11px;margin:0px;color:#2c4fa1;"><b>Nº Petició:</b> {{ sample_info.modulab_id }}</p>
       </div>
       <div class="col" style="">
         <p style="font-size:11px;margin:0px;color:#2c4fa1;"><b>Puresa tumoral (%):</b> {{ sample_info.tumour_purity }}</p>
       </div>
       <div class="col" style="">
-        <p style="font-size:11px;margin:0px;color:#2c4fa1;"><b>Data biòpsia original:</b> {{ petition_info.Date_original_biopsy }}</p>
+        <p style="font-size:11px;margin:0px;color:#2c4fa1;"><b>Data biòpsia original:</b> {{ sample_info.date_original_biopsy  }}</p>
       </div>
     </div>
     <div class="row">
+      <div class="col" style="margin:0px;">
+        <p style="font-size:11px;margin:0px;color:#2c4fa1;"><b>Servei sol·licitant:</b> {{ sample_info.service }}</p>
+      </div>
+      <div class="col" style="margin:0px;">
+        <p style="font-size:11px;margin:0px;color:#2c4fa1;"><b>Mostra original:</b>{{ sample_info.sample_block }}</p>
+      </div>
       <div class="col" style="">
-        <!-- <p style="font-size:11px;margin:0px;color:#2c4fa1;"><b>Codi AP:</b> {{ sample_info.ext1_id }}</p> -->
+        <p style="font-size:11px;margin:0px;color:#2c4fa1;"></p>
       </div>
     </div>
   </div>

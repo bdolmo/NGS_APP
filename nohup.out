@@ -1,0 +1,60 @@
+11:12:52 Worker rq:worker:b0529888dbce44339e75bc3a7d8a6e98 started with PID 2876152, version 1.15.1
+11:12:52 Subscribing to channel rq:pubsub:b0529888dbce44339e75bc3a7d8a6e98
+11:12:52 *** Listening on default...
+11:12:52 Cleaning registries for queue: default
+11:39:52 Cleaning registries for queue: default
+11:44:47 default: AutoLauncherNGS.modules.panel_matcher.submit_job({'panel_name': 'CALM_SUD', 'panel_analysis_bed': '/ngs-db/PANELS_DB/data/CA...) (93749bf8-d679-453f-a61a-a7cd8cc18bde)
+python3 /home/udmmp/GC_NGS_PIPELINE/gc_ngs_pipeline.py all -s targeted --panel /ngs-db/PANELS_DB/data/CALM_SUD/3495421_Covered.analysis.bed --panel_name CALM_SUD --panel_version 1 -r hg19 -t 12 --var_class germline -i /ngs-results/RUN20240620-CGC64004/CALM_SUD -o /ngs-results/RUN20240620-CGC64004/CALM_SUD --db /ngs-db/NGS_DB/NGS.db --user_id . --run_id RUN20240620-CGC64004 --bwamem2
+12:03:17 default: Job OK (93749bf8-d679-453f-a61a-a7cd8cc18bde)
+INFO:rq.worker:default: Job OK (93749bf8-d679-453f-a61a-a7cd8cc18bde)
+12:03:17 Result is kept for 500 seconds
+INFO:rq.worker:Result is kept for 500 seconds
+12:03:17 Cleaning registries for queue: default
+12:03:17 default: AutoLauncherNGS.modules.panel_matcher.submit_job({'panel_name': 'SUDD_85', 'panel_analysis_bed': '/ngs-db/PANELS_DB/data/SUD...) (e80a8fc2-afd4-48af-8558-860aee55332b)
+python3 /home/udmmp/GC_NGS_PIPELINE/gc_ngs_pipeline.py all -s targeted --panel /ngs-db/PANELS_DB/data/SUDD_85/sudd.v3.85.ROI.analysis.bed --panel_name SUDD_85 --panel_version 3 -r hg19 -t 12 --var_class germline -i /ngs-results/RUN20240620-CGC64004/SUDD_85 -o /ngs-results/RUN20240620-CGC64004/SUDD_85 --db /ngs-db/NGS_DB/NGS.db --user_id . --run_id RUN20240620-CGC64004 --bwamem2
+12:25:01 default: Job OK (e80a8fc2-afd4-48af-8558-860aee55332b)
+INFO:rq.worker:default: Job OK (e80a8fc2-afd4-48af-8558-860aee55332b)
+12:25:01 Result is kept for 500 seconds
+INFO:rq.worker:Result is kept for 500 seconds
+12:25:01 Cleaning registries for queue: default
+12:52:02 Cleaning registries for queue: default
+13:19:02 Cleaning registries for queue: default
+13:46:02 Cleaning registries for queue: default
+14:13:02 Cleaning registries for queue: default
+14:40:03 Cleaning registries for queue: default
+23:53:21 Worker rq:worker:a4f54ec56ec04e7590a635b5339fb454 started with PID 2419005, version 1.15.1
+23:53:21 Subscribing to channel rq:pubsub:a4f54ec56ec04e7590a635b5339fb454
+23:53:21 *** Listening on default...
+00:06:51 Cleaning registries for queue: default
+00:33:51 Cleaning registries for queue: default
+01:00:52 Cleaning registries for queue: default
+01:27:52 Cleaning registries for queue: default
+01:54:52 Cleaning registries for queue: default
+02:21:52 Cleaning registries for queue: default
+02:48:53 Cleaning registries for queue: default
+03:15:53 Cleaning registries for queue: default
+03:42:53 Cleaning registries for queue: default
+04:09:53 Cleaning registries for queue: default
+04:36:53 Cleaning registries for queue: default
+05:03:53 Cleaning registries for queue: default
+05:30:54 Cleaning registries for queue: default
+05:57:54 Cleaning registries for queue: default
+06:24:54 Cleaning registries for queue: default
+06:51:54 Cleaning registries for queue: default
+07:18:55 Cleaning registries for queue: default
+07:45:55 Cleaning registries for queue: default
+08:12:55 Cleaning registries for queue: default
+08:32:59 default: AutoLauncherNGS.modules.panel_matcher.submit_job({'panel_name': 'GenOncology-Dx', 'panel_analysis_bed': '/home/udmmp/GC_NGS_...) (37c06b70-840e-4be5-8126-d4e9f2deaa71)
+python3 /home/udmmp/GC_NGS_PIPELINE/gc_ngs_pipeline.py all -s targeted --panel /home/udmmp/GC_NGS_PIPELINE/gene_panels/GenOncology-Dx.v1/GenOncology-Dx.v1.bed --panel_name GenOncology-Dx --panel_version 1 -r hg19 -t 12 --var_class somatic -i /ngs-results/RUN20240626-CGC64001/GenOncology-Dx -o /ngs-results/RUN20240626-CGC64001/GenOncology-Dx --db /ngs-db/NGS_DB/NGS.db --user_id . --run_id RUN20240626-CGC64001 --bwamem2
+08:52:18 default: Job OK (37c06b70-840e-4be5-8126-d4e9f2deaa71)
+INFO:rq.worker:default: Job OK (37c06b70-840e-4be5-8126-d4e9f2deaa71)
+08:52:18 Result is kept for 500 seconds
+INFO:rq.worker:Result is kept for 500 seconds
+08:52:18 Cleaning registries for queue: default
+09:19:18 Cleaning registries for queue: default
+09:46:18 Cleaning registries for queue: default
+10:13:18 Cleaning registries for queue: default
+10:46:24 Worker b0529888dbce44339e75bc3a7d8a6e98 [PID 2876152]: warm shut down requested
+10:46:24 Worker a4f54ec56ec04e7590a635b5339fb454 [PID 2419005]: warm shut down requested
+10:46:24 Unsubscribing from channel rq:pubsub:b0529888dbce44339e75bc3a7d8a6e98
+10:46:24 Unsubscribing from channel rq:pubsub:a4f54ec56ec04e7590a635b5339fb454

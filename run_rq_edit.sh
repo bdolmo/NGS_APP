@@ -4,7 +4,7 @@
 APP_DIR="/home/udmmp/NGS_APP"
 QUEUE_NAME="default"
 WORKER_SCRIPT="rq worker $QUEUE_NAME"
-NGS_SCRIPT="python $APP_DIR/NGS.py"
+NGS_SCRIPT="python3 $APP_DIR/NGS.py"
 
 # Change to the correct directory
 cd $APP_DIR

@@ -146,10 +146,11 @@ class Petition(db.Model):
     Sample_block =  db.Column(db.String(50))
     Sex = db.Column(db.String(50))
     Age = db.Column(db.String(50)) 
+    Modulab_id = db.Column(db.String(50)) 
 
     def __init__(self, Petition_id, User_id, Date, Petition_date,Tumour_origin, AP_code, HC_code, CIP_code, Tumour_pct,
         Volume, Conc_nanodrop, Ratio_nanodrop, Tape_postevaluation, Medical_doctor,
-        Billing_unit, Medical_indication, Date_original_biopsy, Service, Sample_block, Sex, Age):
+        Billing_unit, Medical_indication, Date_original_biopsy, Service, Sample_block, Sex, Age, Modulab_id):
         self.Petition_id = Petition_id
         self.Date   = Date
         self.Petition_date = Petition_date
@@ -171,6 +172,7 @@ class Petition(db.Model):
         self.Sample_block = Sample_block
         self.Age = Age
         self.Sex = Sex
+        self.Modulab_id = Modulab_id
 
 
 class Panel(db.Model):
@@ -308,6 +310,8 @@ class SampleTable(db.Model):
     sample_block =  db.Column(db.String(50))
     Sex = db.Column(db.String(50))
     Age = db.Column(db.String(50))
+    modulab_id = db.Column(db.String(50))
+    report_changes = db.Column(db.String(50)) 
 
     def __repr__(self):
         return '<Sample %r>' % self.lab_id
