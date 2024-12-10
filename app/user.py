@@ -35,6 +35,24 @@ from app.models import User
 #         return 'https://www.gravatar.com/avatar/{}?d=identicon&s={}'.format(
 #             digest, size)
 
+
+@app.route('/login_user_prv')
+def login_user_prv():
+    """
+    Redirects to the main page.
+
+    :returns: Returns the html of the main page.
+    :rtype: render_template
+    """
+
+    session["username"] = "admin"
+    session['user'] = "admin"
+    session["idClient"] = "admin"
+
+    return redirect(url_for('ngs_applications'))
+
+
+
 @app.route('/login_external')
 def login_external():
     """
@@ -43,7 +61,7 @@ def login_external():
     :returns: Returns the html of the main page.
     :rtype: render_template
     """
-    URL_HOME = f'http://172.16.78.83:5000/'
+    URL_HOME = f'http://172.16.82.48:5000/'
     # Redirect to html
     app_dict = {"app": "ngs_app"}
     info_user = requests.post(URL_HOME + "consult_user_app", json=app_dict)

@@ -13,13 +13,169 @@ import redis
 from datetime import date
 import pandas as pd
 import docx
-from app.models import Petition, SampleTable
+from app.models import Petition, SampleTable, GeneVariantSummary
+
+import hashlib
+import json
+from app import app, db
 
 # db = SQLAlchemy(app)
 
+
+def create_table_if_not_exists():
+    """Create the table dynamically if it doesn't exist."""
+    with app.app_context():
+        db.create_all()
+
+def insert_gene_variant_summaries(list_of_dicts):
+    """Insert unique rows into the GENE_VARIANT_SUMMARY table."""
+    create_table_if_not_exists()
+
+    for row in list_of_dicts:
+        # Extract fields and prepare JSON
+        gene = row.get('Gene', None)
+        hgvsg = row.get('HGVSg', None)
+        hgvsc = row.get('HGVSc', None)
+        hgvsp = row.get('HGVSp', None)
+
+        data_json = json.dumps(row, ensure_ascii=False).encode('utf8')
+        # Convert dictionary to JSON string
+        hgvs = row.get('HGVS', None)
+
+        # Calculate a hash from the JSON string
+        hash_string = "".join([gene, hgvsg, hgvsc, hgvsp, hgvs])
+        print(hash_string)
+        hash_value = hashlib.sha256(hash_string.encode('utf-8')).hexdigest()
+
+        # Check if the hash already exists
+        exists = GeneVariantSummary.query.filter_by(hash=hash_value).first()
+        if not exists:
+            # Insert into the table
+            new_entry = GeneVariantSummary(
+                gene=gene, hgvsg=hgvsg, hgvsc=hgvsc, hgvsp=hgvsp, data_json=data_json, hash=hash_value
+            )
+            db.session.add(new_entry)
+        else:
+            print(f"Skipped (already exists)")
+
+    db.session.commit()
+
+@app.route('/upload_xlsx_variants', methods=['GET', 'POST'])
+def upload_xlsx_variants():
+    """Route to upload and process an XLSX file."""
+    if request.method == 'POST':
+        variants_xlsx_dir = os.path.join(app.config['PETITIONS_DIR'], "variants_xlsx")
+        os.makedirs(variants_xlsx_dir, exist_ok=True)
+
+        if 'xlsx_file' not in request.files:
+            flash('No file part in the request')
+            return redirect(request.url)
+
+        file = request.files['xlsx_file']
+
+        if file.filename == '':
+            flash('No file selected')
+            return redirect(request.url)
+
+        if not file.filename.endswith('.xlsx'):
+            flash('File type not supported. Please upload an XLSX file.')
+            return redirect(request.url)
+
+        # Save the file temporarily
+        file_path = os.path.join(variants_xlsx_dir, file.filename)
+        file.save(file_path)
+
+        # Process the file with pandas
+        try:
+            df = pd.read_excel(file_path, engine='openpyxl', sheet_name='Variants', header=2)
+            df = df.fillna(method='ffill', axis=0)
+            df = df.applymap(lambda x: x.replace('\xa0', ' ') if isinstance(x, str) else x)
+            # Convert the DataFrame to a list of dictionaries
+            list_of_dicts = df.to_dict(orient='records')
+            for item in list_of_dicts:
+                if 'HGVSg' in item:
+                    item['HGVSg'] = item['HGVSg'].replace(" No tier ", "")
+                if 'HGVSc' in item:
+                    item['HGVSc'] = item['HGVSc'].replace(" No tier ", "")
+                if 'HGVSp' in item:
+                    item['HGVSp'] = item['HGVSp'].replace(" No tier ", "")
+            # Insert the data into the database
+            print("inserting new variants")
+            insert_gene_variant_summaries(list_of_dicts)
+
+            flash(f'{file.filename} actualitzat correctament', "success")
+        except Exception as e:
+            flash(f'Error en el processament del document: {str(e)}', "error")
+            return redirect('/view_config')
+
+        return redirect('/view_config')
+    return redirect('/view_config')
+
+
+@app.route('/view_config')
+def view_config():
+    """ """
+    return render_template("config.html", title="Configuració")
+
+
+# @app.route('/upload_xlsx_variants', methods=['GET', 'POST'])
+# def upload_xlsx_variants():
+#     """Route to upload and process an XLSX file."""
+#     if request.method == 'POST':
+
+#         variants_xlsx_dir = app.config['PETITIONS_DIR'] + "/variants_xlsx"
+#         if not os.path.isdir(variants_xlsx_dir):
+#             os.mkdir(variants_xlsx_dir)
+
+#         if 'xlsx_file' not in request.files:
+#             flash('No file part in the request')
+#             return redirect(request.url)
+
+#         file = request.files['xlsx_file']
+
+#         if file.filename == '':
+#             flash('No file selected')
+#             return redirect(request.url)
+
+#         if not file.filename.endswith('.xlsx'):
+#             flash('File type not supported. Please upload an XLSX file.')
+#             return redirect(request.url)
+
+#         # Save the file temporarily or process it directly
+#         file_path = os.path.join(variants_xlsx_dir, file.filename)  # Ensure 'uploads' directory exists
+#         file.save(file_path)
+
+
+#         df = pd.read_excel(file_path, engine='openpyxl', sheet_name='Variants', header=2)
+#         df = df.fillna(method='ffill', axis=0)  # resolved updating the missing row entries
+#         # df.index = pd.Series(df.index).fillna(method='ffill')
+#         # Display the first few rows of the DataFrame
+#         # print(df.head())
+#         header_variables = df.columns.tolist()
+#         # print(header_variables)
+#         df = df.applymap(lambda x: x.replace('\xa0', ' ') if isinstance(x, str) else x)
+
+#         list_of_dicts = df.to_dict(orient='records')
+#         for item in list_of_dicts:
+#             if 'HGVSp' in item:
+#                 item['HGVSp'] = item['HGVSp'].replace(" No tier ", "")
+
+
+#         # Process the file (e.g., read with pandas)
+#         try:
+#             df = pd.read_excel(file_path)
+#             # Perform operations with the dataframe (e.g., save to database)
+#             flash(f'{file.filename} uploaded and processed successfully.')
+#         except Exception as e:
+#             flash(f'Error processing file: {str(e)}')
+#             return redirect('/view_config')
+#         return redirect('/view_config')
+#     return redirect('/view_config')
+
 @app.route('/petition_menu')
 def petition_menu():
-
+    '''
+    '''
     All_petitions = Petition.query.all()
 
     return render_template("create_petition.html", title="Nova petició",

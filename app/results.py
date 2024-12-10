@@ -61,7 +61,8 @@ from app.models import (
     AllCnas,
     LostExonsTable,
     PipelineDetails,
-    Petition
+    Petition,
+    GeneVariantSummary
 )
 from app.plots import var_location_pie, cnv_plot, basequal_plot, adapters_plot, snv_plot, vaf_plot
 
@@ -471,77 +472,6 @@ def show_sample_details(run_id, sample, sample_id, active):
     other_variants = []
     rare_variants = []
 
-
-    # __tablename__ = 'PETITIONS'
-    # Id             = db.Column(db.Integer(), primary_key=True, autoincrement=True)
-    # Petition_id    = db.Column(db.String(20))
-    # User_id        = db.Column(db.String(20))
-    # Date           = db.Column(db.String(20))
-    # Petition_date  = db.Column(db.String(20))
-    # Tumour_origin  = db.Column(db.String(20))
-    # AP_code        = db.Column(db.String(20))
-    # HC_code        = db.Column(db.String(20))
-    # CIP_code       = db.Column(db.String(20))
-    # Tumour_pct     = db.Column(db.String(20))
-    # Volume         = db.Column(db.String(20))
-    # Conc_nanodrop  = db.Column(db.String(20))
-    # Ratio_nanodrop = db.Column(db.String(20))
-    # Tape_postevaluation = db.Column(db.String(20))
-    # Medical_doctor = db.Column(db.String(50))
-    # Billing_unit   = db.Column(db.String(50))
-    # Medical_indication   = db.Column(db.String(50))
-    # Date_original_biopsy   = db.Column(db.String(50))
-    # Petition_date   = db.Column(db.String(50))
-    # Service = db.Column(db.String(50))
-    # Sample_block =  db.Column(db.String(50))
-    # Sex = db.Column(db.String(50))
-    # Age = db.Column(db.String(50)) 
-
-
-# class SampleTable(db.Model):
-#     __tablename__ = 'SAMPLES'
-#     id = db.Column(db.Integer, primary_key=True)
-#     user_id = db.Column(db.String(20))
-#     lab_id  = db.Column(db.String(120))
-#     ext1_id = db.Column(db.String(80))
-#     ext2_id = db.Column(db.String(80))
-#     ext3_id = db.Column(db.String(80))
-#     run_id  = db.Column(db.String(80))
-#     petition_id  = db.Column(db.String(80))
-#     extraction_date =  db.Column(db.String(80))
-#     date_original_biopsy =  db.Column(db.String(80))
-#     concentration = db.Column(db.String(80))
-#     analysis_date =  db.Column(db.String(80))
-#     tumour_purity =  db.Column(db.String(80))
-#     sex  = db.Column(db.String(80))
-#     diagnosis = db.Column(db.String(80))
-    # physician_name  = db.Column(db.String(80))
-    # medical_center  = db.Column(db.String(80))
-    # medical_address = db.Column(db.String(80))
-    # sample_type  = db.Column(db.String(80))
-    # panel    = db.Column(db.String(80))
-    # subpanel = db.Column(db.String(80))
-    # roi_bed  = db.Column(db.String(80))
-    # software = db.Column(db.String(80))
-    # software_version = db.Column(db.String(80))
-    # bam = db.Column(db.String(80))
-    # merged_vcf = db.Column(db.String(80))
-    # report_pdf = db.Column(db.String(80))
-    # latest_report_pdf = db.Column(db.String(80))
-    # last_report_emission_date = db.Column(db.String(80))
-    # report_db  = db.Column(db.String(120))
-    # sample_db_dir = db.Column(db.String(120))
-    # cnv_json   = db.Column(db.String(100000))
-    # latest_short_report_pdf = db.Column(db.String(80))
-    # last_short_report_emission_date = db.Column(db.String(80))
-    # petition_date = db.Column(db.String(80))
-    # tumor_origin = db.Column(db.String(80))
-    # service = db.Column(db.String(50))
-    # sample_block =  db.Column(db.String(50))
-    # Sex = db.Column(db.String(50))
-    # Age = db.Column(db.String(50))
-
-
     sample_info = (
         SampleTable.query.filter_by(lab_id=sample).filter_by(run_id=run_id).first()
     )
@@ -617,6 +547,20 @@ def show_sample_details(run_id, sample, sample_id, active):
 
     for var in therapeutic_variants:
         n_var = TherapeuticTable.query.filter_by(gene=var.gene, hgvsg=var.hgvsg).count()
+        var_kb = GeneVariantSummary.query.filter_by(gene=var.gene, hgvsg=var.hgvsg).first()
+        if var_kb:
+            var_kb_str = var_kb.data_json
+            # var.kb = json.loads(var_kb_str.encode('utf-8').decode('utf-8'))
+
+            if isinstance(var_kb_str, bytes):
+                var_kb_str = var_kb_str.decode('utf-8')  # Decode bytes to string
+                print("here")
+                print(var_kb_str)
+
+            # Parse the JSON string into a Python dictionary
+            var.kb = json.loads(var_kb_str)
+            print(var.kb)
+
         var.db_detected_number = n_var
         var.db_sample_count = n_samples
         if var.tier_catsalut != "None":
@@ -640,8 +584,17 @@ def show_sample_details(run_id, sample, sample_id, active):
 
     for var in other_variants:
         n_var = OtherVariantsTable.query.filter_by(gene=var.gene, hgvsg=var.hgvsg).count()
+        var_kb = GeneVariantSummary.query.filter_by(gene=var.gene, hgvsg=var.hgvsg).first()
+
         var.db_detected_number = n_var
         var.db_sample_count = n_samples
+        if var_kb:
+            var_kb_str = var_kb.data_json
+            if isinstance(var_kb_str, bytes):
+                var_kb_str = var_kb_str.decode('utf-8')  # Decode bytes to string
+
+            # Parse the JSON string into a Python dictionary
+            var.kb = json.loads(var_kb_str)
 
         if var.tier_catsalut != "None":
             if var.tier_catsalut == "1":

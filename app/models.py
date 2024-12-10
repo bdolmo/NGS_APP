@@ -1,5 +1,17 @@
 from app import db
 
+
+# Define the dynamic table model
+class GeneVariantSummary(db.Model):
+    __tablename__ = 'GENE_VARIANT_SUMMARY'
+    id = db.Column(db.Integer, primary_key=True, autoincrement=True)
+    gene = db.Column(db.String(50))
+    hgvsg = db.Column(db.String(50))
+    hgvsc = db.Column(db.String(50))
+    hgvsp = db.Column(db.String(50))
+    data_json = db.Column(db.Text)  # Store the JSON string
+    hash = db.Column(db.String(64), unique=True)  # To avoid duplicates
+
 class User(db.Model):
     __tablename__ = 'USERS'
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)

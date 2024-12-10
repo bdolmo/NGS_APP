@@ -911,24 +911,95 @@
                     {% endif %}
                     </span>
                   </div>
-
+                  <div class="col">
+                    {% if var.kb %}
+                    <svg width="25" height="25" xmlns="http://www.w3.org/2000/svg">
+                      <!-- Outer Circle -->
+                      <circle cx="12.5" cy="12.5" r="10" fill="none" stroke="#333c87" stroke-width="1.8" />
+                      <!-- Middle Circle -->
+                      <circle cx="12.5" cy="12.5" r="6.5" fill="none" stroke="#333c87" stroke-width="1.8" />
+                      <!-- Inner Circle -->
+                      <circle cx="12.5" cy="12.5" r="2.5" fill="#333c87" stroke="#333c87" stroke-width="1" />
+                      <!-- Optional Text -->
+                      <title>OncoKB</title>
+                    </svg>                   
+                    {{ var.kb['OncoKB'] }}
+                    {% endif %}
+                  </div>
                 </div>
                 <div class="row">
                   <div class="col">
                     {{ var.hgvsg }}
+                  </div>
+                  <div class="col">
+                    {% if var.kb %}
+                    <svg width="25" height="25" xmlns="http://www.w3.org/2000/svg">
+                      <circle cx="12.3" cy="12.3" r="10" stroke="#333c87" stroke-width="0.5" fill="#333c87" />
+                      <text x="12.5" y="15" font-size="12" text-anchor="middle" fill="white" font-family="Comic Sans MS, sans-serif">
+                        F
+                      </text>
+                      <title>Franklink Germline / Somatic</title>
+                    </svg>
+                    {{ var.kb['Franklin ACMG'] }} / {{ var.kb['Franklin Oncogenicity'] }}
+                    {% endif %}
                   </div>
                 </div>
                 <div class="row mb-2">
                   <div class="col">
                     {{ var.hgvsc }}
                   </div>
+                  <div class="col">
+                    {% if var.kb %}
+                    <svg width="25" height="25" xmlns="http://www.w3.org/2000/svg">
+                      <circle cx="12.3" cy="12.3" r="10" stroke="orange" stroke-width="0.5" fill="orange" />
+                      <text x="12.5" y="15" font-size="7" text-anchor="middle" fill="white" font-family="Comic Sans MS, sans-serif">
+                        MTBP
+                      </text>
+                      <title>Molecular Tumor Board Portal</title>
+
+
+                    </svg>
+                    {{ var.kb['MTBP'] }}
+                    {% endif %}
+                  </div>
                 </div>
                 <div class="row">
                   <div class="col">
                     <b> Tipus: </b> {{ var.variant_type }}
                   </div>
+                  <div class="col">
+                    {% if var.kb %}
+                    <svg width="25" height="25" xmlns="http://www.w3.org/2000/svg">
+                      <circle cx="12.3" cy="12.3" r="10" stroke="darkorange" stroke-width="0.5" fill="darkorange" />
+                      <text x="12.5" y="15" font-size="9" text-anchor="middle" fill="white" font-family="Comic Sans MS, sans-serif">
+                        CGI
+                      </text>
+                      <title>Cancer Genome Interpreter</title>
+                    </svg>
+                    {{ var.kb['Oncogenic prediction'] }}
+                    {% endif %}
+                  </div>
                 </div>
-                <p class="text-truncate"><b> Localització/Efecte: </b> {{ var.consequence }}</p>
+
+                <div class="row">
+                  <div class="col">
+                      <p class="text-truncate"><b> Localització/Efecte: </b> {{ var.consequence }}</p>
+                  </div>
+                    <div class="col">
+                      {% if var.kb %}
+                      <svg width="25" height="25" xmlns="http://www.w3.org/2000/svg">
+                        <circle cx="12.3" cy="12.3" r="10" stroke="#a1a1ce" stroke-width="0.5" fill="#a1a1ce" />
+                        <text x="12.5" y="15" font-size="9" text-anchor="middle" fill="white" font-family="Comic Sans MS, sans-serif">
+                          CV
+                        </text>
+                        <title>ClinVar: Germline / Somatic</title>
+
+
+                      </svg>
+                      {{ var.kb['ClinVar Germline']}} / {{ var.kb['ClinVar Somatic'] }}
+                      {% endif %}
+                    </div>
+                </div>
                 {% if (var.blacklist == "yes") %}
                 <div class="row">
                   <div class="col">
