@@ -60,6 +60,7 @@ def insert_gene_variant_summaries(list_of_dicts):
 
     db.session.commit()
 
+
 @app.route('/upload_xlsx_variants', methods=['GET', 'POST'])
 def upload_xlsx_variants():
     """Route to upload and process an XLSX file."""
@@ -115,8 +116,144 @@ def upload_xlsx_variants():
 @app.route('/view_config')
 def view_config():
     """ """
-    return render_template("config.html", title="Configuració")
+    vars_kb = GeneVariantSummary.query.all()
+    for variant in vars_kb:
+        var_kb_str = variant.data_json
+        if isinstance(var_kb_str, bytes):
+            var_kb_str = var_kb_str.decode('utf-8')  # Decode bytes to string
+            # print("here")
+            # print(var_kb_str)
+        variant.kb = json.loads(var_kb_str)
 
+
+    return render_template("config.html", vars_kb=vars_kb, title="Configuració")
+
+
+@app.route('/delete_all_variants', methods=['POST'])
+def delete_all_variants():
+    try:
+        # Delete all entries in the GeneVariantSummary table
+        GeneVariantSummary.query.delete()
+        db.session.commit()
+        return jsonify({"success": True, "message": "S'han eliminat totes les entrades correctament"})
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({"success": False, "message": str(e)}), 500
+
+@app.route('/update_variant', methods=['POST'])
+def update_variant():
+    variant_id = request.form.get('variant_id')
+    gene = request.form.get('gene')
+    hgvsg = request.form.get('hgvsg')
+    hgvsc = request.form.get('hgvsc')
+    hgvsp = request.form.get('hgvsp')
+    cgi = request.form.get('cgi')
+    cancer_type = request.form.get('cancer_type')
+    oncokb = request.form.get('oncokb')
+    franklin_germline = request.form.get('franklin_germline')
+    franklin_somatic = request.form.get('franklin_somatic')
+    mtbp = request.form.get('mtbp')
+    clinvar_germline = request.form.get('clinvar_germline')
+    clinvar_somatic = request.form.get('clinvar_somatic')
+
+    variant = GeneVariantSummary.query.filter_by(id=variant_id).first()
+    if variant:
+        variant.gene = gene
+        variant.hgvsg = hgvsg
+        variant.hgvsc = hgvsc
+        variant.hgvsp = hgvsp
+        variant.data_json = json.dumps({
+            "Oncogenic prediction": cgi,
+            "Càncer": cancer_type,
+            "OncoKB": oncokb,
+            "Franklin ACMG": franklin_germline,
+            "Franklin Oncogenicity": franklin_somatic,
+            "MTBP": mtbp,
+            "ClinVar Germline": clinvar_germline,
+            "ClinVar Somatic": clinvar_somatic,
+        })
+        db.session.commit()
+        flash("Variant actualitzada correctament!", "success")
+    else:
+        flash("Variant no trobada", "danger")
+    return redirect(url_for('view_config'))
+
+
+@app.route('/add_variant', methods=['POST'])
+def add_variant():
+    try:
+        # Extract form data
+        gene = request.form.get('gene')
+        hgvsg = request.form.get('hgvsg')
+        hgvsc = request.form.get('hgvsc')
+        hgvsp = request.form.get('hgvsp')
+        cancer_type = request.form.get('cancer_type')
+        cgi = request.form.get('cgi')
+        oncokb = request.form.get('oncokb')
+        franklin_germline = request.form.get('franklin_germline')
+        franklin_somatic = request.form.get('franklin_somatic')
+        mtbp = request.form.get('mtbp')
+        clinvar_germline = request.form.get('clinvar_germline')
+        clinvar_somatic = request.form.get('clinvar_somatic')
+
+        # Create a new variant record
+        new_variant = GeneVariantSummary(
+            gene=gene,
+            hgvsg=hgvsg,
+            hgvsc=hgvsc,
+            hgvsp=hgvsp,
+            data_json=json.dumps({
+                "Càncer": cancer_type,
+                "CGI": cgi,
+                "OncoKB": oncokb,
+                "Franklin Germline": franklin_germline,
+                "Franklin Somatic": franklin_somatic,
+                "MTBP": mtbp,
+                "ClinVar Germline": clinvar_germline,
+                "ClinVar Somatic": clinvar_somatic
+            })
+        )
+        db.session.add(new_variant)
+        db.session.commit()
+
+        # Respond with the new variant's data
+        return jsonify({
+            "success": True,
+            "variant": {
+                "id": new_variant.id,
+                "gene": new_variant.gene,
+                "hgvsg": new_variant.hgvsg,
+                "hgvsc": new_variant.hgvsc,
+                "hgvsp": new_variant.hgvsp,
+                "cancer_type": cancer_type,
+                "cgi": cgi,
+                "oncokb": oncokb,
+                "franklin_germline": franklin_germline,
+                "franklin_somatic": franklin_somatic,
+                "mtbp": mtbp,
+                "clinvar_germline": clinvar_germline,
+                "clinvar_somatic": clinvar_somatic
+            }
+        })
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({"success": False, "message": str(e)}), 500
+
+
+
+@app.route('/delete_variant/<int:variant_id>', methods=['DELETE'])
+def delete_variant(variant_id):
+    try:
+        variant = GeneVariantSummary.query.get(variant_id)
+        if not variant:
+            return jsonify({"success": False, "message": "Variant no trobada"}), 404
+
+        db.session.delete(variant)
+        db.session.commit()
+        return jsonify({"success": True, "message": "Variant eliminada"})
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({"success": False, "message": str(e)}), 500
 
 # @app.route('/upload_xlsx_variants', methods=['GET', 'POST'])
 # def upload_xlsx_variants():

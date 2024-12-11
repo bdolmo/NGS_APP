@@ -90,6 +90,9 @@
           })
       </script>
 
+<script>
+
+
       <script>
 
         function deleteSelectedVariants() {
@@ -363,6 +366,25 @@
               order: [ 1, 'asc' ]
             } );
         } );
+        $(document).ready(function() {
+            var table = $('#knowledge_variants').DataTable( {
+
+            "language": {
+              "lengthMenu": "Mostra _MENU_ variants per pàgina",
+              "zeroRecords": "No hi ha variants",
+              "info": "Pàgina _PAGE_ of _PAGES_",
+              "infoEmpty": "No hi ha entrades",
+              "infoFiltered": "(filtrats de _MAX_ total records)",
+              "sSearch" : "Cerca:"
+            },
+            "pageLength":5,
+
+
+              order: [ 0, 'asc' ]
+            } );
+        } );
+
+        
 
         $(document).ready(function() {
             var table = $('#rare_table').DataTable( {
@@ -692,7 +714,7 @@
 
           <li class="nav-item active ml-4"style="border: 1px;border-color:white;">
             <a class="btn btn-outline-light"  href="{{ url_for('view_config') }}">
-                <i class="fas fa-cog fa-xs"></i> Config
+                <i class="fas fa-xslx fa-xs"></i> Xlsx Vars
             </a>
           </li>
           </ul>
