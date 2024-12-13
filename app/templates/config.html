@@ -33,9 +33,15 @@
                         <input type="text" class="form-control" id="newCancerType" name="cancer_type">
                     </div>
                     <div class="mb-3">
-                        <label for="newCGI" class="form-label">CGI</label>
-                        <input type="text" class="form-control" id="newCGI" name="cgi">
+                        <label for="newCGI" class="form-label">CGI Summary</label>
+                        <input type="text" class="form-control" id="cgi_summary" name="cgi_summary">
                     </div>
+
+                    <div class="mb-3">
+                        <label for="newCGI" class="form-label">CGI Prediction</label>
+                        <input type="text" class="form-control" id="cgi_prediction" name="cgi_prediction">
+                    </div>
+
                     <div class="mb-3">
                         <label for="newOncoKB" class="form-label">OncoKB</label>
                         <input type="text" class="form-control" id="newOncoKB" name="oncokb">
@@ -113,10 +119,22 @@
             <div class="row">
                 <div class="col">
                     <div class="mb-3">
-                        <label for="cgi" class="form-label"><b>CGI</b></label>
-                        <input type="text" class="form-control" id="cgi" name="cgi">
+                        <label for="cgi_summary" class="form-label"><b>CGI Summary</b></label>
+                        <input type="text" class="form-control" id="cgi_summary" name="cgi_summary">
                     </div>
                 </div>
+
+                <div class="col">
+                    <div class="mb-3">
+                        <label for="cgi_prediction" class="form-label"><b>CGI Prediction</b></label>
+                        <input type="text" class="form-control" id="cgi_prediction" name="cgi_prediction">
+                    </div>
+                </div>
+            </div>
+
+
+            <div class="row">
+
                 <div class="col">
                     <div class="mb-3">
                         <label for="cancerType" class="form-label"><b>Tipus de càncer</b></label>
@@ -224,7 +242,8 @@
           <th>HGVSc</th>
           <th>HGVSg</th>
           <th>Tipus de càncer</th>
-          <th>CGI</th>
+          <th>CGI Summary</th>
+          <th>CGI Prediction</th>
           <th>OncoKB</th>
           <th>Franklin Germline</th>
           <th>Franklin Somatic</th>
@@ -246,8 +265,9 @@
             {{ var.hgvsg }}
             <input id="variant_id" type="hidden" value="{{ var.id }}">
           </td>
-          <td id="cgi">{{ var.kb['Càncer'] }}</td>
-          <td id="cancer_type">{{ var.kb['Oncogenic prediction'] }}</td>
+          <td id="cancer_type">{{  var.kb['Càncer'] }}</td>
+          <td id="cgi_summary">{{ var.kb['Oncogenic summary']  }}</td>
+          <td id="cgi_prediction">{{ var.kb['Oncogenic prediction']  }}</td>
           <td id="oncokb" style="min-width:150px;max-width:170px;">{{ var.kb['OncoKB'] }}</td>
           <td id="franklin_germline" v>{{ var.kb['Franklin ACMG'] }}</td>
           <td id="franklin_somatic" style="min-width:150px;">{{ var.kb['Franklin Oncogenicity']  }}</td>
@@ -262,8 +282,9 @@
             data-hgvsg="{{ var.hgvsg|escape }}"
             data-hgvsc="{{ var.hgvsc|escape }}"
             data-hgvsp="{{ var.hgvsp|escape }}"
-            data-cgi="{{ var.kb['Càncer']|escape }}"
-            data-cancer-type="{{ var.kb['Oncogenic prediction']|escape }}"
+            data-cancer-type="{{ var.kb['Càncer']|escape }}"
+            data-cgi-summary="{{ var.kb['Oncogenic summary']|escape  }}"
+            data-cgi-prediction="{{ var.kb['Oncogenic prediction']|escape  }}"
             data-oncokb="{{ var.kb['OncoKB']|escape }}"
             data-franklin-germline="{{ var.kb['Franklin ACMG']|escape }}"
             data-franklin-somatic="{{ var.kb['Franklin Oncogenicity']|escape }}"
@@ -334,7 +355,10 @@
                 const hgvsg = button.getAttribute("data-hgvsg");
                 const hgvsc = button.getAttribute("data-hgvsc");
                 const hgvsp = button.getAttribute("data-hgvsp");
-                const cgi = button.getAttribute("data-cgi");
+                const cgiPrediction = button.getAttribute("data-cgi-prediction");
+
+                const cgiSummary = button.getAttribute("data-cgi-summary");
+
                 const cancerType = button.getAttribute("data-cancer-type");
                 const oncokb = button.getAttribute("data-oncokb");
                 const franklinGermline = button.getAttribute("data-franklin-germline");
@@ -349,7 +373,9 @@
                 document.getElementById("hgvsg").value = hgvsg || '';
                 document.getElementById("hgvsc").value = hgvsc || '';
                 document.getElementById("hgvsp").value = hgvsp || '';
-                document.getElementById("cgi").value = cgi || '';
+
+                document.getElementById("cgiPrediction").value = cgiPrediction || '';
+                document.getElementById("cgiSummary").value = cgiSummary || '';
                 document.getElementById("cancerType").value = cancerType || '';
                 document.getElementById("oncokb").value = oncokb || '';
                 document.getElementById("franklinGermline").value = franklinGermline || '';
@@ -421,7 +447,8 @@
                         <td>${data.variant.hgvsc}</td>
                         <td>${data.variant.hgvsp}</td>
                         <td>${data.variant.cancer_type}</td>
-                        <td>${data.variant.cgi}</td>
+                        <td>${data.variant.cgi_summary}</td>
+                        <td>${data.variant.cgi_prediction}</td>
                         <td>${data.variant.oncokb}</td>
                         <td>${data.variant.franklin_germline}</td>
                         <td>${data.variant.franklin_somatic}</td>

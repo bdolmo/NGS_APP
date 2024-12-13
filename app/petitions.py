@@ -147,7 +147,8 @@ def update_variant():
     hgvsg = request.form.get('hgvsg')
     hgvsc = request.form.get('hgvsc')
     hgvsp = request.form.get('hgvsp')
-    cgi = request.form.get('cgi')
+    cgi_summary = requst.form.get('cgi_summary')
+    cgi_prediction = request.form.get('cgi_prediction')
     cancer_type = request.form.get('cancer_type')
     oncokb = request.form.get('oncokb')
     franklin_germline = request.form.get('franklin_germline')
@@ -163,7 +164,8 @@ def update_variant():
         variant.hgvsc = hgvsc
         variant.hgvsp = hgvsp
         variant.data_json = json.dumps({
-            "Oncogenic prediction": cgi,
+            "Oncogenic summary": cgi_summary,
+            "Oncogenic prediction": cgi_prediction,
             "Càncer": cancer_type,
             "OncoKB": oncokb,
             "Franklin ACMG": franklin_germline,
@@ -188,7 +190,9 @@ def add_variant():
         hgvsc = request.form.get('hgvsc')
         hgvsp = request.form.get('hgvsp')
         cancer_type = request.form.get('cancer_type')
-        cgi = request.form.get('cgi')
+        cgi_prediction = request.form.get('cgi_prediction')
+        cgi_summary = request.form.get('cgi_summary')
+
         oncokb = request.form.get('oncokb')
         franklin_germline = request.form.get('franklin_germline')
         franklin_somatic = request.form.get('franklin_somatic')
@@ -204,7 +208,8 @@ def add_variant():
             hgvsp=hgvsp,
             data_json=json.dumps({
                 "Càncer": cancer_type,
-                "CGI": cgi,
+                "CGI Summary": cgi_summary,
+                "CGI Prediction": cgi_prediction,
                 "OncoKB": oncokb,
                 "Franklin Germline": franklin_germline,
                 "Franklin Somatic": franklin_somatic,
@@ -226,7 +231,8 @@ def add_variant():
                 "hgvsc": new_variant.hgvsc,
                 "hgvsp": new_variant.hgvsp,
                 "cancer_type": cancer_type,
-                "cgi": cgi,
+                "cgi_summary": cgi_summary,
+                "cgi_prediction": cgi_prediction,
                 "oncokb": oncokb,
                 "franklin_germline": franklin_germline,
                 "franklin_somatic": franklin_somatic,

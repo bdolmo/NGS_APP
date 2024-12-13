@@ -28,7 +28,7 @@ class Config(object):
     ALLOWED_FASTQ_EXTENSIONS = ["fastq.gz", "fq.gz"]
     MAX_INPUT_FILESIZE = 50 * 1024 * 1024
     SQLALCHEMY_DATABASE_URI = "sqlite:////ngs-db/NGS_DB/NGS.db"
-    # SQLALCHEMY_DATABASE_URI = "sqlite:////home/bdelolmo/Desktop/NGS.db"
+    #SQLALCHEMY_DATABASE_URI = "sqlite:////home/bdelolmo/Desktop/NGS.db"
 
     WTF_CSRF_SECRET_KEY = "a csrf secret key"
     RECAPTCHA_PUBLIC_KEY = "6Lcl-vsZAAAAAl1wU3t4-5jrYxwYrevk-6qN4mSi"
