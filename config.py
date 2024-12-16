@@ -6,10 +6,10 @@ ngs_results_dir = "/ngs-results/"
 pipeline_main = "/home/udmmp/GC_NGS_PIPELINE"
 ann_dir = "/ngs-annotations/ANN_DIR/"
 ref_dir = "/ngs-annotations/REF_DIR/"
-db_dir = "/home/bdelolmo/Desktop/"
-db = "/home/bdelolmo/Desktop/NGS.db"
-# db_dir = "/ngs-db/NGS_DB/"
-# db = "/ngs-db/NGS_DB/NGS.db"
+# db_dir = "/home/bdelolmo/Desktop/"
+# db = "/home/bdelolmo/Desktop/NGS.db"
+db_dir = "/ngs-db/NGS_DB/"
+db = "/ngs-db/NGS_DB/NGS.db"
 data_dir = "/ngs-results/"
 ngs_app_url = "http://172.16.83.24:5000"
 gene_panels_api_url = "http://172.16.83.24:8000/api/gene_panels"
@@ -27,8 +27,8 @@ class Config(object):
     WORKING_DIRECTORY = os.path.join(main_dir, "data")
     ALLOWED_FASTQ_EXTENSIONS = ["fastq.gz", "fq.gz"]
     MAX_INPUT_FILESIZE = 50 * 1024 * 1024
-    # SQLALCHEMY_DATABASE_URI = "sqlite:////ngs-db/NGS_DB/NGS.db"
-    SQLALCHEMY_DATABASE_URI = "sqlite:////home/bdelolmo/Desktop/NGS.db"
+    SQLALCHEMY_DATABASE_URI = "sqlite:////ngs-db/NGS_DB/NGS.db"
+    # SQLALCHEMY_DATABASE_URI = "sqlite:////home/bdelolmo/Desktop/NGS.db"
 
     WTF_CSRF_SECRET_KEY = "a csrf secret key"
     RECAPTCHA_PUBLIC_KEY = "6Lcl-vsZAAAAAl1wU3t4-5jrYxwYrevk-6qN4mSi"
