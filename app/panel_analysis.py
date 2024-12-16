@@ -118,6 +118,30 @@ def stop_job(queue_id):
     send_stop_job_command(r, queue_id)
     return redirect(url_for("status"))
 
+@app.route('/change_status', methods=['POST'])
+def change_status():
+    data = request.get_json()
+    job_id = data.get('job_id')
+    new_status = data.get('new_status')
+
+    # Validate and update the job status in the database or backend
+    if not job_id or not new_status:
+        return jsonify(success=False, error="Invalid input"), 400
+
+    # Update the job status in your database
+    try:
+        # Replace this with actual database logic
+        job = Job.query.filter_by(Job_id=job_id).first()
+        if not job:
+            return jsonify(success=False, error="Job not found"), 404
+        job.Status = new_status
+        db.session.commit()
+
+        return jsonify(success=True)
+    except Exception as e:
+        return jsonify(success=False, error=str(e)), 500
+
+
 
 @app.route("/remove_job/<queue_id>/<job_id>/<panel>")
 #@login_required
@@ -242,26 +266,25 @@ def status():
     All_jobs.reverse()  # Reverse the order of jobs
 
     for job in All_jobs:
-        print(job.Job_id, job.Status, job.Queue_id)
         # from redis, get queued status from id
         # Returns job having ID "my_id"
         if job.Job_id is None:
             continue
         queued_job = q.fetch_job(job.Queue_id)
-        if queued_job:
-            queued_status = queued_job.get_status()
-            if queued_status == "queued":
-                status_dict["In queue"] += 1
-            elif queued_status == "started":
-                status_dict["Running"] += 1
-            elif queued_status == "failed":
-                status_dict["Failed"] += 1
-            job.Status = queued_status
-        else:
-            if job.Status == "started":
-                job.Status = "finished"
-            job.Status = "finished"
-        db.session.commit()
+        if job.Status != "finished":
+            print(job.Job_id, job.Status, job.Queue_id)
+            if queued_job:
+                queued_status = queued_job.get_status()
+                if queued_status == "queued":
+                    status_dict["In queue"] += 1
+                elif queued_status == "started":
+                    status_dict["Running"] += 1
+                elif queued_status == "failed":
+                    status_dict["Failed"] += 1
+                job.Status = queued_status
+                # job.Status = "finished"
+            # if job.Status != "finished":
+            #     db.session.commit()
 
     status_dict["Completed"] = (
         len(All_jobs)

@@ -5,6 +5,40 @@
 
 {% block body %}
 
+
+<!-- Modal for Changing Status -->
+<div class="modal fade" id="changeStatusModal" tabindex="-1" aria-labelledby="changeStatusModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" id="changeStatusModalLabel">Change Job Status</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body">
+          <form id="changeStatusForm">
+            <div class="mb-3">
+              <label for="newStatusInput" class="form-label">New Status</label>
+              <select class="form-select" id="newStatusInput" required>
+                <option value="queued">Queued</option>
+                <option value="started">Started</option>
+                <option value="running">Running</option>
+                <option value="finished">Finished</option>
+                <option value="failed">Failed</option>
+                <option value="stopped">Stopped</option>
+              </select>
+            </div>
+            <input type="hidden" id="jobIdInput">
+          </form>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+          <button type="button" id="saveStatusButton" class="btn btn-primary">Save Changes</button>
+        </div>
+      </div>
+    </div>
+  </div>
+  
+
 <div class="container-fluid py-4 rounded mb-4 mt-4 bg-light" style="margin:0 auto; width:100%;">
   <div style="margin:0 auto; width:90%;">
       <!-- Total Jobs and Status Summary -->
@@ -90,74 +124,87 @@
       </div>
 
       <div id="jobsList" class="row">
-          {% for job in Jobs %}
-          <div class="col-md-4 job-card-container">
-              <div class="card mb-3 shadow-sm job-card" data-status="{{ job.Status }}" data-job-id="{{ job.Job_id }}" data-panel="{{ job.Panel }}" data-queue-id="{{ job.Queue_id }}" data-analysis="{{ job.Analysis }}" data-date="{{ job.Date }}">
-                  <div class="card-body {% if job.Status == 'started' %}animated-div{% endif %} {% if job.Status == 'running' %}animated-div{% endif %}" 
-                       {% if job.Status == "queued" %} 
-                       style="border-left: 5px solid #6c757d;" 
-                       {% elif job.Status == "finished" %} 
-                       style="border-left: 5px solid #28a745;" 
-                       {% elif job.Status == "started" %} 
-                       style="border-left: 5px solid blue;" 
-                       {% elif job.Status == "failed" %} 
-                       style="border-left: 5px solid #dc3545;" 
-                       {% elif job.Status == "stopped" %} 
-                       style="border-left: 5px solid #ffc107;" 
-                       {% endif %}>
-                      <h6 class="mb-0">
-                          {% if job.Status in ["failed", "queued", "started", "stopped"] %}
-                              <b>{{ job.Job_id }}</b>
-                          {% else %}
-                              {% if job.Analysis in ["Somatic", "somatic", "Lowpass"] %}
-                                  <a href="{{ url_for('show_run_details', run_id=job.Job_id) }}"><b>{{ job.Job_id }}</b></a>
-                              {% elif job.Analysis == "germline" %}
-                                  <a href="{{ url_for('show_compendium_run', run_id=job.Job_id) }}"><b>{{ job.Job_id }}</b></a>
-                              {% else %}
-                                  {{ job.Job_id }}
-                              {% endif %}
-                          {% endif %}
-                          {% set analysis_type = job.Analysis %}
-                          {% set analysis_color = job.Analysis %}
+        {% for job in Jobs %}
+        <div class="col-md-4 job-card-container">
+            <div class="card mb-3 shadow-sm job-card" 
+                 data-status="{{ job.Status }}" 
+                 data-job-id="{{ job.Job_id }}" 
+                 data-panel="{{ job.Panel }}" 
+                 data-queue-id="{{ job.Queue_id }}" 
+                 data-analysis="{{ job.Analysis }}" 
+                 data-date="{{ job.Date }}">
+                <div class="card-body {% if job.Status == 'started' %}animated-div{% endif %} {% if job.Status == 'running' %}animated-div{% endif %}"
+                
+                     {% if job.Status == "queued" %} 
+                     style="border-left: 5px solid #6c757d;background-color:  #eef0f1;" 
+                     {% elif job.Status == "finished" %} 
+                     style="border-left: 5px solid #28a745;" 
+                     {% elif job.Status == "started" %} 
+                     style="border-left: 5px solid blue;" 
+                     {% elif job.Status == "failed" %} 
+                     style="border-left: 5px solid #dc3545;" 
+                     {% elif job.Status == "stopped" %} 
+                     style="border-left: 5px solid #ffc107;" 
+                     {% endif %}>
+                     <h6 class="mb-0">
+                        {% if job.Status in ["failed", "queued", "started", "stopped"] %}
+                            <b>{{ job.Job_id }}</b>
+                        {% else %}
+                            {% if job.Analysis in ["Somatic", "somatic", "Lowpass"] %}
+                                <a href="{{ url_for('show_run_details', run_id=job.Job_id) }}"><b>{{ job.Job_id }}</b></a>
+                            {% elif job.Analysis == "germline" %}
+                                <a href="{{ url_for('show_compendium_run', run_id=job.Job_id) }}"><b>{{ job.Job_id }}</b></a>
+                            {% else %}
+                                {{ job.Job_id }}
+                            {% endif %}
+                        {% endif %}
+                        {% set analysis_type = job.Analysis %}
+                        {% set analysis_color = job.Analysis %}
 
-                          {% if analysis_type == "germline" %}
-                            {% set analysis_type = "GERMINAL" %}
-                            {% set analysis_color = "#0047AB" %}
-                          {% else %}
-                            {% set analysis_type = "SOMATIC" %}
-                            {% set analysis_color = "#E30B5C" %}
-                          {% endif %}
+                        {% if analysis_type == "germline" %}
+                          {% set analysis_type = "GERMINAL" %}
+                          {% set analysis_color = "#0047AB" %}
+                        {% else %}
+                          {% set analysis_type = "SOMATIC" %}
+                          {% set analysis_color = "#E30B5C" %}
+                        {% endif %}
 
-                          <span style="float:right;font-size:12px;color:{{analysis_color}}">
-                            <b>{{ analysis_type }}</b>
-                          </span>
-                      </h6>
-                      <hr style="margin:0px">
-                      <div class="row">
-                          <div class="col-10">
-                              <p style="margin: 1px;" class="card-text"><b>Date:</b> {{ job.Date }}</p>
-                              <p style="margin: 1px;" class="card-text"><b>Panel:</b> {{ job.Panel }}</p>
-                              <p style="margin: 1px;" class="card-text"><b>N Samples:</b> {{ job.Samples }}</p>
-                          </div>
-                          <div class="col-2">
-                              {% if job.Status in ["queued", "started", "finished", "failed", "stopped", "scheduled"] %}
-                                  <a href="{{ url_for('remove_job', queue_id=job.Queue_id, job_id=job.Job_id, panel=job.Panel) }}" role="button" onclick="return confirm('Segur que vols eliminar aquest RUN?');">
-                                      <i class="fas fa-trash text-danger"></i>
-                                  </a>
-                              {% endif %}
-                              {% if job.Status == "started" %}
-                                  <a href="{{ url_for('stop_job', queue_id=job.Queue_id) }}" role="button" onclick="return confirm('Segur que vols aturar aquest RUN?');">
-                                      <i class="fas fa-stop-circle text-primary"></i>
-                                  </a>
-                              {% endif %}
-                          </div>
-                      </div>
-                  </div>
-              </div>
-          </div>
-          {% endfor %}
-      </div>
-
+                        <span style="float:right;font-size:12px;color:{{analysis_color}}">
+                          <b>{{ analysis_type }}</b>
+                        </span>
+                    </h6>
+                    <hr style="margin:0px">
+                    <div class="row">
+                        <div class="col-10">
+                            <p style="margin: 1px;" class="card-text"><b>Date:</b> {{ job.Date }}</p>
+                            <p style="margin: 1px;" class="card-text"><b>Panel:</b> {{ job.Panel }}</p>
+                            <p style="margin: 1px;" class="card-text"><b>N Samples:</b> {{ job.Samples }}</p>
+                        </div>
+                        <div class="col-2">
+                            {% if job.Status in ["queued", "started", "finished", "failed", "stopped", "scheduled"] %}
+                                <a href="{{ url_for('remove_job', queue_id=job.Queue_id, job_id=job.Job_id, panel=job.Panel) }}" role="button" onclick="return confirm('Segur que vols eliminar aquest RUN?');">
+                                    <i class="fas fa-trash text-danger"></i>
+                                </a>
+                            {% endif %}
+                            {% if job.Status == "started" %}
+                                <a href="{{ url_for('stop_job', queue_id=job.Queue_id) }}" role="button" onclick="return confirm('Segur que vols aturar aquest RUN?');">
+                                    <i class="fas fa-stop-circle text-primary"></i>
+                                </a>
+                            {% endif %}
+                            <!-- New Change Status Button -->
+                            {% if session["user"] == "admin" %}
+                            <button class="btn btn-sm btn-outline-secondary change-status-btn" data-job-id="{{ job.Job_id }}" data-current-status="{{ job.Status }}">
+                                <i class="fas fa-edit"></i>Canvia status
+                            </button>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+    
       <!-- Pagination Controls -->
       <div class="d-flex justify-content-center mt-1">
           <nav>
@@ -171,6 +218,83 @@
 </div>
 
 <script>
+
+    document.addEventListener('DOMContentLoaded', function () {
+        const changeStatusButtons = document.querySelectorAll('.change-status-btn');
+        const changeStatusModal = new bootstrap.Modal(document.getElementById('changeStatusModal'));
+        const newStatusInput = document.getElementById('newStatusInput');
+        const jobIdInput = document.getElementById('jobIdInput');
+        const saveStatusButton = document.getElementById('saveStatusButton');
+
+        let currentJobId = null;
+
+        // Open modal when the "Change Status" button is clicked
+        changeStatusButtons.forEach(button => {
+            button.addEventListener('click', function () {
+                currentJobId = this.getAttribute('data-job-id');
+                const currentStatus = this.getAttribute('data-current-status');
+
+                // Populate modal fields
+                jobIdInput.value = currentJobId;
+                newStatusInput.value = currentStatus;
+
+                // Show the modal
+                changeStatusModal.show();
+            });
+        });
+
+        // Handle saving the new status
+        saveStatusButton.addEventListener('click', function () {
+            const jobId = jobIdInput.value;
+            const newStatus = newStatusInput.value;
+
+            // Send AJAX request to update the status
+            fetch(`/change_status`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': '{{ csrf_token }}'  // Add CSRF token for Flask if necessary
+                },
+                body: JSON.stringify({ job_id: jobId, new_status: newStatus })
+            })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        // Update the UI
+                        const jobCard = document.querySelector(`.job-card[data-job-id="${jobId}"]`);
+                        const newColor = getColorForStatus(newStatus);
+                        jobCard.style.borderLeft = `5px solid ${newColor}`;
+                        jobCard.setAttribute('data-status', newStatus);
+
+                        // Close the modal
+                        changeStatusModal.hide();
+                    } else {
+                        alert('Failed to update status: ' + data.error);
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    alert('An error occurred while updating the status.');
+                });
+        });
+
+        function getColorForStatus(status) {
+            switch (status) {
+                case 'queued': return '#6c757d';
+                case 'finished': return '#28a745';
+                case 'started': return 'blue';
+                case 'running': return '#17a2b8';
+                case 'failed': return '#dc3545';
+                case 'stopped': return '#ffc107';
+                default: return '#000';
+            }
+        }
+    });
+
+
+
+
+
     let currentPage = 1;
     const itemsPerPage = 9;
 
