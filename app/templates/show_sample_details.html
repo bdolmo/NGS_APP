@@ -184,10 +184,11 @@
 <div class="bg-light border-right vh-100" id="sidebar-wrapper"style="position:fixed;width:15%;">
   <div class="list-group list-group-flush">
     <div href="#" class="list-group-item list-group-item-action" style="background-color:#d9f7f7;">
-      <div style="font-size:24px;"><img class="card-img rounded-circle" style="width:32px;height:32px;font-size:28px;" src="">
+      
+      <div style="font-size:24px;"><img class="card-img rounded-circle" style="width:32px;height:32px;font-size:28px;" src="{{ session['avatar'] }}">
     {{ session["username"] }}</div>
     <i style="color:green;" class="fas fa-circle"></i><span style="font-size:13px;"> Online</span>
-    <p style="font-size:13px;"><b>Últim accés:</b>  </p>
+    <!-- <p style="font-size:13px;"><b>Últim accés:</b>  </p> -->
    </div>
     <div href="#" class="list-group-item list-group-item-action bg-light">
       <div class="row">

@@ -48,6 +48,13 @@ def login_user_prv():
     session["username"] = "admin"
     session['user'] = "admin"
     session["idClient"] = "admin"
+    session["email"] = "admin@udmmp.cat"
+
+    digest = md5(session['email'].lower().encode('utf-8')).hexdigest()
+    user_url_img =  'https://www.gravatar.com/avatar/{}?d=identicon&s={}'.format(
+                digest, 80)
+    session['avatar'] = user_url_img
+
 
     return redirect(url_for('ngs_applications'))
 
@@ -75,6 +82,11 @@ def login_external():
     session['user'] = user_info_data['user']
     session["idClient"] = user_info_data['id_client']
     # session["last_access_date"] = user_info_data['last_access_date']
+    digest = md5(session['email'].lower().encode('utf-8')).hexdigest()
+    user_url_img =  'https://www.gravatar.com/avatar/{}?d=identicon&s={}'.format(
+                digest, 80)
+    session['avatar'] = user_url_img
+
 
     dicc_delete = {"id": user_info_data['id_client']}
     requests.post(URL_HOME + "delete_user_app", json=dicc_delete)
@@ -97,6 +109,11 @@ def receive_token():
         session['email'] = decoded_token.get('email_tok', 'Usuario no encontrado')
         session['idClient'] = decoded_token.get('id_client_tok', 'Usuario no encontrado')
         session['rol'] = decoded_token.get('rol_tok', 'Usuario no encontrado')
+        digest = md5(session['email'].lower().encode('utf-8')).hexdigest()
+        user_url_img =  'https://www.gravatar.com/avatar/{}?d=identicon&s={}'.format(
+                    digest, 80)
+        session['avatar'] = user_url_img
+
         print(session['user'])
         print(session['rols'])
         print(session['email'])
