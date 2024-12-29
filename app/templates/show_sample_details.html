@@ -53,8 +53,17 @@
                   </div>
                   <div class="row mb-3">
                       <div class="col">
-                          <label for="variant_type" class="form-label">Tipus de variant (SNV, Indel, SV, CNA)</label>
-                          <input type="text" class="form-control" id="variant_type" name="variant_type">
+                          <label for="variant_type" class="form-label">Tipus de variant<label>
+
+                          <select class="form-control" id="variant_type" name="variant_type" required>
+                            <option value="">Seleccioneu...</option>
+                            <option value="SNV">SNV</option>
+                            <option value="Indel">Indel</option>
+                            <option value="SV">SV</option>
+                            <option value="CNA">CNA</option>
+                        </select>
+
+
                       </div>
                       <div class="col">
                           <label for="exon" class="form-label">Exó</label>
