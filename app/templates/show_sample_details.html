@@ -24,7 +24,7 @@
                       </div>
                       <div class="col">
                           <label for="enst_id" class="form-label">Isoforma</label>
-                          <input type="text" class="form-control" id="enst_id" name="enst_id">
+                          <input type="text" class="form-control" id="new_enst_id" name="new_enst_id">
                       </div>
                   </div>
                   <div class="row mb-3">
@@ -1543,6 +1543,7 @@ addVariantForm.addEventListener('submit', async (event) => {
         ext1_id: document.getElementById('edit_ext2_id').value || '.',
         ext2_id: document.getElementById('edit_ext3_id').value || '.',
         gene: document.getElementById('gene').value || '.',
+        enst_id: document.getElementById('new_enst_id').value || '.',
         hgvsg: document.getElementById('hgvsg').value || '.',
         hgvsc: document.getElementById('hgvsc').value || '.',
         hgvsp: document.getElementById('hgvsp').value || '.',
