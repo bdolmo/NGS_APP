@@ -458,21 +458,25 @@
       </script>
 
       <style>
-@keyframes backgroundFade {
-    0% {
-        background-color: white; /* light blue */
-    }
-    50% {
-        background-color: rgb(209, 237, 255); /* medium blue */
-    }
-    100% {
-        background-color: white; /* light blue */
-    }
-}
-.animated-div {
-  border-left: 8px solid blue;
-  animation: backgroundFade 2.5s infinite;
-}
+      .form-control:required {
+          border-color: red; /* Red color for required fields */
+      }
+
+      @keyframes backgroundFade {
+          0% {
+              background-color: white; /* light blue */
+          }
+          50% {
+              background-color: rgb(209, 237, 255); /* medium blue */
+          }
+          100% {
+              background-color: white; /* light blue */
+          }
+      }
+      .animated-div {
+        border-left: 8px solid blue;
+        animation: backgroundFade 2.5s infinite;
+      }
 
        div.custom_tooltip {
            position: absolute;

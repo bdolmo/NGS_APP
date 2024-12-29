@@ -294,6 +294,22 @@ def update_patient_info():
         message = {"info": "S'han realitzat els canvis correctament"}
         return make_response(jsonify(message), 200)
 
+@app.route('/add_new_variant', methods=['POST'])
+def add_new_variant():
+    data = request.json
+    
+    # Process tier_catsalut logic
+    tier = data.get("tier_catsalut")
+    if tier == "4":
+        data["tier_catsalut"] = "None"  # Replace "4" with "None"
+
+    # Create a new entry
+    new_entry = TherapeuticTable(**data)
+    db.session.add(new_entry)
+    db.session.commit()
+    
+    return jsonify({"info": "S'ha enregistrat una nova variant!"}), 201
+
 @app.route("/modify_tier", methods=["POST"])
 #@login_required
 def modify_tier():

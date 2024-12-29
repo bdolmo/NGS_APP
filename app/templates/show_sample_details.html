@@ -2,6 +2,99 @@
 
 {% block body %}
 
+
+<!-- The Modal -->
+<!-- Button to Open the Modal -->
+
+
+<!-- The Modal -->
+<div class="modal fade" id="addVariantModal" tabindex="-1" aria-labelledby="addVariantModalLabel" aria-hidden="true">
+  <div class="modal-dialog">
+      <div class="modal-content">
+          <div class="modal-header">
+              <h5 class="modal-title" id="addVariantModalLabel">Afegeix una nova variant</h5>
+              <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+          </div>
+          <div class="modal-body">
+              <form id="addVariantForm">
+                  <div class="row mb-3">
+                      <div class="col">
+                          <label for="gene" class="form-label">Gen <span class="text-danger">*</span></label>
+                          <input type="text" class="form-control" id="gene" name="gene" required>
+                      </div>
+                      <div class="col">
+                          <label for="enst_id" class="form-label">Isoforma</label>
+                          <input type="text" class="form-control" id="enst_id" name="enst_id">
+                      </div>
+                  </div>
+                  <div class="row mb-3">
+                      <div class="col">
+                          <label for="hgvsg" class="form-label">HGVSg</label>
+                          <input type="text" class="form-control" id="hgvsg" name="hgvsg">
+                      </div>
+                      <div class="col">
+                          <label for="hgvsc" class="form-label">HGVSc</label>
+                          <input type="text" class="form-control" id="hgvsc" name="hgvsc" >
+                      </div>
+                  </div>
+                  <div class="row mb-3">
+                      <div class="col">
+                          <label for="hgvsc" class="form-label">HGVSc</label>
+                          <input type="text" class="form-control" id="hgvsc" name="hgvsc">
+                      </div>
+                      <div class="col">
+                          <label for="hgvsp" class="form-label">HGVSp</label>
+                          <input type="text" class="form-control" id="hgvsp" name="hgvsp">
+                      </div>
+                  </div>
+                  <div class="row mb-3">
+                      <div class="col">
+                          <label for="variant_type" class="form-label">Tipus de variant (SNV, Indel, SV, CNA)</label>
+                          <input type="text" class="form-control" id="variant_type" name="variant_type">
+                      </div>
+                      <div class="col">
+                          <label for="exon" class="form-label">Exó</label>
+                          <input type="text" class="form-control" id="exon" name="exon">
+                      </div>
+                  </div>
+                  <div class="row mb-3">
+                      <div class="col">
+                          <label for="intron" class="form-label">Intró </label>
+                          <input type="text" class="form-control" id="intron" name="intron" >
+                      </div>
+                      <div class="col">
+                          <label for="depth" class="form-label">Profunditat <span class="text-danger">*</span></label>
+                          <input type="number" class="form-control" id="depth" name="depth" required>
+                      </div>
+                  </div>
+                  <div class="row mb-3">
+                      <div class="col">
+                          <label for="allele_frequency" class="form-label">Freq. al·lèlica</label>
+                          <input type="number" class="form-control" id="allele_frequency" name="allele_frequency" step="0.01" readonly>
+                      </div>
+                      <div class="col">
+                          <label for="read_support" class="form-label">Read Support <span class="text-danger">*</span></label>
+                          <input type="number" class="form-control" id="read_support" name="read_support" required>
+                      </div>
+                  </div>
+                  <div class="row mb-3">
+                      <div class="col">
+                          <label for="tier_catsalut" class="form-label">Tier Catsalut</label>
+                          <select class="form-control" id="tier_catsalut" name="tier_catsalut" required>
+                              <option value="1">1</option>
+                              <option value="2">2</option>
+                              <option value="3">3</option>
+                              <option value="4">4</option>
+                          </select>
+                      </div>
+                  </div>
+                  <button type="submit" class="btn btn-primary">Accepta</button>
+              </form>
+          </div>
+      </div>
+  </div>
+</div>
+
 <div id="edit_sample" class="modal fade">
   <!-- <form action="" method="POST" enctype="multipart/form-data" id="update_petition"> -->
     <div class="modal-dialog modal-lg">
@@ -756,6 +849,10 @@
         <hr>
 
         <div class="table-responsive-">
+
+          <button type="button" id="new_variant_button" class="btn btn-primary btn-sm mb-1" data-bs-toggle="modal" data-bs-target="#addEntryModal">
+            <i class="fas fa-plus-circle" ></i> Afegir variant
+          </button>
           <table id="therapeutic_table" class="table table-sm table-striped table-bordered dt-responsive wrap" style="width:100%;background-color:white;">
             <div id="delete_multiple_button" style="margin-bottom:15px;display:none;">
               <hr>
@@ -1421,6 +1518,82 @@
 {% block script %}
 <script>
 
+
+button_new_variant = document.getElementById("new_variant_button");
+button_new_variant.addEventListener("click", openNewVariantModal);
+
+
+function openNewVariantModal() {
+    // document.getElementById('lab_id').value = document.getElementById('edit_lab_id').innerText;
+    // document.getElementById('run_id').value = document.getElementById('run_id_tag').innerText;
+    // document.getElementById('edit_ext2_id').value = document.getElementById('edit_ext2_id').innerText;
+    // document.getElementById('edit_ext3_id').value = document.getElementById('edit_ext3_id').innerText;
+    $("#addVariantModal").modal('show');
+}
+
+
+// Handle form submission
+const addVariantForm = document.getElementById('addVariantForm');
+addVariantForm.addEventListener('submit', async (event) => {
+    event.preventDefault(); // Prevent default form submission
+
+    const formData = {
+        lab_id: document.getElementById('edit_lab_id').innerText || '.',
+        run_id: document.getElementById('run_id_tag').innerText || '.',
+        ext1_id: document.getElementById('edit_ext2_id').value || '.',
+        ext2_id: document.getElementById('edit_ext3_id').value || '.',
+        gene: document.getElementById('gene').value || '.',
+        hgvsg: document.getElementById('hgvsg').value || '.',
+        hgvsc: document.getElementById('hgvsc').value || '.',
+        hgvsp: document.getElementById('hgvsp').value || '.',
+        variant_type: document.getElementById('variant_type').value || '.',
+        exon: document.getElementById('exon').value || '.',
+        intron: document.getElementById('intron').value || '.',
+        depth: document.getElementById('depth').value || '.',
+        allele_frequency: document.getElementById('allele_frequency').value || '.',
+        read_support: document.getElementById('read_support').value || '.',
+        tier_catsalut: document.getElementById('tier_catsalut').value || '.',
+        classification: "Therapeutic",
+        consequence: document.getElementById('edit_ext2_id').value || '.',
+    };
+
+    try {
+        const response = await fetch('/add_new_variant', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(formData)
+        });
+
+        response.json().then((data) => {
+            $("#addVariantModal").modal('hide');
+            document.getElementById("message_div").style.display = "block";
+            document.getElementById("message_span").innerHTML = data["info"] || "Success";
+            console.log(data["info"] || "Success");
+        }).then(() => {
+            window.location.reload();
+        }); // Reset the form
+    } catch (error) {
+        alert('Error adding entry: ' + error.message);
+    }
+});
+
+
+document.getElementById('depth').addEventListener('input', calculateAlleleFrequency);
+document.getElementById('read_support').addEventListener('input', calculateAlleleFrequency);
+
+function calculateAlleleFrequency() {
+    const depth = parseFloat(document.getElementById('depth').value);
+    const readSupport = parseFloat(document.getElementById('read_support').value);
+
+    if (!isNaN(depth) && depth > 0 && !isNaN(readSupport) && readSupport >= 0) {
+        const alleleFrequency = Math.min(readSupport / depth, 1).toFixed(2); // Ensure max is 1
+        document.getElementById('allele_frequency').value = alleleFrequency;
+    } else {
+        document.getElementById('allele_frequency').value = '';
+    }
+}
 
   document.getElementById('substitute_report').addEventListener('change', function() {
     var modificacionsContainer = document.getElementById('modificacions_container');
