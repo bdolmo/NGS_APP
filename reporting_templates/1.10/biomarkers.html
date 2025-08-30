@@ -1,0 +1,33 @@
+
+<table style="width:80%;margin:0 auto;page-break-inside: auto;">
+  <content>
+    <div class="row" style="width:80%;margin:0 auto;">
+      <div class="col" style="width:100%;margin:0px;color:#2c4fa1;">
+        <p style="font-size:15px;font-family: arial, sans-serif;"><img src="fourdot.png" alt="" style="width:16px;height:15px;">
+          <b>INFORMACIÓ ADDICIONAL SOBRE BIOMARCADORS CONEGUTS</b>
+        </p>
+      </div>
+    </div>
+  </content>
+  <thead>
+  <tr style="color:white;background-color:#365c85;font-size:12px;padding:5px;margin:0px;page-break-inside: auto;">
+    <th> GEN</th>
+    <th> VARIANT</th>
+    <th> Exó/Regió</th>
+    <th> VAF</th>
+    <th> Profunditat</th>
+  </tr>
+  </thead>
+  <tbody>
+  {% for biomarker in biomarkers %}
+    <tr style="background-color:#f0f4f8;padding:5px;">
+      <td style="padding:5px;"><b><i>{{ biomarker.gene }} </i></b></td>
+      <td style="padding:5px;"> {{ biomarker.variant }} </td>
+      <td style="padding:5px;">{{ biomarker.exon }}<br>
+      <td style="padding:5px;padding:5px;">{{ biomarker.vaf }} </td>
+      <td style="padding:5px;">{{ biomarker.depth }} </td>
+    </tr>
+  {% endfor %}
+  </tbody>
+</table>
+<!-- <p style="page-break-before: always" ></p> -->

@@ -37,10 +37,21 @@ def insert_gene_variant_summaries(list_of_dicts):
         hgvsg = row.get('HGVSg', None)
         hgvsc = row.get('HGVSc', None)
         hgvsp = row.get('HGVSp', None)
-
-        data_json = json.dumps(row, ensure_ascii=False).encode('utf8')
-        # Convert dictionary to JSON string
         hgvs = row.get('HGVS', None)
+
+        converted_row = {
+            str(key): (str(value) if value is not None else "")
+            for key, value in row.items()
+        }
+        gene  = converted_row.get('Gene', "")
+        hgvsg = converted_row.get('HGVSg', "")
+        hgvsc = converted_row.get('HGVSc', "")
+        hgvsp = converted_row.get('HGVSp', "")
+        hgvs  = converted_row.get('HGVS', "")
+
+
+        data_json = json.dumps(converted_row, ensure_ascii=False).encode('utf8')
+        # Convert dictionary to JSON string
 
         # Calculate a hash from the JSON string
         hash_string = "".join([gene, hgvsg, hgvsc, hgvsp, hgvs])
@@ -88,7 +99,7 @@ def upload_xlsx_variants():
 
         # Process the file with pandas
         try:
-            df = pd.read_excel(file_path, engine='openpyxl', sheet_name='Variants', header=2)
+            df = pd.read_excel(file_path, engine='openpyxl', sheet_name='Variants', header=0)
             df = df.fillna(method='ffill', axis=0)
             df = df.applymap(lambda x: x.replace('\xa0', ' ') if isinstance(x, str) else x)
             # Convert the DataFrame to a list of dictionaries

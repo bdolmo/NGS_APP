@@ -1,0 +1,761 @@
+<meta http-equiv="refresh" content="60">
+
+{% extends "base.html" %}
+
+{% block body %}
+
+
+<!-- Modal for Changing Status -->
+<div class="modal fade" id="changeStatusModal" tabindex="-1" aria-labelledby="changeStatusModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" id="changeStatusModalLabel">Canvia l'Status del Job</h5>
+
+          <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+            <span aria-hidden="true">&times;</span>
+          </button>
+        </div>
+        <div class="modal-body">
+          <form id="changeStatusForm">
+            <div class="mb-3">
+              <label for="newStatusInput" class="form-label">New Status</label>
+              <select class="form-select" id="newStatusInput" required>
+                <option value="queued">Queued</option>
+                <option value="started">Started</option>
+                <option value="running">Running</option>
+                <option value="finished">Finished</option>
+                <option value="failed">Failed</option>
+                <option value="stopped">Stopped</option>
+              </select>
+            </div>
+            <input type="hidden" id="jobIdInput">
+          </form>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel·la</button>
+          <button type="button" id="saveStatusButton" class="btn btn-primary">Desa canvis</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal for Configurations -->
+  <div class="modal fade" id="configModal" tabindex="-1">
+    <div class="modal-dialog modal-xl modal-dialog-scrollable" style="min-width:1500px">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h3 class="modal-title"><b>Configuració d'anàlisi</b></h3>
+
+
+          <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+            <span aria-hidden="true">&times;</span>
+          </button>
+
+        </div>
+        <div class="modal-body"><!-- filled by JS --></div>
+        <div class="modal-footer">
+          </div>
+      </div>
+    </div>
+  </div>
+
+  
+
+<div class="container-fluid py-4 rounded mb-4 mt-4 bg-light" style="margin:0 auto; width:100%;">
+  <div style="margin:0 auto; width:90%;">
+      <!-- Total Jobs and Status Summary -->
+      <div class="row text-center mb-4">
+          <div class="col-md-2">
+              <div class="card shadow-sm">
+                  <div class="card-body">
+                      <h5 class="card-title"><i class="fas fa-tasks"></i> Total Analisis</h5>
+                      <h2 class="card-text">{{status_dict['Total jobs']}}</h2>
+                  </div>
+              </div>
+          </div>
+          <div class="col-md-2">
+              <div class="card shadow-sm">
+                  <div class="card-body">
+                      <h5 class="card-title"><i style="color:rgb(114, 170, 114);" class="fas fa-check-circle"></i> Completats</h5>
+                      <h2 class="card-text">{{status_dict['Completed']}}</h2>
+                  </div>
+              </div>
+          </div>
+          <div class="col-md-2">
+              <div class="card shadow-sm">
+                  <div class="card-body">
+                      <h5 class="card-title"><i style="color:rgb(116, 208, 224);" class="fas fa-play-circle"></i> En progrés</h5>
+                      <h2 class="card-text">{{status_dict['Running']}}</h2>
+                  </div>
+              </div>
+          </div>
+          <div class="col-md-2">
+              <div class="card shadow-sm">
+                  <div class="card-body">
+                      <h5 class="card-title"><i style="color:rgb(250, 135, 135);" class="fas fa-times-circle"></i> Fallits</h5>
+                      <h2 class="card-text">{{status_dict['Failed']}}</h2>
+                  </div>
+              </div>
+          </div>
+      </div>
+
+      <div class="d-flex justify-content-center mt-3">
+          <div class="row">
+              {% with messages = get_flashed_messages(with_categories=true) %}
+              {% if messages %}
+              {% for category, message in messages %}
+              <div class="alert alert-{{ category }} alert-dismissible fade show ml-3" role="alert">
+                  <span>{{ message }}</span>
+                  <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+                      <span aria-hidden="true">&times;</span>
+                  </button>
+                  <br>
+              </div>
+              {% endfor %}
+              {% endif %}
+              {% endwith %}
+          </div>
+      </div>
+
+      <!-- Search and Filter Controls -->
+      <div class="row mb-4">
+          <div class="col-md-4">
+              <input type="text" id="searchInput" class="form-control" placeholder="Cerca">
+          </div>
+          <div class="col-md-3">
+              <select id="statusFilter" class="form-control">
+                  <option value="">Filtra per Status</option>
+                  <option value="queued">Queued</option>
+                  <option value="finished">Finished</option>
+                  <option value="started">Started</option>
+                  <option value="failed">Failed</option>
+                  <option value="stopped">Stopped</option>
+              </select>
+          </div>
+          <div class="col-md-3">
+              <select id="sortFilter" class="form-control">
+                  <option value="">Ordena per</option>
+                  <option value="date">Data</option>
+                  <option value="job_id">Nom Job</option>
+              </select>
+          </div>
+          <div class="col-md-2">
+              <button class="btn btn-primary" onclick="applyFilters()">Aplica</button>
+              <!-- <button class="btn btn-secondary" onclick="clearFilters()">Reinicia</button> -->
+          </div>
+      </div>
+
+      <div id="jobsList" class="row">
+        {% for job in Jobs %}
+        <div class="col-md-4 job-card-container">
+            <div class="card mb-3 shadow-sm job-card" 
+                 data-status="{{ job.Status }}" 
+                 data-job-id="{{ job.Job_id }}" 
+                 data-panel="{{ job.Panel }}" 
+                 data-queue-id="{{ job.Queue_id }}" 
+                 data-analysis="{{ job.Analysis }}" 
+                 data-date="{{ job.Date }}">
+                <div class="card-body {% if job.Status == 'started' %}animated-div{% endif %} {% if job.Status == 'running' %}animated-div{% endif %}"
+                
+                     {% if job.Status == "queued" %} 
+                     style="border-left: 5px solid #6c757d;background-color:  #eef0f1;" 
+                     {% elif job.Status == "finished" %} 
+                     style="border-left: 5px solid #28a745;" 
+                     {% elif job.Status == "started" %} 
+                     style="border-left: 5px solid blue;" 
+                     {% elif job.Status == "failed" %} 
+                     style="border-left: 5px solid #dc3545;" 
+                     {% elif job.Status == "stopped" %} 
+                     style="border-left: 5px solid #ffc107;" 
+                     {% endif %}>
+                     <h6 class="mb-0">
+                        {% if job.Status in ["failed", "queued", "started", "stopped"] %}
+                            <b>{{ job.Job_id }}</b>
+                        {% else %}
+                            {% if job.Analysis in ["Somatic", "somatic", "Lowpass"] %}
+                                <a href="{{ url_for('show_run_details', run_id=job.Job_id) }}"><b>{{ job.Job_id }}</b></a>
+                            {% elif job.Analysis == "germline" %}
+                                <a href="{{ url_for('show_compendium_run', run_id=job.Job_id) }}"><b>{{ job.Job_id }}</b></a>
+                            {% else %}
+                                {{ job.Job_id }}
+                            {% endif %}
+                        {% endif %}
+                        {% set analysis_type = job.Analysis %}
+                        {% set analysis_color = job.Analysis %}
+
+                        {% if analysis_type == "germline" %}
+                          {% set analysis_type = "GERMINAL" %}
+                          {% set analysis_color = "#0047AB" %}
+                        {% else %}
+                          {% set analysis_type = "SOMATIC" %}
+                          {% set analysis_color = "#E30B5C" %}
+                        {% endif %}
+
+                        <span style="float:right;font-size:12px;color:{{analysis_color}}">
+                          <b>{{ analysis_type }}</b>
+                        </span>
+                    </h6>
+                    <hr style="margin:0px">
+                    <div class="row">
+                        <div class="col-10">
+                            <p style="margin: 1px;" class="card-text"><b>Date:</b> {{ job.Date }}</p>
+                            <p style="margin: 1px;" class="card-text"><b>Panel:</b> {{ job.Panel }}</p>
+                            <p style="margin: 1px;" class="card-text"><b>N Samples:</b> {{ job.Samples }}</p>
+                            {% if job.Logfile %}
+                                <button class="btn btn-sm btn-outline-secondary">
+                                    <a href="{{ url_for('download_log', job_id=job.Job_id) }}" style="text-decoration: none; color: inherit;">
+                                        <i class="fas fa-download"></i> Log
+                                    </a>
+                                </button>
+                                {% if logs_dict[job.Job_id] %}
+                                <button class="btn btn-sm btn-outline-info toggle-log-btn" data-job-id="{{ job.Job_id }}">
+                                    <i class="fas fa-eye"></i> Mostra log
+                                </button>
+
+                                <p id="log-msg-{{ job.Job_id }}" class="log-message" style="display: none; margin-top: 5px;">
+                                    {{ logs_dict[job.Job_id] }}
+                                </p>
+                                {% endif %}
+                            {% endif %}
+                            {% if config_yaml_info %}
+                                <button class="btn btn-sm btn-outline-primary view-config-btn" data-cmd="{{job.Job_cmd}}" data-job-id="{{ job.Job_id }}" 
+                                data-config='{{ config_yaml_info[job.Job_id]|tojson }}'>
+                                    <i class="fas fa-cogs"></i> Conf. Anàlisi
+                                </button>
+                            {% endif %}
+                        </div>
+                        <div class="col-2">
+                            {% if job.Status in ["queued", "started", "finished", "failed", "stopped", "scheduled"] %}
+                                <a href="{{ url_for('remove_job', queue_id=job.Queue_id, job_id=job.Job_id, panel=job.Panel) }}" role="button" 
+                                onclick="return confirm('Segur que vols eliminar aquest RUN?');">
+                                    <i class="fas fa-trash text-danger"></i>
+                                </a>
+                            {% endif %}
+                            {% if job.Status == "started" %}
+                                <a href="{{ url_for('stop_job', queue_id=job.Queue_id) }}" role="button" onclick="return confirm('Segur que vols aturar aquest RUN?');">
+                                    <i class="fas fa-stop-circle text-primary"></i>
+                                </a>
+                            {% endif %}
+                            <!-- New Change Status Button -->
+                            {% if session["user"] == "admin" %}
+                            <button class="btn btn-sm btn-outline-secondary change-status-btn" data-job-id="{{ job.Job_id }}" data-current-status="{{ job.Status }}">
+                                <i class="fas fa-edit"></i>Canvia status
+                            </button>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+    
+      <!-- Pagination Controls -->
+      <div class="d-flex justify-content-center mt-1">
+          <nav>
+              <ul class="pagination">
+                  <li class="page-item"><a class="page-link" href="#" onclick="previousPage()">Previ</a></li>
+                  <li class="page-item"><a class="page-link" href="#" onclick="nextPage()">Següent</a></li>
+              </ul>
+          </nav>
+      </div>
+  </div>
+</div>
+<script>
+
+function capitalizeFirst(str) {
+  if (!str) return '';
+  return str.charAt(0).toUpperCase() + str.slice(1);
+}
+
+function copyTextToClipboard(text) {
+  // 1) Create and style the textarea
+  const textarea = document.createElement('textarea');
+  textarea.value = text;
+  textarea.setAttribute('readonly', '');
+  // Off-screen placement
+  textarea.style.position = 'fixed';
+  textarea.style.top = '0';
+  textarea.style.left = '-9999px';
+  document.body.appendChild(textarea);
+
+  // 2) Save existing selection (if any) so we can restore it
+  const selection = document.getSelection();
+  const ranges = [];
+  for (let i = 0; i < selection.rangeCount; i++) {
+    ranges.push(selection.getRangeAt(i));
+  }
+
+  // 3) Select the textarea’s contents
+  textarea.select();
+  textarea.setSelectionRange(0, textarea.value.length);
+  // 4) Try to copy
+  let success = false;
+  try {
+    success = document.execCommand('copy');
+  } catch (err) {
+    console.error('Copy command failed', err);
+    success = false;
+  }
+
+  // 5) Clean up: remove textarea and restore selection
+  document.body.removeChild(textarea);
+  selection.removeAllRanges();
+  ranges.forEach(r => selection.addRange(r));
+
+  return success;
+}
+
+
+document.addEventListener('DOMContentLoaded', () => {
+    const modalEl   = document.getElementById('configModal');
+    const modalBody = modalEl.querySelector('.modal-body');
+    const bsModal   = new bootstrap.Modal(modalEl);
+
+    document.querySelectorAll('.view-config-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        // 1) Grab the JSON blob and jobId
+        const cfgs  = JSON.parse(btn.getAttribute('data-config'));
+        let cmd_str = btn.getAttribute('data-cmd');
+        const jobId = btn.getAttribute('data-job-id');
+        const names = Object.keys(cfgs);
+        console.log(cmd_str);
+
+        // 2) Build nav and content buffers
+        let navHtml     = '<ul class="nav flex-column">';
+        let contentHtml = '';
+
+        // if cmd_str is not none
+        if (cmd_str === 'None') {
+          cmd_str = '';
+        } else {
+          cmd_str = cmd_str.replace(/yaml$/i, '').trim();
+        }
+        cmd_str = cmd_str.replace(/data-job-id=/, '');
+
+        navHtml += `
+            <li class="nav-item">
+              <a class="nav-link" href="#cmd-${jobId}">
+                Pipeline CMD
+              </a>
+            </li>`;
+
+            // <button class="btn btn-sm btn-primary copy-cmd-btn" data-job-id="${jobId}"><i class="fas fa-copy"></i> Copia</button>
+
+        contentHtml += `
+        <div id="cmd-${jobId}" class="mb-4">
+            <h5><b>Pipeline command:</b></h5>
+            <p class="log-message">${cmd_str}</p>
+        </div><hr style="border: 1px solid darkgrey;">`;
+            
+        
+        names.forEach(name => {
+          // 2a) Unique ID for this section
+          const sectionId = `cfg-${jobId}-${name}`;
+
+          // 2b) Figure out a human-friendly title
+          let pretty = name.replace(/_/g, ' ').replace(/yaml$/i, '').trim();
+          if (pretty === 'ann')    pretty = 'Annotacions';
+          if (pretty === 'config') pretty = 'Configuració';
+          if (pretty === 'bin')    pretty = 'Binaris';
+          if (pretty === 'ref')    pretty = 'Referències';
+          if (pretty === 'docker') pretty = 'Docker';
+
+          // 2c) Add to the left-nav
+          navHtml += `
+            <li class="nav-item">
+              <a class="nav-link" href="#${sectionId}">
+                ${pretty}
+              </a>
+            </li>`;
+
+          // 2d) Start the right-side content section
+          contentHtml += `
+            <div id="${sectionId}" class="mb-4">
+              <h5>
+                <b>${pretty}</b>
+             </h5>`;
+
+          const content = cfgs[name];
+
+          // 3) Render nested content
+          if (content && typeof content === 'object') {
+            // go through each sub-category: config, predictors, resources…
+            for (const key in content) {
+              const sub = content[key];
+              console.log(sub.length)
+              // only if we have content
+            //   if (sub.length == 0 ) continue;
+            
+              // if sub length is undefined
+                if (sub.length > 0) {
+                    contentHtml += `<h6><b>${capitalizeFirst(key)}</b></h6>`;
+
+                }
+
+
+              // 3a) Array?
+              if (Array.isArray(sub)) {
+                if (sub.length > 0 && typeof sub[0] === 'object') {
+                    // array of objects → table
+                    let headers = Object.keys(sub[0]);
+
+                    // remove "key" and "dirname" columns
+                    headers.splice(headers.indexOf('key'), 1);
+                    const skip = ['key', 'dirname', 'resurce_name', 'hg19', 'hg38'];
+                    for (const s of skip) {
+                      const i = headers.indexOf(s);
+                      if (i > -1) headers.splice(i, 1);
+                    }
+
+                    // if we have "resource_name" in the headers place it first
+                    const resourceIndex = headers.indexOf('resource_name');
+                    if (resourceIndex > -1) {
+                      headers.splice(resourceIndex, 1);
+                      headers.unshift('resource_name');
+                    }
+
+                  contentHtml += `
+                    <table class="table table-striped table-bordered">
+                      <thead><tr>${headers.map(h => `<th>${h}</th>`).join('')}</tr></thead>
+                      <tbody>
+                        ${sub.map(item => `
+                          <tr>
+                            ${headers.map(h => {
+                              let v = item[h];
+                              if (Array.isArray(v)) v = v.join(', ');
+                              return `<td style="max-width:100px;overflow-wrap: break-word;">${v ?? ''}</td>`;
+                            }).join('')}
+                          </tr>`).join('')}
+                      </tbody>
+                    </table><hr style="border: 1px solid darkgrey;">`;
+                } else {
+                  // array of primitives → simple list
+                  contentHtml += '<ul>';
+                  sub.forEach(el => {
+                    contentHtml += `<li>${el}</li>`;
+                  });
+                  contentHtml += '</ul>';
+                }
+
+              // 3b) Plain object → two-column table
+              } else if (typeof sub === 'object') {
+
+                // if Object entries is empty do not show the table
+                if (Object.entries(sub).length === 0) {
+                //   contentHtml += `<p><em>No data for ${jobId}/${name}.</em></p>`;
+                  continue;
+                }
+                contentHtml += `<h6><b>${capitalizeFirst(key)}</b></h6>`;
+
+                contentHtml += `
+                  <table class="table table-striped table-bordered">
+                    <tbody>
+                      ${Object.entries(sub).map(([k,v]) => {
+                        if (Array.isArray(v)) v = v.join(', ');
+
+                        // parse v to get a list of values by ","
+                        // we will create an span with badge class for each element
+                        // if (Array.isArray(v)) {
+                        //   v = v.map(item => `<span class="badge bg-primary">${item}</span>`).join(' ');
+                        // }
+
+                        // if (typeof v === 'string' && v.includes(',')) {
+                        //   v = v.split(',').map(item => item.trim()).join(', ');
+                        // }
+
+                        if (key == "predictors") {
+                            let predictorsString = "";
+                            let v_list = v.split(',');
+
+                            let info = "info";
+                            if (k == "genomewide_predictors") {
+                                info = "info";
+                            }
+                            if (k == "missense_predictors") {
+                                info = "danger";
+                            }
+                            if (k == "splicing_predictors") {
+                                info = "warning";
+                            }
+
+                            for (let i = 0; i < v_list.length; i++) {
+                                predictorsString+= `<span class="badge bg-${info}" style="color:white;">${v_list[i].trim()}</span> `;
+                            }
+
+                            return `<tr><td style="max-width:100px;overflow-wrap: break-word;">${k}</td><td>${predictorsString}</td></tr>`;
+                        }
+
+                        return `<tr><td style="max-width:100px;overflow-wrap: break-word;">${k}</td><td>${v}</td></tr>`;
+                      }).join('')}
+                    </tbody>
+                  </table>`;
+
+              // 3c) Primitive → paragraph
+              } else {
+                // if sub is empty do not show the paragraph
+                if (sub.length == 0) {
+                  continue
+                }
+                contentHtml += `<p>${sub ?? ''}</p>`;
+              }
+            }
+
+          // 4) No content
+          } else {
+            contentHtml += `<p><em>No data for ${jobId}/${name}.</em></p>`;
+          }
+
+          contentHtml += `</div>`;
+        });
+
+        navHtml += '</ul>';
+
+        // 5) Assemble the two-column layout and inject
+        const html = `
+          <div class="row">
+            <nav class="col-1 border-end pe-3" style="max-height:75vh; overflow-y:auto;">
+              ${navHtml}
+            </nav>
+            <div class="col-11" style="max-height:75vh; overflow-y:auto;">
+              ${contentHtml}
+            </div>
+          </div>`;
+
+        modalBody.innerHTML = html;
+        bsModal.show();
+
+
+        // ─── 2) In your modal-injection handler, replace the copy listener with this ─────────────
+        // Usage in your click handler:
+        // modalBody.querySelectorAll('.copy-cmd-btn').forEach(copyBtn => {
+        // copyBtn.addEventListener('click', () => {
+        //     const jobId = copyBtn.getAttribute('data-job-id');
+        //     const text  = modalBody
+        //     .querySelector(`#cmd-${jobId} .log-message`)
+        //     .innerText
+        //     .trim();
+        //     console.log(text);
+
+        //     if (copyTextToClipboard(text)) {
+        //     copyBtn.innerHTML   = '<i class="fas fa-check"></i> Copiat';
+        //     copyBtn.disabled    = true;
+        //     setTimeout(() => {
+        //         copyBtn.innerHTML = '<i class="fas fa-copy"></i> Copiar CMD';
+        //         copyBtn.disabled  = false;
+        //     }, 2000);
+        //     } else {
+        //     alert('No s’ha pogut copiar al portapapers, si us plau copieu manualment.');
+        //     }
+        // });
+        // });
+
+
+      });
+    });
+  });
+
+document.addEventListener("DOMContentLoaded", function () {
+    const buttons = document.querySelectorAll(".toggle-log-btn");
+    buttons.forEach(function (btn) {
+        btn.addEventListener("click", function () {
+            const jobId = btn.getAttribute("data-job-id");
+            const logElement = document.getElementById(`log-msg-${jobId}`);
+            if (logElement.style.display === "none") {
+                logElement.style.display = "block";
+                btn.innerHTML = `<i class="fas fa-eye-slash"></i> Amaga log`;
+            } else {
+                logElement.style.display = "none";
+                btn.innerHTML = `<i class="fas fa-eye"></i> Mostra log`;
+            }
+        });
+    });
+});
+
+document.addEventListener('DOMContentLoaded', function () {
+  const changeStatusButtons = document.querySelectorAll('.change-status-btn');
+  const changeStatusModal = new bootstrap.Modal(document.getElementById('changeStatusModal'));
+  const newStatusInput = document.getElementById('newStatusInput');
+  const jobIdInput = document.getElementById('jobIdInput');
+  const saveStatusButton = document.getElementById('saveStatusButton');
+
+  let currentJobId = null;
+
+  // Open modal when the "Change Status" button is clicked
+  changeStatusButtons.forEach(button => {
+      button.addEventListener('click', function () {
+          currentJobId = this.getAttribute('data-job-id');
+          const currentStatus = this.getAttribute('data-current-status');
+
+          // Populate modal fields
+          jobIdInput.value = currentJobId;
+          newStatusInput.value = currentStatus;
+
+          // Show the modal
+          changeStatusModal.show();
+      });
+  });
+
+  // Handle saving the new status
+  saveStatusButton.addEventListener('click', function () {
+      const jobId = jobIdInput.value;
+      const newStatus = newStatusInput.value;
+
+      // Send AJAX request to update the status
+      fetch(`/change_status`, {
+          method: 'POST',
+          headers: {
+              'Content-Type': 'application/json',
+              'X-CSRFToken': '{{ csrf_token }}'  // Add CSRF token for Flask if necessary
+          },
+          body: JSON.stringify({ job_id: jobId, new_status: newStatus })
+      })
+          .then(response => response.json())
+          .then(data => {
+              if (data.success) {
+                  // Update the UI
+                  const jobCard = document.querySelector(`.job-card[data-job-id="${jobId}"]`);
+                  const newColor = getColorForStatus(newStatus);
+                  jobCard.style.borderLeft = `5px solid ${newColor}`;
+                  jobCard.setAttribute('data-status', newStatus);
+
+                  // Close the modal
+                  changeStatusModal.hide();
+              } else {
+                  alert('Failed to update status: ' + data.error);
+              }
+          })
+          .catch(error => {
+              console.error('Error:', error);
+              alert('An error occurred while updating the status.');
+          });
+  });
+
+  function getColorForStatus(status) {
+      switch (status) {
+          case 'queued': return '#6c757d';
+          case 'finished': return '#28a745';
+          case 'started': return 'blue';
+          case 'running': return '#17a2b8';
+          case 'failed': return '#dc3545';
+          case 'stopped': return '#ffc107';
+          default: return '#000';
+      }
+  }
+});
+
+let currentPage = 1;
+const itemsPerPage = 9;
+
+function applyFilters() {
+    const searchValue = document.getElementById('searchInput').value.toLowerCase();
+    const statusValue = document.getElementById('statusFilter').value.toLowerCase();
+    const sortValue = document.getElementById('sortFilter').value.toLowerCase();
+
+    console.log("Search Value: ", searchValue);
+    console.log("Status Value: ", statusValue);
+    console.log("Sort Value: ", sortValue);
+
+    const jobCards = Array.from(document.querySelectorAll('.job-card-container'));
+
+    jobCards.forEach(card => {
+        const jobId = card.querySelector('.job-card').getAttribute('data-job-id').toLowerCase();
+        const queueId = card.querySelector('.job-card').getAttribute('data-queue-id').toLowerCase();
+        const analysis = card.querySelector('.job-card').getAttribute('data-analysis').toLowerCase();
+        const panel = card.querySelector('.job-card').getAttribute('data-panel').toLowerCase();
+        const status = card.querySelector('.job-card').getAttribute('data-status').toLowerCase();
+        const date = card.querySelector('.job-card').getAttribute('data-date').toLowerCase();
+
+        // Determine if the card matches the search criteria
+        let matchesSearch = false;
+        if (searchValue) {
+            const jobIdMatches = jobId.includes(searchValue);
+            const queueIdMatches = queueId.includes(searchValue);
+            const analysisMatches = analysis.includes(searchValue);
+            const panelMatches = panel.includes(searchValue);
+
+            matchesSearch = jobIdMatches || queueIdMatches || analysisMatches || panelMatches;
+        } else {
+            matchesSearch = true; // If no search value is provided, all cards match
+        }
+
+        // Determine if the card matches the status filter
+        let matchesStatus = false;
+        if (statusValue) {
+            matchesStatus = status === statusValue;
+        } else {
+            matchesStatus = true; // If no status value is provided, all cards match
+        }
+
+        // Show or hide the card based on the combined criteria
+        if (matchesSearch && matchesStatus) {
+            card.style.display = 'block';
+        } else {
+            card.style.display = 'none';
+        }
+    });
+
+    // Sort the job cards if a sort option is selected
+    if (sortValue) {
+        jobCards.sort((a, b) => {
+            const aValue = a.querySelector('.job-card').getAttribute(`data-${sortValue}`).toLowerCase();
+            const bValue = b.querySelector('.job-card').getAttribute(`data-${sortValue}`).toLowerCase();
+            if (sortValue === 'date') {
+                return new Date(bValue) - new Date(aValue); // Sort by date descending
+            } else {
+                return aValue.localeCompare(bValue);
+            }
+        });
+    }
+
+    // Update the displayed job cards
+    const jobsList = document.getElementById('jobsList');
+    jobsList.innerHTML = '';
+    jobCards.forEach(card => jobsList.appendChild(card));
+
+    paginate();
+}
+
+function paginate() {
+    const jobCards = Array.from(document.getElementsByClassName('job-card-container'));
+    jobCards.forEach((card, index) => {
+        card.style.display = 'none';
+        if (index >= (currentPage - 1) * itemsPerPage && index < currentPage * itemsPerPage) {
+            card.style.display = 'block';
+        }
+    });
+}
+
+function previousPage() {
+    if (currentPage > 1) {
+        currentPage--;
+        paginate();
+    }
+}
+
+function nextPage() {
+    const jobCards = Array.from(document.getElementsByClassName('job-card-container'));
+    if (currentPage * itemsPerPage < jobCards.length) {
+        currentPage++;
+        paginate();
+    }
+}
+
+function clearFilters() {
+    document.getElementById('searchInput').value = '';
+    document.getElementById('statusFilter').value = '';
+    document.getElementById('sortFilter').value = '';
+    currentPage = 1;
+    applyFilters();
+}
+
+window.onload = () => {
+    applyFilters();
+    paginate();
+};
+</script>
+
+{% endblock body %}
+
+

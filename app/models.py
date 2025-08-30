@@ -1,5 +1,62 @@
 from app import db
 
+# models_pipeline.py
+from datetime import datetime
+from hashlib import md5
+import json
+
+class Pipeline(db.Model):
+    __tablename__ = 'PIPELINES'
+    id          = db.Column(db.Integer, primary_key=True, autoincrement=True)
+    name        = db.Column(db.String(120), unique=True, nullable=False)
+    version     = db.Column(db.String(50))
+    entrypoint  = db.Column(db.String(500))   # e.g., /path/to/Snakefile or script.py or tool name
+    workdir     = db.Column(db.String(500))
+    interpreter = db.Column(db.String(50))    # e.g., snakemake | python | bash
+    env_vars_json = db.Column(db.Text)        # JSON dict of env vars
+    meta_json     = db.Column(db.Text)        # any extra metadata
+    created_by    = db.Column(db.String(50))
+    created_at    = db.Column(db.DateTime, default=datetime.utcnow)
+    updated_at    = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    description = db.Column(db.Text)          # <-- NEW: free text description
+
+    params  = db.relationship('PipelineParam', backref='pipeline', cascade="all, delete-orphan")
+    configs = db.relationship('PipelineConfig', backref='pipeline', cascade="all, delete-orphan")
+
+
+
+class PipelineParam(db.Model):
+    __tablename__ = 'PIPELINE_PARAMS'
+    id           = db.Column(db.Integer, primary_key=True, autoincrement=True)
+    pipeline_id  = db.Column(db.Integer, db.ForeignKey('PIPELINES.id', ondelete='CASCADE'), index=True)
+    name         = db.Column(db.String(120))    # long flag name (no leading --) or positional name
+    short        = db.Column(db.String(10))     # short flag (no leading -), optional
+    type         = db.Column(db.String(20))     # string,int,float,bool,choice,file,dir
+    default      = db.Column(db.String(1000))
+    required     = db.Column(db.Boolean, default=False)
+    is_positional= db.Column(db.Boolean, default=False)
+    position     = db.Column(db.Integer)        # order for positional args
+    description  = db.Column(db.Text)
+    choices_json = db.Column(db.Text)           # JSON list
+    group_name   = db.Column(db.String(120))    # optional UI grouping
+    group_format   = db.Column(db.String(120))    # optional UI grouping
+
+class PipelineConfig(db.Model):
+    __tablename__ = 'PIPELINE_CONFIGS'
+    id           = db.Column(db.Integer, primary_key=True, autoincrement=True)
+    pipeline_id  = db.Column(db.Integer, db.ForeignKey('PIPELINES.id', ondelete='CASCADE'), index=True)
+    name         = db.Column(db.String(120))       # human-readable config name
+    values_json  = db.Column(db.Text)              # JSON dict {paramName: value}
+    created_by   = db.Column(db.String(50))
+    created_at   = db.Column(db.DateTime, default=datetime.utcnow)
+    hash         = db.Column(db.String(64), unique=True)  # prevent duplicates
+
+    def compute_hash(self):
+        try:
+            canonical = json.dumps(json.loads(self.values_json or "{}"), sort_keys=True, ensure_ascii=False)
+        except Exception:
+            canonical = self.values_json or ""
+        self.hash = md5(canonical.encode('utf-8')).hexdigest()
 
 # Define the dynamic table model
 class GeneVariantSummary(db.Model):
@@ -122,8 +179,15 @@ class Job(db.Model):
     Panel    = db.Column(db.String(20))
     Samples  = db.Column(db.String(20))
     Status   = db.Column(db.String(20))
+    Logfile  = db.Column(db.String(20))
+    Config_yaml_1 = db.Column(db.String(20))
+    Config_yaml_2 = db.Column(db.String(20))
+    Config_yaml_3 = db.Column(db.String(20))
+    Config_yaml_4 = db.Column(db.String(20))
+    Job_cmd = db.Column(db.String(20))
 
-    def __init__(self, User_id, Job_id, Queue_id, Date, Analysis, Panel, Samples, Status):
+
+    def __init__(self, User_id, Job_id, Queue_id, Date, Analysis, Panel, Samples, Status, Logfile, Config_yaml_1, Config_yaml_2, Config_yaml_3, Config_yaml_4, Job_cmd):
         self.User_id = User_id
         self.Job_id  = Job_id
         self.Queue_id= Queue_id
@@ -132,6 +196,12 @@ class Job(db.Model):
         self.Panel   = Panel
         self.Samples = Samples
         self.Status  = Status
+        self.Logfile = Logfile
+        self.Config_yaml_1 = Config_yaml_1
+        self.Config_yaml_2 = Config_yaml_2
+        self.Config_yaml_3 = Config_yaml_3
+        self.Config_yaml_4 = Config_yaml_4
+        self.Job_cmd = Job_cmd
 
 class Petition(db.Model):
     __tablename__ = 'PETITIONS'
@@ -323,7 +393,8 @@ class SampleTable(db.Model):
     Sex = db.Column(db.String(50))
     Age = db.Column(db.String(50))
     modulab_id = db.Column(db.String(50))
-    report_changes = db.Column(db.String(50)) 
+    report_changes = db.Column(db.String(50))
+    virtual_panel = db.Column(db.String(50))
 
     def __repr__(self):
         return '<Sample %r>' % self.lab_id

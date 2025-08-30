@@ -1,0 +1,35 @@
+<div class='footer'>
+  <!-- <p style="position:absolute;top: 20px;right:-1cm;float:right;font-size:6px;transform: rotate(-90deg);">LDG_INFO_004_V7</p> -->
+  <hr style="border: 0.7px solid #e5e6eb;width:100%;margin:0px;padding:0px;"> 
+  <div class="row" style="display: flex; justify-content: space-between; margin-top:0px; position: relative;">
+    <div style="flex: 1; text-align: left; margin-top:0px;">
+      {% if lowqual_msg %}
+      <img src="" alt="" style="width:60px;height:70px;margin:0px;padding:0px;">
+      {% else %}
+        {% if no_enac %}
+        {% else %}
+        <div style="display: flex; align-items: center; white-space: nowrap;">
+          <img src="ISO 15189_WEB 1 exp_1496 _ LE2732.png" alt="" style="width:60px;height:70px;margin:0;padding:0; flex-shrink: 0;">
+          <span style="margin-left: 15px; font-size: 11px; white-space: nowrap;">
+            * Les activitats marcades no estan cobertes per l'acreditació ENAC
+          </span>
+        </div>
+        {% endif %}
+      {% endif %}
+    </div>
+  
+    <div style="flex: 1; text-align: center; margin-top:0px;">
+      <!-- Empty or used for spacing -->
+    </div>
+  
+    <div style="flex: 1; position: relative;">
+      <img src="logo_AP.png" alt="" style="width:53px;height:56px;position: absolute;top: 0;right: 0.5cm;"/>
+      <p style="position: absolute; top: 20px; right: -1cm; font-size: 6px; transform: rotate(-90deg);">
+        LDG_INFO_004_V10
+      </p>
+      
+    </div>
+  </div>
+  
+</div>
+

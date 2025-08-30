@@ -2,6 +2,7 @@ from app import app, db
 import os
 import binascii
 import requests
+import io
 import re
 from rq import Queue, cancel_job
 from uuid import uuid4
@@ -23,7 +24,7 @@ from flask import (
 from flask_wtf import FlaskForm
 from flask_sqlalchemy import SQLAlchemy
 from flask_sslify import SSLify
-from collections import defaultdict
+from collections import defaultdict, Counter
 from weasyprint import HTML
 from jinja2 import Environment, FileSystemLoader
 from sqlalchemy import (
@@ -65,7 +66,7 @@ from app.models import (
     GeneVariantSummary
 )
 from app.plots import var_location_pie, cnv_plot, basequal_plot, adapters_plot, snv_plot, vaf_plot
-
+from config import api_gene_panels
 
 class AllFusions(db.Model):
     __tablename__ = "ALL_FUSIONS"
@@ -89,6 +90,20 @@ class AllFusions(db.Model):
     fusion_diseases = db.Column(db.String(100))
     flanking_genes = db.Column(db.String(100))
 
+
+def parse_hgvsg(hgvsg_str):
+    """
+    Parse chr, pos, ref, alt from HGVSg string like 'chr6:g.117656917C>T'
+    Returns (chrom, pos, ref, alt) or default '.' values if invalid
+    """
+    if not hgvsg_str or "g." not in hgvsg_str:
+        return ".", ".", ".", "."
+
+    match = re.match(r"^(chr[\w]+):g\.(\d+)([ACGT]+)>([ACGT]+)$", hgvsg_str)
+    if match:
+        chrom, pos, ref, alt = match.groups()
+        return chrom, pos, ref, alt
+    return ".", ".", ".", "."
 
 # # Define version control class
 class AlchemyEncoder(json.JSONEncoder):
@@ -188,18 +203,6 @@ def update_patient_info():
         service = data["service"]
         sample_block = data["sample_block"]
 
-        print(sex, age, sample_block)
-
-        # change to YYYY-MM-DD
-        # tmp_date = biopsy_date.split("/")
-        # if len(tmp_date) == 3:
-        #     biopsy_date = tmp_date[1]+"-"+tmp_date[0]+"-"+tmp_date[2]
-
-        # change to YYYY-MM-DD
-        # tmp_date = recieved_date.split("/")
-        # if len(tmp_date) == 3:
-        #     recieved_date = tmp_date[1]+"-"+tmp_date[0]+"-"+tmp_date[2]
-
         sample = SampleTable.query.filter_by(lab_id=old_lab_id, run_id=run_id).first()
         if sample:
             sample.lab_id = lab_id
@@ -217,15 +220,14 @@ def update_patient_info():
             sample.sample_block = sample_block
             sample.service = service
             sample.date_original_biopsy = biopsy_date
-            sample.petition_date = biopsy_date
+            sample.petition_date = recieved_date
             db.session.commit()
-        print(ext1_id, ext2_id, ext3_id, biopsy_date)
 
         petition = (
-            Petition.query.filter_by(AP_code=lab_id).first()
+            Petition.query.filter_by(AP_code=old_lab_id).first()
         )
         if petition:
-            petition.AP_code = ext1_id
+            petition.AP_code = lab_id
             petition.HC_code = ext2_id
             petition.CIP_code = ext3_id
             petition.Tumour_pct = tumor_pct
@@ -245,7 +247,7 @@ def update_patient_info():
 
             if recieved_date:
                 petition.Petition_date = recieved_date
-                sample.petition_date = biopsy_date
+                sample.petition_date = recieved_date
             db.session.commit()
 
 
@@ -296,19 +298,98 @@ def update_patient_info():
 
 @app.route('/add_new_variant', methods=['POST'])
 def add_new_variant():
-    data = request.json
-    
-    # Process tier_catsalut logic
-    tier = data.get("tier_catsalut")
-    if tier == "4":
-        data["tier_catsalut"] = "None"  # Replace "4" with "None"
+    data = request.json or {}
 
-    # Create a new entry
-    new_entry = TherapeuticTable(**data)
-    db.session.add(new_entry)
-    db.session.commit()
+    # Remap tier if needed
+    if data.get("tier_catsalut") == "4":
+        data["tier_catsalut"] = "None"
+
+    # Clean access helper
+    def get(field, default="."):
+        return data.get(field) or default
     
+    chrom, pos, ref, alt = parse_hgvsg(get("hgvsg"))
+    # Construct var_json in required nested structure
+    var_json = {
+        "CHROM": chrom,  # Could be enhanced to infer from hgvsg
+        "POS": pos,        # Same here — unless provided
+        "ID": ".",
+        "REF": ref,        # Could be parsed from hgvsg, optionally
+        "ALT": alt,
+        "QUAL": ".",
+        "FILTER": "manual",
+        "INFO": {
+            "DP": get("depth"),
+            "AF": get("allele_frequency"),
+            "AD": get("read_support"),
+            "CSQ": [{
+                "SYMBOL": get("gene"),
+                "Feature": get("enst_id"),
+                "HGVSc": get("hgvsc"),
+                "HGVSp": get("hgvsp"),
+                "Consequence": get("consequence"),
+                "HGVSg": get("hgvsg"),
+            }],
+            "REFSEQ_ANALYSIS_ISOFORM" : get("enst_id")
+        }
+    }
+
+    # Create DB entry
+    new_variant = TherapeuticTable(
+        user_id="manual",
+        lab_id=get("lab_id"),
+        run_id=get("run_id"),
+        ext1_id=get("ext1_id"),
+        ext2_id=get("ext2_id"),
+        gene=get("gene"),
+        enst_id=get("enst_id"),
+        hgvsg=get("hgvsg"),
+        hgvsc=get("hgvsc"),
+        hgvsp=get("hgvsp"),
+        variant_type=get("variant_type"),
+        exon=get("exon"),
+        intron=get("intron"),
+        depth=get("depth"),
+        allele_frequency=get("allele_frequency"),
+        read_support=get("read_support"),
+        tier_catsalut=get("tier_catsalut"),
+        classification=get("classification"),
+        consequence=get("consequence"),
+        tumor_type=".",
+        var_json=json.dumps(var_json),
+        validated_assessor="no",
+        validated_bioinfo="no",
+        db_detected_number=0,
+        db_sample_count=0,
+        db_detected_freq=0.0,
+        blacklist="no"
+    )
+
+    db.session.add(new_variant)
+    db.session.commit()
+
     return jsonify({"info": "S'ha enregistrat una nova variant!"}), 201
+
+
+# @app.route('/add_new_variant', methods=['POST'])
+# def add_new_variant():
+#     data = request.json
+    
+#     # Process tier_catsalut logic
+#     tier = data.get("tier_catsalut")
+#     if tier == "4":
+#         data["tier_catsalut"] = "None"  # Replace "4" with "None"
+
+
+
+
+
+#     # Create a new entry
+#     new_entry = TherapeuticTable(**data)
+#     db.session.add(new_entry)
+#     db.session.commit()
+    
+#     return jsonify({"info": "S'ha enregistrat una nova variant!"}), 201
 
 @app.route("/modify_tier", methods=["POST"])
 #@login_required
@@ -341,21 +422,66 @@ def modify_tier():
 @app.route("/download_summary_qc/<run_id>")
 #@login_required
 def download_summary_qc(run_id):
-    """ """
-    uploads = os.path.join(app.config["STATIC_URL_PATH"], run_id, "GenOncology-Dx")
-    summary_qc_xlsx = "GenOncology-Dx_qc.xlsx"
-    test_path = os.path.join(uploads, summary_qc_xlsx)
-    print(test_path)
-    if not os.path.isfile(test_path):
-        summary_qc_xlsx = f"{run_id}_qc.xlsx"
-        test_path = os.path.join(uploads, summary_qc_xlsx)
-    if not os.path.isfile(test_path):
-        summary_qc_xlsx = f"{run_id}_qc.xlsx"
-        uploads = os.path.join(app.config["STATIC_URL_PATH"], run_id)
+    base_path = os.path.join(app.config["STATIC_URL_PATH"], run_id)
+    sources = ["GenOncology-Dx", "GenOncology-Dx_1.5"]
+    filenames = [f"GenOncology-Dx_qc.xlsx", f"{run_id}_qc.xlsx"]
 
-    print(uploads, summary_qc_xlsx)
-    return send_from_directory(
-        directory=uploads, path=summary_qc_xlsx, as_attachment=True
+    overall_data = []
+    overall_header = None
+    lost_exons_data = {}
+
+    for source in sources:
+        folder = os.path.join(base_path, source)
+        if not os.path.isdir(folder):
+            continue
+        for fname in filenames:
+            fpath = os.path.join(folder, fname)
+            if os.path.isfile(fpath):
+                try:
+                    xls = pd.read_excel(fpath, sheet_name=None, header=None)
+
+                    # === Handle Overall_Metrics sheet ===
+                    if "Overall_Metrics" in xls:
+                        df = xls["Overall_Metrics"]
+                        if df.shape[0] >= 3:
+                            if overall_header is None:
+                                overall_header = df.iloc[0:2]
+                            data_part = df.iloc[2:]
+                            data_part = data_part[data_part.iloc[:, 0] != "Ext1 ID"]
+                            overall_data.append(data_part)
+
+                    # === Handle Lost_Exons sheet ===
+                    if "Lost_Exons" in xls:
+                        df = xls["Lost_Exons"]
+                        if df.shape[0] >= 3:
+                            lost_exons_data[source] = df  # keep full with header
+                except Exception as e:
+                    print(f"Error processing {fpath}: {e}")
+
+    # Stop if nothing was read
+    if overall_header is None and not lost_exons_data:
+        return "No valid data found in any input file.", 404
+
+    # Write output
+    output = io.BytesIO()
+    with pd.ExcelWriter(output, engine="openpyxl") as writer:
+        # Sheet 1: Overall_Metrics
+        if overall_header is not None and overall_data:
+            merged_overall = pd.concat(overall_data, ignore_index=True)
+            overall_header.to_excel(writer, index=False, header=False, startrow=0, sheet_name="Overall_Metrics")
+            merged_overall.to_excel(writer, index=False, header=False, startrow=2, sheet_name="Overall_Metrics")
+
+        # Sheet 2 and 3: Lost_Exons from each source
+        for source, df in lost_exons_data.items():
+            sheet_name = f"Lost_Exons_{source}"
+            df.to_excel(writer, index=False, header=False, sheet_name=sheet_name)
+
+    output.seek(0)
+    return send_file(
+        output,
+        mimetype="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        download_name=f"{run_id}_summary_qc.xlsx",
+        as_attachment=True,
     )
 
 
@@ -373,9 +499,14 @@ def download_sample_bam(run_id, sample):
     uploads = os.path.join(
         app.config["STATIC_URL_PATH"], run_id, "GenOncology-Dx", sample, "BAM_FOLDER"
     )
-    
+    if not os.path.isdir(uploads):
+        uploads = os.path.join(
+            app.config["STATIC_URL_PATH"], run_id, "GenOncology-Dx_1.5", sample, "BAM_FOLDER"
+        )
+
     expected_bam_path = os.path.join(uploads, bam_file)
     if not os.path.isfile(expected_bam_path):
+        print("here")
         uploads = os.path.join(
             app.config["STATIC_URL_PATH"], run_id, sample, "BAM_FOLDER"
         )
@@ -396,6 +527,11 @@ def download_sample_bai(run_id, sample):
     uploads = os.path.join(
         app.config["STATIC_URL_PATH"], run_id, "GenOncology-Dx", sample, "BAM_FOLDER"
     )
+    if not os.path.isdir(uploads):
+        uploads = os.path.join(
+            app.config["STATIC_URL_PATH"], run_id, "GenOncology-Dx_1.5", sample, "BAM_FOLDER"
+        )
+
 
     expected_bai_path = os.path.join(uploads, bai_file)
     print(expected_bai_path)
@@ -411,6 +547,7 @@ def download_sample_bai(run_id, sample):
 @app.route("/download_sample_vcf/<run_id>/<sample>")
 #@login_required
 def download_sample_vcf(run_id, sample):
+
     uploads = os.path.join(
         app.config["STATIC_URL_PATH"], run_id + "/" + sample + "/VCF_FOLDER/"
     )
@@ -425,6 +562,16 @@ def download_sample_vcf(run_id, sample):
             sample,
             "VCF_FOLDER",
         )
+    if not os.path.isfile(vcf_file_path):
+        uploads = os.path.join(
+            app.config["STATIC_URL_PATH"],
+            run_id,
+            "GenOncology-Dx_1.5",
+            sample,
+            "VCF_FOLDER",
+        )
+
+
 
     lancet_vcf_path = os.path.join(uploads, lancet_vcf_file)
     if os.path.isfile(lancet_vcf_path):
@@ -491,8 +638,12 @@ def show_sample_details(run_id, sample, sample_id, active):
     sample_info = (
         SampleTable.query.filter_by(lab_id=sample).filter_by(run_id=run_id).first()
     )
-    if sample_info.ext1_id == ".":
-        sample_info.ext1_id = sample_info.lab_id
+    if sample_info:
+        if hasattr(sample_info, "ext1_id"):
+            if sample_info.ext1_id == ".":
+                sample_info.ext1_id = sample_info.lab_id
+        else:
+            sample_info.ext1_id = sample
 
     petition_info = (
         Petition.query.filter_by(AP_code=sample_info.ext1_id).first()
@@ -562,20 +713,24 @@ def show_sample_details(run_id, sample, sample_id, active):
     n_samples = len(unique_samples)
 
     for var in therapeutic_variants:
+        try:
+            variant_dict = json.loads(var.var_json)
+        except:
+            var.refseq = var.enst_id
+        else:
+            var.refseq = variant_dict["INFO"]["REFSEQ_ANALYSIS_ISOFORM"]
+
+ 
         n_var = TherapeuticTable.query.filter_by(gene=var.gene, hgvsg=var.hgvsg).count()
         var_kb = GeneVariantSummary.query.filter_by(gene=var.gene, hgvsg=var.hgvsg).first()
         if var_kb:
             var_kb_str = var_kb.data_json
             # var.kb = json.loads(var_kb_str.encode('utf-8').decode('utf-8'))
-
             if isinstance(var_kb_str, bytes):
                 var_kb_str = var_kb_str.decode('utf-8')  # Decode bytes to string
-                print("here")
-                print(var_kb_str)
 
             # Parse the JSON string into a Python dictionary
             var.kb = json.loads(var_kb_str)
-            print(var.kb)
 
         var.db_detected_number = n_var
         var.db_sample_count = n_samples
@@ -588,6 +743,7 @@ def show_sample_details(run_id, sample, sample_id, active):
                     tier_variants["tier_II"].append(var)
             if var.tier_catsalut == "3":
                 if var not in tier_variants["tier_III"]:
+
                     tier_variants["tier_III"].append(var)
             if var.tier_catsalut == "":
                 if var not in tier_variants["no_tier"]:
@@ -599,6 +755,15 @@ def show_sample_details(run_id, sample, sample_id, active):
                 bad_qual_variants.append(var)
 
     for var in other_variants:
+
+        variant_dict = json.loads(var.var_json)
+        try: 
+            variant_dict["INFO"]["REFSEQ_ANALYSIS_ISOFORM"]
+        except:
+            var.refseq = var.enst_id
+        else:
+            var.refseq = variant_dict["INFO"]["REFSEQ_ANALYSIS_ISOFORM"]
+            
         n_var = OtherVariantsTable.query.filter_by(gene=var.gene, hgvsg=var.hgvsg).count()
         var_kb = GeneVariantSummary.query.filter_by(gene=var.gene, hgvsg=var.hgvsg).first()
 
@@ -633,6 +798,15 @@ def show_sample_details(run_id, sample, sample_id, active):
 
     rare_variants2 = []
     for var in rare_variants:
+        variant_dict = json.loads(var.var_json)
+
+        try: 
+            variant_dict["INFO"]["REFSEQ_ANALYSIS_ISOFORM"]
+        except:
+            var.refseq = var.enst_id
+        else:
+            var.refseq = variant_dict["INFO"]["REFSEQ_ANALYSIS_ISOFORM"]
+
         if var.hgvsg == ".":
             continue
         else:
@@ -722,19 +896,62 @@ def show_sample_details(run_id, sample, sample_id, active):
 
     read2_basequal_dict = fastp_dict["read2_before_filtering"]["quality_curves"]
     plot_read2 = basequal_plot(read2_basequal_dict)
-
-    cnv_plotdata = json.loads(sample_info.cnv_json)
+    cnv_plotdata = {}
+    try:
+        cnv_plotdata = json.loads(sample_info.cnv_json)
+    except:
+        pass
+    
     plot_cnv = ""
     pie_plot = ""
     bar_plot = ""
     plot_cnv = cnv_plot(cnv_plotdata)
+
+
+    def chrom_key(chrom):
+        m = re.search(r'(\d+)$', str(chrom))
+        if m:
+            return int(m.group(1))
+        else:
+            # non-numeric chrs (like X, Y, MT) go after 1–22
+            return float('inf')
+
+    cnv_entries = []
+    for k,v in cnv_plotdata.items():
+        try:
+            region = float(k)
+        except ValueError:
+            continue    
+
+        tmp_coordinates = re.split(r":|-",  v["Coordinates"])
+        chromosome = tmp_coordinates[0]
+        pos = tmp_coordinates[1]
+
+        cnv_entries.append({
+            "region":        region,
+            "roi_log2":      float(v.get("roi_log2",0)),
+            "segment_log2":  float(v.get("segment_log2",0)),
+            "gene":          v.get("Gene",""),
+            "chromosome":    chromosome,  # <— ensure this is set
+            "position": pos
+        })
+   
+    cnv_entries.sort(
+        key=lambda d: (
+            chrom_key(d["chromosome"]),
+            d["region"]
+        )
+    )
+
+
+    # then pass json.dumps(cnv_entries) as cnv_data
+
     pie_plot, bar_plot = var_location_pie(rare_variants)
     read1_adapters_dict = fastp_dict["adapter_cutting"]["read1_adapter_counts"]
     read2_adapters_dict = fastp_dict["adapter_cutting"]["read2_adapter_counts"]
     r1_adapters_plot = adapters_plot(read1_adapters_dict, read2_adapters_dict)
 
     if petition_info:
-
         pattern = r'^\d{4}-\d{2}-\d{2}'
         match = re.match(pattern, petition_info.Date_original_biopsy)
         if match:
@@ -752,15 +969,16 @@ def show_sample_details(run_id, sample, sample_id, active):
             petition_info.Petition_date = newdate
             db.session.commit()
 
+    cons_counter = Counter()
+    vartype_counter = Counter()
+    for var in rare_variants:
+        for entry in re.split(r"[,&]", var.consequence or ""):
+            entry = entry.strip()
+            if entry:
+                cons_counter[entry] += 1
+        if var.variant_type:
+            vartype_counter[var.variant_type] += 1
 
-    #     try:
-    #         tmp_date =petition_info.Petition_date.replace("-", "/").replace(" 00:00:00", "")
-    #     except:
-    #         pass
-    #     else:
-    #         tmp_date_list = tmp_date.split("/")
-    #         newdate = f"{tmp_date_list[2]}/{tmp_date_list[1]}/{tmp_date_list[0]}"
-    #         petition_info.Petition_date = newdate
 
     return render_template(
         "show_sample_details.html",
@@ -768,6 +986,7 @@ def show_sample_details(run_id, sample, sample_id, active):
         active=active,
         petition_info=petition_info,
         sample_info=sample_info,
+        sample_id=sample_id,
         sample_variants=sample_variants,
         summary_qc_dict=summary_qc_dict,
         fastp_dict=fastp_dict,
@@ -785,6 +1004,16 @@ def show_sample_details(run_id, sample, sample_id, active):
         vaf_plot=plot_vaf,
         snv_plot=plot_snv,
         all_cnas=all_cnas,
+
+
+
+        snv_data=json.dumps(snv_dict),
+        vaf_data=json.dumps(vaf_list),
+        cons_data=json.dumps(cons_counter),
+        vartype_data=json.dumps(vartype_counter),
+        cnv_data=json.dumps(cnv_entries),
+
+
         all_fusions=all_fusions,
         vcf_folder=vcf_folder,
         All_jobs=All_jobs,
@@ -1117,62 +1346,72 @@ def redo_action(action_id, run_id, sample, sample_id, active):
     "/remove_variant/<run_id>/<sample>/<sample_id>/<var_id>/<var_classification>",
     methods=["GET", "POST"],
 )
-#@login_required
 def remove_variant(run_id, sample, sample_id, var_id, var_classification):
-
+    """Delete a variant. Return JSON if AJAX, else flash+redirect."""
+    # 1) Locate the variant in the appropriate table
     origin_table = None
-    target_table = None
+    variant = None
+
     if var_classification == "Therapeutic":
         origin_table = "TherapeuticTable"
-        variant = TherapeuticTable.query.filter_by(id=var_id).first()
-    if var_classification == "Other":
+        variant = TherapeuticTable.query.get(var_id)
+    elif var_classification == "Other":
         origin_table = "OtherVariantsTable"
-        variant = OtherVariantsTable.query.filter_by(id=var_id).first()
-    if var_classification == "Rare":
+        variant = OtherVariantsTable.query.get(var_id)
+    elif var_classification == "Rare":
         origin_table = "RareVariantsTable"
-        variant = RareVariantsTable.query.filter_by(id=var_id).first()
+        variant = RareVariantsTable.query.get(var_id)
 
+    msg = "No s'ha trobat la variant."
     if variant:
-        db.session.delete(variant)
-        db.session.commit()
+        hgvsg = variant.hgvsg or var_id
 
-        # instantiate a VersionControl object and commit the change
+        # --- your VersionControl bookkeeping ---
         action_dict = {
             "origin_table": origin_table,
             "origin_action": "delete",
             "redo": True,
             "target_table": None,
             "target_action": None,
+            # serialize the deleted record
             "action_json": json.dumps(variant, cls=AlchemyEncoder),
-            "msg": " Variant " + variant.hgvsg + " eliminada",
+            "msg": f"Variant {hgvsg} eliminada"
         }
         action_str = json.dumps(action_dict)
-        action_name = f"Mostra: {sample} variant {variant.hgvsg} eliminada"
-        now = datetime.now()
-        dt = now.strftime("%d/%m/%y-%H:%M:%S")
+        action_name = f"Mostra: {sample} variant {hgvsg} eliminada"
+        dt = datetime.now().strftime("%d/%m/%y-%H:%M:%S")
         vc = VersionControl(
-            User_id=7,
+            User_id=7,  # <-- you should pull the real current_user.id here
             Action_id=generate_key(16),
             Action_name=action_name,
             Action_json=action_str,
-            Modified_on=dt,
+            Modified_on=dt
         )
         db.session.add(vc)
+        # --- end VersionControl ---
+
+        # now delete the variant itself
+        db.session.delete(variant)
         db.session.commit()
 
-        variant_out = ""
-        if variant.hgvsg:
-            variant_out = variant.hgvsg
-            msg = ("S'ha eliminat correctament la variant {}").format(variant.hgvsg)
-            flash(msg, "success")
+        msg = f"S'ha eliminat correctament la variant {hgvsg}"
+        flash(msg, "success")
 
-    sample_info = (
-        SampleTable.query.filter_by(lab_id=sample).filter_by(run_id=run_id).first()
-    )
+    # 2) If this was an XHR (AJAX) request, return JSON directly
+    if request.headers.get("X-Requested-With") == "XMLHttpRequest":
+        return jsonify({
+            "status": "ok" if variant else "error",
+            "message": msg,
+            "deleted_var_id": var_id
+        })
+
+    # 3) Otherwise, fall back to your original redirect+flash behavior
+    sample_info = SampleTable.query.filter_by(
+        lab_id=sample, run_id=run_id
+    ).first()
     vcf_folder = sample_info.sample_db_dir.replace(
         "REPORT_FOLDER", "VCF_FOLDER/IGV_SNAPSHOTS"
     )
-
     return redirect(
         url_for(
             "show_sample_details",
@@ -1183,6 +1422,78 @@ def remove_variant(run_id, sample, sample_id, var_id, var_classification):
             active="Therapeutic",
         )
     )
+
+
+# @app.route(
+#     "/remove_variant/<run_id>/<sample>/<sample_id>/<var_id>/<var_classification>",
+#     methods=["GET", "POST"],
+# )
+# #@login_required
+# def remove_variant(run_id, sample, sample_id, var_id, var_classification):
+
+#     origin_table = None
+#     target_table = None
+#     if var_classification == "Therapeutic":
+#         origin_table = "TherapeuticTable"
+#         variant = TherapeuticTable.query.filter_by(id=var_id).first()
+#     if var_classification == "Other":
+#         origin_table = "OtherVariantsTable"
+#         variant = OtherVariantsTable.query.filter_by(id=var_id).first()
+#     if var_classification == "Rare":
+#         origin_table = "RareVariantsTable"
+#         variant = RareVariantsTable.query.filter_by(id=var_id).first()
+
+#     if variant:
+#         db.session.delete(variant)
+#         db.session.commit()
+
+#         # instantiate a VersionControl object and commit the change
+#         action_dict = {
+#             "origin_table": origin_table,
+#             "origin_action": "delete",
+#             "redo": True,
+#             "target_table": None,
+#             "target_action": None,
+#             "action_json": json.dumps(variant, cls=AlchemyEncoder),
+#             "msg": " Variant " + variant.hgvsg + " eliminada",
+#         }
+#         action_str = json.dumps(action_dict)
+#         action_name = f"Mostra: {sample} variant {variant.hgvsg} eliminada"
+#         now = datetime.now()
+#         dt = now.strftime("%d/%m/%y-%H:%M:%S")
+#         vc = VersionControl(
+#             User_id=7,
+#             Action_id=generate_key(16),
+#             Action_name=action_name,
+#             Action_json=action_str,
+#             Modified_on=dt,
+#         )
+#         db.session.add(vc)
+#         db.session.commit()
+
+#         variant_out = ""
+#         if variant.hgvsg:
+#             variant_out = variant.hgvsg
+#             msg = ("S'ha eliminat correctament la variant {}").format(variant.hgvsg)
+#             flash(msg, "success")
+
+#     sample_info = (
+#         SampleTable.query.filter_by(lab_id=sample).filter_by(run_id=run_id).first()
+#     )
+#     vcf_folder = sample_info.sample_db_dir.replace(
+#         "REPORT_FOLDER", "VCF_FOLDER/IGV_SNAPSHOTS"
+#     )
+
+#     return redirect(
+#         url_for(
+#             "show_sample_details",
+#             run_id=run_id,
+#             sample=sample,
+#             sample_id=sample_id,
+#             vcf_folder=vcf_folder,
+#             active="Therapeutic",
+#         )
+#     )
 
 def myvariant_request(hgvsg: str) -> dict:
     """ """
@@ -1273,27 +1584,173 @@ def show_therapeutic_details(sample, run_id, entry_id, var_classification):
     )
 
 
+def get_genes_from_panel(panel):
+    """ """
+    gene_panel_version = ""
+    url_api_panel = f"{api_gene_panels}/api/gene_panels/{panel}/latest_version"
+    response = requests.get(url_api_panel)
+    if response.status_code == 200:
+        response_json = response.json()
+        gene_panel_version = int(response_json["panel_version"])
+
+    url_api_panel = f"{api_gene_panels}/api/gene_panels/{panel}/v{gene_panel_version}"
+    response = requests.get(url_api_panel)
+    genes = []
+    if response.status_code == 200:
+        response_json = response.json()
+        genes = response_json["Genes"]
+        clean_genes = []
+        for gene in genes:
+            if gene == "":
+                continue
+            clean_genes.append(gene)
+        genes = clean_genes
+    return genes
+
+def get_subpanels_from_panel(panel):
+    """ """
+    url_api_panel = f"{api_gene_panels}/api/gene_panels/{panel}/latest_version"
+    response = requests.get(url_api_panel)
+    if response.status_code == 200:
+        response_json = response.json()
+        gene_panel_version = int(response_json["panel_version"])
+
+    url_api_panel = f"{api_gene_panels}/api/gene_panels/{panel}/v{gene_panel_version}"
+    response = requests.get(url_api_panel)
+    if response.status_code == 200:
+        response_json = response.json()
+        subpanels = response_json["subpanels"]
+        return subpanels
+
+
+@app.route('/new_virtual_panel/<panel>')
+def new_virtual_panel(panel):
+    """ """
+    panel_genes = get_genes_from_panel(panel)
+    url_api_panel = f"{api_gene_panels}/api/gene_panels/{panel}/latest_version"
+    response = requests.get(url_api_panel)
+    panel_version= "."
+
+    subpanels = get_subpanels_from_panel(panel)
+    if response.status_code == 200:
+        response_json = response.json()
+        panel_version = int(response_json["panel_version"])
+
+    return render_template("virtual_panels.html", panel=panel, panel_genes=panel_genes, 
+        panel_version=panel_version, subpanels=subpanels, title="Nou panell virtual")
+
+@app.route('/save_virtual_panel', methods=['POST'])
+def save_virtual_panel():
+    """ """
+    data = request.get_json()
+    parent_panel = data["parent_panel"]
+    panel_version = data["panel_version"]
+    name = data["virtual_panel_name"]
+    genes = data["genes"]
+
+
+            # body: JSON.stringify({
+            #     "virtual_panel_name": virtualPanelName,
+            #     "genes": genesList,
+            #     "parent_panel": parent_panel,
+            #     "panel_version": panel_version
+            # })
+
+    old_virtual_panel_name = ""
+    if "old_virtual_panel_name" in data:
+        old_virtual_panel_name = data["old_virtual_panel_name"]
+
+    if old_virtual_panel_name:
+        # Update data from VirtualPanel mongo collection
+        # virtual_panel = VirtualPanel.objects(name=old_virtual_panel_name).first()
+        # virtual_panel.update(set__name=name)
+        # virtual_panel.update(set__parent_panel=parent_panel)
+        # virtual_panel.update(set__genes = genes)
+        # virtual_panel.update(set__hpo_terms = hpo_terms)Ç
+        
+        
+        # Now update data from the Gene Panels API (external to COMPENDIUM)
+        subpanel_data = {
+            'old_subpanel_name': old_virtual_panel_name,
+            'new_subpanel_name': name,
+            'panel_version': panel_version,
+            'genes': genes,
+        }
+        url_api_panel = f"{api_gene_panels}/api/gene_panels/update_subpanel/{parent_panel}/{old_virtual_panel_name}"
+        
+        try:
+            response = requests.post(url_api_panel, json=subpanel_data)
+            if response.status_code == 200:
+                msg = f"S'ha actualitzat el panell virtual {name}"
+            else:
+                msg = f"error {name}"
+                return make_response(jsonify(msg), 400)
+        except Exception as e:
+            msg = "error"
+        return make_response(jsonify(msg), 200)
+
+    else:
+        # virtual_panel = VirtualPanel.objects(name=name).first()
+        # if not virtual_panel:
+        #     new_virtual_panel = VirtualPanel(
+        #         name=name,
+        #         parent_panel=parent_panel,
+        #         panel_version=panel_version,
+        #         genes=genes,
+        #         hpo_terms=hpo_terms
+        #     )
+        #     new_virtual_panel.save()
+
+        # Prepare data for the subpanel addition
+        subpanel_data = {
+            'subpanel_name': name,
+            'panel_version': panel_version,
+            'genes': genes,
+        }
+
+        url_api_panel = f"{api_gene_panels}/api/gene_panels/add_subpanel/{parent_panel}"
+        try:
+            response = requests.post(url_api_panel, json=subpanel_data)
+            if response.status_code == 201:
+                msg = f"S'ha creat el panell virtual {name}"
+            else:
+                msg = f"S'ha actualitzat el panell virtual {name}"
+
+        except Exception as e:
+            # Log or handle exception during the API call
+            pass  # Add logic to handle or log the exception
+
+        return make_response(jsonify(msg), 200)
+
+
 @app.route("/download_report/<run_id>/<sample>")
 #@login_required
 def download_report(run_id, sample):
     sample_info = SampleTable.query.filter_by(run_id=run_id, lab_id=sample).first()
+    uploads = ""
+    try:
+        if not sample_info.report_pdf.endswith(".pdf"):
+            sample_info.report_pdf = sample_info.report_pdf + ".pdf"
 
-    if not sample_info.report_pdf.endswith(".pdf"):
-        sample_info.report_pdf = sample_info.report_pdf + ".pdf"
+        if sample_info.latest_short_report_pdf:
+            if not sample_info.latest_short_report_pdf.endswith(".pdf"):
+                sample_info.latest_short_report_pdf = sample_info.latest_short_report_pdf + ".pdf"
+            report_file = os.path.basename(sample_info.latest_short_report_pdf)
+            uploads = os.path.dirname(sample_info.latest_short_report_pdf)
+        else:
+            report_file = os.path.basename(sample_info.report_pdf)
+            uploads = os.path.dirname(sample_info.latest_short_report_pdf)
 
-    if sample_info.latest_report_pdf:
-        if not sample_info.latest_report_pdf.endswith(".pdf"):
-            sample_info.latest_report_pdf = sample_info.latest_report_pdf + ".pdf"
-        report_file = os.path.basename(sample_info.latest_report_pdf)
-        uploads = os.path.dirname(sample_info.latest_report_pdf)
-    else:
-        report_file = os.path.basename(sample_info.report_pdf)
-        uploads = os.path.dirname(sample_info.latest_report_pdf)
-    if not os.path.isfile(os.path.join(uploads, report_file)):
-        print("here")
-        msg = f"Informe no disponible per a la mostra {sample}"
-        flash(msg, "warning")
-        return redirect(url_for("show_run_details", run_id=run_id))
+        if not os.path.isfile(os.path.join(uploads, report_file)):
+            msg = f"Informe no disponible per a la mostra {sample}"
+            flash(msg, "warning")
+            return redirect(url_for("show_run_details", run_id=run_id))
+
+    except:
+        if not os.path.isfile(os.path.join(uploads, report_file)):
+            msg = f"Informe no disponible per a la mostra {sample}"
+            flash(msg, "warning")
+            return redirect(url_for("show_run_details", run_id=run_id))
 
     return send_from_directory(directory=uploads, path=report_file, as_attachment=True)
 
@@ -1310,7 +1767,6 @@ def generate_new_report(
     sample_info = (
         SampleTable.query.filter_by(lab_id=sample).filter_by(run_id=run_id).first()
     )
-
     
     rare_variants = (
         RareVariantsTable.query.filter_by(lab_id=sample)
@@ -1333,6 +1789,35 @@ def generate_new_report(
         .distinct()
         .all()
     )
+
+    for variant in high_impact_variants:
+        variant_dict = json.loads(variant.var_json)
+        try: 
+            variant_dict["INFO"]["REFSEQ_ANALYSIS_ISOFORM"]
+        except:
+            variant.refseq = variant.enst_id
+        else:
+            variant.refseq = variant_dict["INFO"]["REFSEQ_ANALYSIS_ISOFORM"]
+
+    for variant in actionable_variants:
+        variant_dict = json.loads(variant.var_json)
+        try: 
+            variant_dict["INFO"]["REFSEQ_ANALYSIS_ISOFORM"]
+        except:
+            variant.refseq = variant.enst_id
+        else:
+            variant.refseq = variant_dict["INFO"]["REFSEQ_ANALYSIS_ISOFORM"]
+
+
+    for variant in rare_variants:
+        variant_dict = json.loads(variant.var_json)
+        try: 
+            variant_dict["INFO"]["REFSEQ_ANALYSIS_ISOFORM"]
+        except:
+            variant.refseq = variant.enst_id
+        else:
+            variant.refseq = variant_dict["INFO"]["REFSEQ_ANALYSIS_ISOFORM"]
+
     lost_exons = (
         LostExonsTable.query.filter_by(lab_id=sample).filter_by(run_id=run_id).all()
     )
@@ -1349,13 +1834,13 @@ def generate_new_report(
 
     petition_info = Petition.query.filter_by(AP_code=sample_info.ext1_id).first()
     if petition_info:
-
         print(petition_info.Petition_date)
         tmp_date = petition_info.Petition_date.split("-")
         if len(tmp_date) == 1:
             tmp_date = petition_info.Petition_date.split("/")
 
         petition_dict["Petition_date"] = f"{tmp_date[0]}/{tmp_date[1]}/{tmp_date[2]}"
+        petition_dict["Date_original_biopsy"]  = petition_info.Petition_date
 
         tmp_date = petition_info.Date_original_biopsy.split("-")
         if len(tmp_date) == 1:
@@ -1385,6 +1870,7 @@ def generate_new_report(
     seen_vars = set()
     for var in actionable_variants:
         var_str = var.to_string()
+        # var.refseq = 
         if var_str in seen_vars:
             continue
         seen_vars.add(var_str)

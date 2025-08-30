@@ -1,0 +1,295 @@
+{% extends "base.html" %}
+
+{% block styles %}
+<style>
+  pre { white-space: pre-wrap; }
+  .font-mono { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace; }
+  .wrap { word-break: break-word; }
+  .stat-line { display:flex; align-items:center; flex-wrap:wrap; }
+  .stat-line > * { margin-right:.5rem; }
+  .clip { max-width: 100%; overflow-wrap:anywhere; }
+  .preview { max-height: 10rem; overflow: hidden; position: relative; }
+  .preview--fade:after {
+    content:"";
+    position:absolute; left:0; right:0; bottom:0; height:3rem;
+    background: linear-gradient(to bottom, rgba(255,255,255,0), #fff);
+  }
+  .btn-icon { padding: .25rem .5rem; line-height: 1; }
+</style>
+{% endblock styles %}
+
+{% block body %}
+<div class="container-fluid py-4 rounded mb-4 mt-4 bg-light" style="margin:0 auto; width:100%;">
+
+  <nav aria-label="breadcrumb">
+    <ol class="breadcrumb mt-6">
+      <li class="breadcrumb-item">Queue: <a href="{{ url_for('rq_queue_view', queue_name=queue_name) }}">{{ queue_name }}</a></li>
+      <li class="breadcrumb-item active" aria-current="page">Job</li>
+    </ol>
+  </nav>
+
+
+  <!-- Flash -->
+  {% with messages = get_flashed_messages() %}
+    {% if messages %}
+      <div class="mb-3">
+        {% for m in messages %}
+          <div class="alert alert-info mb-2" role="alert">{{ m }}</div>
+        {% endfor %}
+      </div>
+    {% endif %}
+  {% endwith %}
+
+  <!-- Capçalera -->
+  <div class="d-flex align-items-start justify-content-between mb-3">
+    <div class="pr-3">
+      <h1 class="h4 mb-2 wrap">
+        Job <code class="font-mono">{{ job.id }}</code>
+      </h1>
+
+      <div class="stat-line">
+        <strong>Estat:</strong>
+        {% set s = (job.get_status() or '').lower() %}
+        {% if s in ['finished', 'success'] %}
+          <span class="badge badge-success text-uppercase">{{ s }}</span>
+        {% elif s in ['started', 'running'] %}
+          <span class="badge badge-primary text-uppercase align-middle">{{ s }}</span>
+          <span class="spinner-border spinner-border-sm text-primary align-middle" role="status" aria-hidden="true"></span>
+        {% elif s in ['queued', 'pending'] %}
+          <span class="badge badge-info text-uppercase">{{ s }}</span>
+        {% elif s in ['deferred', 'scheduled'] %}
+          <span class="badge badge-warning text-uppercase">{{ s }}</span>
+        {% elif s in ['failed', 'stopped', 'canceled', 'cancelled'] %}
+          <span class="badge badge-danger text-uppercase">{{ s }}</span>
+        {% else %}
+          <span class="badge badge-secondary text-uppercase">{{ s or 'desconegut' }}</span>
+        {% endif %}
+
+        <div class="custom-control custom-switch ">
+          <input type="checkbox" class="custom-control-input" id="autorefresh">
+          <label class="custom-control-label" for="autorefresh">F5</label>
+        </div>
+      </div>
+    </div>
+
+    <div class="text-right">
+      <div class="btn-group" role="group">
+        <form method="post" action="{{ url_for('rq_job_requeue', job_id=job.id) }}" class="d-inline">
+          <button type="submit" class="btn btn-sm btn-outline-primary">Re-executar</button>
+        </form>
+        <button id="btnStop" class="btn btn-sm btn-outline-secondary" data-queueid="{{ job.id }}">Aturar</button>
+        <button class="btn btn-sm btn-outline-danger" data-toggle="modal" data-target="#confirmDeleteModal">Eliminar</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Contingut -->
+  <div class="row">
+    <!-- Resum -->
+    <div class="col-lg-6 mb-3">
+      <div class="card shadow-sm">
+        <div class="card-header bg-white d-flex justify-content-between align-items-center">
+          <strong>Resum</strong>
+          <!-- <button id="copyFunc" class="btn btn-outline-secondary btn-sm btn-icon" title="Copiar funció" data-func="{{ job.func_name }}">📋</button> -->
+        </div>
+        <div class="card-body">
+          <dl class="mb-0">
+            <dt>CMD:</dt>
+            <dd class="clip"><span class="badge badge-light font-mono">{{ job.func_name }}</span></dd>
+
+            <dt class="mt-2">Arguments</dt>
+            <dd>
+              {% set args_text = job.args|string %}
+              {% set args_is_long = (args_text|length > 800) %}
+              <div id="argsWrap" class="font-mono {{ 'preview preview--fade' if args_is_long else '' }}">{{ args_text }}</div>
+              {% if args_is_long %}
+                <button class="btn btn-link btn-sm p-0" data-toggle="collapse" data-target="#argsMore" aria-expanded="false">Mostrar més</button>
+                <div id="argsMore" class="collapse mt-2">
+                  <pre class="font-mono mb-0">{{ args_text }}</pre>
+                </div>
+              {% endif %}
+            </dd>
+
+            <dt class="mt-2">Kwargs</dt>
+            <dd>
+              {% set kw_text = job.kwargs|string %}
+              {% set kw_is_long = (kw_text|length > 800) %}
+              <div id="kwargsWrap" class="font-mono {{ 'preview preview--fade' if kw_is_long else '' }}">{{ kw_text }}</div>
+              {% if kw_is_long %}
+                <button class="btn btn-link btn-sm p-0" data-toggle="collapse" data-target="#kwargsMore" aria-expanded="false">Mostrar més</button>
+                <div id="kwargsMore" class="collapse mt-2">
+                  <pre class="font-mono mb-0">{{ kw_text }}</pre>
+                </div>
+              {% endif %}
+            </dd>
+          </dl>
+        </div>
+      </div>
+    </div>
+
+    <!-- Marques de temps -->
+    <div class="col-lg-6 mb-3">
+      <div class="card shadow-sm">
+        <div class="card-header bg-white"><strong>Altres detalls</strong></div>
+        <div class="card-body">
+          <ul class="list-unstyled mb-0">
+            <li class="mb-1"><strong>Creat:</strong> <span class="text-muted">{{ job.created_at }}</span></li>
+            <li class="mb-1"><strong>En cua:</strong> <span class="text-muted">{{ job.enqueued_at }}</span></li>
+            <li class="mb-1"><strong>Iniciat:</strong> <span class="text-muted">{{ job.started_at }}</span></li>
+            <li class="mb-1"><strong>Finalitzat:</strong> <span class="text-muted">{{ job.ended_at }}</span></li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </div>
+
+
+  {% if job.result is not none or job.exc_info %}
+  <div id="jobAccordion" class="mb-3">
+    {% if job.result is not none %}
+    <div class="card shadow-sm">
+      <div class="card-header bg-white" id="headingResult">
+        <h5 class="mb-0">
+          <button class="btn btn-link" data-toggle="collapse" data-target="#collapseResult" aria-expanded="true" aria-controls="collapseResult">
+            Resultat
+          </button>
+        </h5>
+      </div>
+      <div id="collapseResult" class="collapse show" aria-labelledby="headingResult" data-parent="#jobAccordion">
+        <div class="card-body">
+          <pre class="font-mono mb-0">{{ job.result }}</pre>
+        </div>
+      </div>
+    </div>
+    {% endif %}
+
+    {% if job.exc_info %}
+    <div class="card shadow-sm mt-2">
+      <div class="card-header bg-white" id="headingException">
+        <h5 class="mb-0">
+          <button class="btn btn-link collapsed text-danger" data-toggle="collapse" data-target="#collapseException" aria-expanded="false" aria-controls="collapseException">
+            Excepció
+          </button>
+        </h5>
+      </div>
+      <div id="collapseException" class="collapse show" aria-labelledby="headingException" data-parent="#jobAccordion">
+        <div class="card-body">
+          <pre class="font-mono mb-0">{{ job.exc_info }}</pre>
+        </div>
+      </div>
+    </div>
+    {% endif %}
+  </div>
+  {% endif %}
+
+</div>
+
+<!-- Modal eliminar -->
+<div class="modal fade" id="confirmDeleteModal" tabindex="-1" role="dialog" aria-labelledby="confirmDeleteTitle" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered" role="document">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 id="confirmDeleteTitle" class="modal-title">Eliminar job</h5>
+        <button type="button" class="close" data-dismiss="modal" aria-label="Tanca"><span>&times;</span></button>
+      </div>
+      <div class="modal-body">
+        Segur que vols eliminar el job <code class="font-mono">{{ job.id }}</code>? Aquesta acció no es pot desfer.
+      </div>
+      <div class="modal-footer">
+        <form method="post" action="{{ url_for('rq_job_delete', job_id=job.id) }}" class="m-0">
+          <button type="submit" class="btn btn-danger">Sí, elimina</button>
+        </form>
+        <button type="button" class="btn btn-outline-secondary" data-dismiss="modal">Cancel·la</button>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock body %}
+
+{% block scripts %}
+<script>
+  // Copiar ID
+  document.getElementById('copyId')?.addEventListener('click', async (e) => {
+    const id = e.currentTarget.dataset.id || '';
+    try {
+      await navigator.clipboard.writeText(id);
+      e.currentTarget.classList.remove('btn-outline-secondary');
+      e.currentTarget.classList.add('btn-success');
+      e.currentTarget.textContent = '✔';
+      setTimeout(() => {
+        e.currentTarget.classList.remove('btn-success');
+        e.currentTarget.classList.add('btn-outline-secondary');
+        e.currentTarget.textContent = '📋';
+      }, 1200);
+    } catch {
+      alert('No s’ha pogut copiar. ID: ' + id);
+    }
+  });
+
+  // Copiar nom de funció
+  document.getElementById('copyFunc')?.addEventListener('click', async (e) => {
+    const fn = e.currentTarget.dataset.func || '';
+    try {
+      await navigator.clipboard.writeText(fn);
+      e.currentTarget.classList.remove('btn-outline-secondary');
+      e.currentTarget.classList.add('btn-success');
+      e.currentTarget.textContent = '✔';
+      setTimeout(() => {
+        e.currentTarget.classList.remove('btn-success');
+        e.currentTarget.classList.add('btn-outline-secondary');
+        e.currentTarget.textContent = '📋';
+      }, 1200);
+    } catch {
+      alert('No s’ha pogut copiar: ' + fn);
+    }
+  });
+
+  // Auto-refresc cada 8s
+  (function(){
+    const box = document.getElementById('autorefresh');
+    let timer = null;
+    const start = () => { if (!timer) timer = setInterval(() => { if (!document.hidden) location.reload(); }, 8000); };
+    const stop  = () => { if (timer) clearInterval(timer); timer = null; };
+    if (box) {
+      const key = 'ar_' + '{{ job.id }}';
+      const saved = localStorage.getItem(key);
+      if (saved === '1') { box.checked = true; start(); }
+      box.addEventListener('change', () => {
+        localStorage.setItem(key, box.checked ? '1' : '0');
+        box.checked ? start() : stop();
+      });
+    }
+  })();
+
+  // Aturar treball (POST a /api/job/<queue_id>/stop)
+  document.getElementById('btnStop')?.addEventListener('click', async (e) => {
+    const queueId = e.currentTarget.dataset.queueid;
+    e.currentTarget.disabled = true;
+    e.currentTarget.textContent = 'Aturant...';
+    try {
+      const res = await fetch('{{ url_for("api_stop_job", queue_id="__ID__") }}'.replace('__ID__', queueId), {
+        method: 'POST',
+        headers: { 'X-Requested-With': 'XMLHttpRequest' }
+      });
+      const data = await res.json();
+      if (data.ok) {
+        e.currentTarget.classList.remove('btn-outline-warning');
+        e.currentTarget.classList.add('btn-success');
+        e.currentTarget.textContent = 'Aturat';
+        // Opcional: refrescar després d’uns segons
+        setTimeout(() => location.reload(), 800);
+      } else {
+        e.currentTarget.classList.remove('btn-outline-warning');
+        e.currentTarget.classList.add('btn-danger');
+        e.currentTarget.textContent = 'Error';
+        alert(data.error || 'No s’ha pogut aturar el job.');
+        e.currentTarget.disabled = false;
+      }
+    } catch (err) {
+      alert('Error de xarxa aturant el job.');
+      e.currentTarget.disabled = false;
+      e.currentTarget.textContent = 'Aturar';
+    }
+  });
+</script>
+{% endblock scripts %}

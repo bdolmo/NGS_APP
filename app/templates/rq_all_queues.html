@@ -1,0 +1,395 @@
+{% extends "base.html" %}
+
+{% block styles %}
+<style>
+  .font-mono { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace; }
+  .table-sticky thead th { position: sticky; top: 0; background: #fff; z-index: 1; }
+  .badge-wide { min-width: 3.2rem; display: inline-block; }
+</style>
+{% endblock styles %}
+
+{% block body %}
+<div class="container-fluid py-5 justify-content-center  mb-4 mt-5 bg-light" style="margin:0 auto; width:80%;">
+
+
+<div class="d-flex align-items-center justify-content-between mb-3">
+    <div>
+        <h1 class="h4 mb-1">Servidor producció NGS</h1>
+    </div>
+
+    </div>
+
+ <!-- ✨ Panell del servidor -->
+<div class="row no-gutters ">
+    <div class="col-md-6 col-xl-3 pr-md-2 mb-2" style="height:210px;">
+      <div class="card shadow-sm "style="height:190px;">
+        <div class="card-body py-3">
+
+          <div class="text-muted small">CPU</div>
+          <div class="h6 mb-1" id="cpuModel">{{ cpu_model }}</div>
+
+          <div class="row">
+            <div class="col">
+                <div class="small text-muted">
+                    <span id="cpuFreq"> Freq:
+                      {% if cpu_freq_ghz %}{{ cpu_freq_ghz }} GHz{% else %}—{% endif %}
+                      {% if cpu_max_ghz %} <span class="text-muted">/ {{ cpu_max_ghz }} GHz max</span>{% endif %}
+                    </span>
+                  </div>
+            </div>
+            <div class="col">
+                <div class="small text-muted">
+                    Ús CPU: {{ cpu_percent|round(1) }}%
+                </div>
+            </div>
+          </div>
+
+          <div class="row mt-3">
+            <div class="col">
+                <div class="text-muted small">Memòria total</div>
+                <div class="h5"><span id="memTotalGb">{{ mem_total_gb }}</span><span class="h5 ml-1">GB</span></div>
+            </div>
+            <div class="col">
+                <div class="text-muted small">Memòria en ús</div>
+                <span id="memUsedGbBadge" class="">{{ mem_used_gb }} GB</span> <small>({{ mem_used_pct|round(1) }}%)</small>
+            </div>
+          </div>
+          <!-- <div class="progress mt-2" style="height:8px;"> -->
+            <!-- <div id="memBar" class="progress-bar bg-warning" role="progressbar"
+                 style="width: {{ mem_used_pct|int }}%;" aria-valuenow="{{ mem_used_pct|int }}"
+                 aria-valuemin="0" aria-valuemax="100"></div> -->
+          <!-- </div> -->
+          <!-- <div class="text-right small text-muted mt-1">
+            <span id="memUsedPct">{{ mem_used_pct|round(1) }}</span>%
+          </div> -->
+
+        </div>
+      </div>
+    </div>
+  
+ 
+  
+<!-- Llistat de discos amb row/col -->
+    <div class="col-md-12 col-xl-8 pr-md-2  " >
+
+    <div class="card shadow-sm mb-3"style="height:190px;">
+
+        <div class="card-body py-3">
+
+        <div class="bg-white d-flex justify-content-between align-items-center">
+            <div class="text-muted small">Espai en disc</div>
+        </div>
+    
+        <!-- Capçalera (grid) -->
+        <div class="text-uppercase text-muted font-weight-bold d-none d-md-block" >
+            <div class="row ">
+            <div class="col-md-3">Volum</div>
+            <div class="col-md-2 text-left">En ús (GB)</div>
+            <div class="col-md-2 text-left">Lliure (GB)</div>
+            <div class="col-md-2 text-left">Total (GB)</div>
+            <div class="col-md-3 text-left"> % ús</div>
+            </div>
+        </div>
+    
+        <div id="diskBody">
+            {% for d in disks %}
+            <div class="text-muted d-none d-md-block">
+                <div class="row " data-path="{{ d.path }}">
+                <!-- Volum -->
+                <div class="col-md-3 mb-1 mb-md-0">
+                {{ d.path }}
+                </div>
+    
+                <!-- Usat / Lliure / Total -->
+                <div class="col-md-2 text-left">
+                <span class="">{{ '%.2f'|format(d.used_gb) }}</span>
+                </div>
+                <div class=" col-md-2 text-left">
+                <span class="disk-free">{{ '%.2f'|format(d.free_gb) }}</span>
+                </div>
+                <div class=" col-md-2 text-left mt-1 mt-md-0">
+                <span class="disk-total">{{ '%.2f'|format(d.total_gb) }}</span>
+                </div>
+    
+                <!-- % usat -->
+                <div class="col-md-3 mt-1 mt-md-0">
+                    <div class="d-flex align-items-center">
+                        <div class="progress flex-grow-1" style="height:8px;">
+                        <div class="progress-bar {{ 'bg-danger' if d.used_pct>=90 else 'bg-warning' if d.used_pct>=75 else 'bg-success' }} disk-bar"
+                            role="progressbar"
+                            style="width: {{ d.used_pct|int }}%;"
+                            aria-valuenow="{{ d.used_pct|int }}" aria-valuemin="0" aria-valuemax="100"></div>
+                        </div>
+                        <small class="ml-2 text-muted"><span class="disk-pct">{{ '%.1f'|format(d.used_pct) }}</span>%</small>
+                    </div>
+                </div>
+            </div>
+            </div>
+            {% endfor %}
+    
+            {% if not disks %}
+            <div class="px-3 py-4 border-top text-center text-muted">
+            No s’ha pogut obtenir l’estat dels volums.
+            </div>
+            {% endif %}
+        </div>
+        </div>
+    </div>
+  </div>
+</div>
+<div class="d-flex align-items-center justify-content-between mb-3 mt-2"  style="width:90%;">
+    <div>
+      <h1 class="h4 mb-1">Sistema de cues de treball (Redis-RQ)</h1>
+      <div class="text-muted small">Panell principal de cues — fes clic a una cua per veure’n el detall.</div>
+    </div>
+    <div class="d-flex align-items-center">
+      <button id="btnCleanup" class="btn btn-outline-secondary btn-sm">Elimina workers morts</button>
+    </div>
+  </div>
+
+  <!-- Taula de cues -->
+  <div class="table-responsive table-sticky"  style="width:90%;">
+    <table id="queuesTable" class="table table-hover">
+      <thead>
+        <tr>
+          <th style="min-width: 160px;">Queue</th>
+          <th class="text-center">Pendents</th>
+          <th class="text-center">Iniciats</th>
+
+          <th class="text-center">Aturats</th>   <!-- ✨ NOVA COLUMNA -->
+          <th class="text-center">Fallits</th>
+
+
+          <th class="text-center">Cancel·lats</th>   <!-- ✨ NOVA COLUMNA -->
+          <!-- <th class="text-center">Diferits</th> -->
+          <th class="text-center">Programats</th>
+          <th class="text-center">Finalitzats</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for q in queues %}
+        {% set name      = q.name %}
+        {% set pending   = q.pending_count   or q.pending   or 0 %}
+        {% set started   = q.started_count   or 0 %}
+        {% set stopped    = q.stopped_count    or 0 %}
+
+
+        {% set failed    = q.failed_count    or 0 %}
+        {% set canceled  = q.canceled_count  or q.cancelled_count or 0 %}  {# suport tant 'canceled' com 'cancelled' #}
+        {% set deferred  = q.deferred_count  or 0 %}
+        {% set scheduled = q.scheduled_count or 0 %}
+        {% set finished  = q.finished_count  or q.finished  or 0 %}
+        <tr data-name="{{ name | lower }}">
+          <td>
+            <span class="font-mono"><a href="{{ url_for('rq_queue_view', queue_name=name) }}">{{ name }}</a></span>
+          </td>
+          <td class="text-center">
+            <span class="badge badge-info badge-wide">{{ pending }}</span>
+          </td>
+          <td class="text-center">
+            <span class="badge badge-primary badge-wide">{{ started }}</span>
+          </td>
+
+          <td class="text-center">
+            <span class="badge badge-secondary badge-wide">{{ stopped }}</span>
+          </td>
+
+          <td class="text-center">
+            <span class="badge badge-danger badge-wide">{{ failed }}</span>
+          </td>
+          <td class="text-center">
+            <span class="badge badge-dark badge-wide">{{ canceled }}</span>   <!-- ✨ NOVA CEL·LA -->
+          </td>
+          <!-- <td class="text-center">
+            <span class="badge badge-secondary badge-wide">{{ deferred }}</span>
+          </td> -->
+          <td class="text-center">
+            <span class="badge badge-warning badge-wide">{{ scheduled }}</span>
+          </td>
+          <td class="text-center">
+            <span class="badge badge-success badge-wide">{{ finished }}</span>
+          </td>
+        </tr>
+        {% endfor %}
+        {% if queues|length == 0 %}
+        <tr>
+          <td colspan="8" class="text-center text-muted">No hi ha cues.</td>
+        </tr>
+        {% endif %}
+      </tbody>
+    </table>
+  </div>
+
+</div>
+{% endblock body %}
+
+{% block scripts %}
+
+
+<script>
+  // Auto-refresc (opcional) ja preparat si hi ha checkbox (no present en aquest layout)
+  (function(){
+    var box = document.getElementById('autorefresh');
+    if (!box) return;
+    var key = 'rq_queues_autorefresh';
+    var saved = localStorage.getItem(key);
+    var timer = null;
+    function start(){ if (!timer) timer = setInterval(function(){ if (!document.hidden) location.reload(); }, 10000); }
+    function stop(){ if (timer){ clearInterval(timer); timer = null; } }
+    if (saved === '1'){ box.checked = true; start(); }
+    box.addEventListener('change', function(){
+      localStorage.setItem(key, box.checked ? '1' : '0');
+      box.checked ? start() : stop();
+    });
+  })();
+
+  // Neteja workers morts
+  (function(){
+    var btn = document.getElementById('btnCleanup');
+    if (!btn) return;
+    btn.addEventListener('click', function(){
+      btn.disabled = true;
+      btn.textContent = 'Netejant...';
+      fetch('{{ url_for("rq_cleanup_workers") }}', { method: 'POST', headers: { 'X-Requested-With':'XMLHttpRequest' }})
+        .then(function(r){ return r.json(); })
+        .then(function(data){
+          var cleaned = (data && data.cleaned) ? data.cleaned.length : 0;
+          btn.classList.remove('btn-outline-secondary');
+          btn.classList.add(cleaned ? 'btn-success' : 'btn-info');
+          btn.textContent = cleaned ? ('Netejats: ' + cleaned) : 'Cap per netejar';
+          setTimeout(function(){ location.reload(); }, 800);
+        })
+        .catch(function(){
+          btn.classList.remove('btn-outline-secondary');
+          btn.classList.add('btn-danger');
+          btn.textContent = 'Error';
+          btn.disabled = false;
+        });
+    });
+  })();
+</script>
+<script>
+(function(){
+    var url = "{{ url_for('api_rq_metrics') }}";
+    var REFRESH_MS = 5000; // 5 segons
+    var timer = null;
+    var inFlight = false;  // evita solapaments
+    var lastTs = 0;
+  
+    function clamp(n, min, max){ return Math.max(min, Math.min(max, n)); }
+  
+    function setText(id, text){
+      var el = document.getElementById(id);
+      if (el) el.textContent = text;
+    }
+    function setBar(id, pct){
+      var el = document.getElementById(id);
+      if (!el) return;
+      var v = clamp(Math.round(pct), 0, 100);
+      el.style.width = v + "%";
+      el.setAttribute("aria-valuenow", v);
+    }
+  
+    async function tick(){
+      if (inFlight || document.hidden) return;
+      inFlight = true;
+      try{
+        var res = await fetch(url, { headers: { 'X-Requested-With': 'XMLHttpRequest' }});
+        if (!res.ok) throw new Error("HTTP " + res.status);
+        var data = await res.json();
+  
+        // Evita repaint si no hi ha canvis (opcional)
+        if (data.ts && data.ts === lastTs) { inFlight = false; return; }
+        lastTs = data.ts || Date.now();
+  
+        setText("cpuCount", data.cpu_count != null ? data.cpu_count : "—");
+        setText("cpuPercentBadge", (data.cpu_percent != null ? data.cpu_percent.toFixed(1) : 0) + "%");
+        setBar("cpuBar", data.cpu_percent || 0);
+  
+        setText("memTotalGb", data.mem_total_gb != null ? data.mem_total_gb.toFixed(2) : "0.00");
+        setText("memUsedGbBadge", (data.mem_used_gb != null ? data.mem_used_gb.toFixed(2) : "0.00") + " GB");
+        setText("memUsedPct", data.mem_used_pct != null ? data.mem_used_pct.toFixed(1) : "0.0");
+        setBar("memBar", data.mem_used_pct || 0);
+      } catch(e){
+        // Marca error suaument (opcional)
+        setText("cpuPercentBadge", "—");
+        setText("memUsedGbBadge", "—");
+      } finally {
+        inFlight = false;
+      }
+    }
+  
+    // Primer tick immediat i després cada 5s
+    tick();
+    timer = setInterval(tick, REFRESH_MS);
+  
+    // Si canvies de pestanya, no bombardegis el servidor
+    document.addEventListener("visibilitychange", function(){
+      if (!document.hidden) tick();
+    });
+  })();
+</script>
+
+<script>
+    // Reemplaça la funció usada al polling per aquesta versió “grid”
+    function updateDiskRow(d) {
+      var body = document.getElementById('diskBody');
+      if (!body) return;
+  
+      // Troba la fila existent (div.row amb data-path)
+      var row = body.querySelector('[data-path="' + d.path + '"]');
+  
+      // Composa la classe de color segons % usat
+      var barClass = (d.used_pct >= 90) ? 'bg-danger'
+                   : (d.used_pct >= 75) ? 'bg-warning'
+                   : 'bg-success';
+  
+      // Si no existeix, crea tota l’estructura (px-3/py-2 + row)
+      if (!row) {
+        var wrapper = document.createElement('div');
+        wrapper.className = 'px-3 py-2 border-top';
+        wrapper.innerHTML =
+          '<div class="row no-gutters align-items-center" data-path="' + d.path + '">' +
+            '<div class="col-12 col-md-4 text-monospace mb-1 mb-md-0">' + d.path + '</div>' +
+            '<div class="col-6 col-md-2 text-right"><span class="disk-used"></span></div>' +
+            '<div class="col-6 col-md-2 text-right"><span class="disk-free"></span></div>' +
+            '<div class="col-6 col-md-2 text-right mt-1 mt-md-0"><span class="disk-total"></span></div>' +
+            '<div class="col-6 col-md-2 mt-1 mt-md-0">' +
+              '<div class="d-flex align-items-center">' +
+                '<div class="progress flex-grow-1" style="height:8px;">' +
+                  '<div class="progress-bar disk-bar" role="progressbar" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100"></div>' +
+                '</div>' +
+                '<small class="ml-2 text-muted"><span class="disk-pct"></span>%</small>' +
+              '</div>' +
+            '</div>' +
+          '</div>';
+        body.appendChild(wrapper);
+        row = wrapper.querySelector('[data-path="' + d.path + '"]');
+      }
+  
+      // Actualitza camps numèrics
+      var usedEl  = row.querySelector('.disk-used');
+      var freeEl  = row.querySelector('.disk-free');
+      var totalEl = row.querySelector('.disk-total');
+      var pctEl   = row.querySelector('.disk-pct');
+      var barEl   = row.querySelector('.disk-bar');
+  
+      if (usedEl)  usedEl.textContent  = (d.used_gb  != null ? d.used_gb.toFixed(2)  : '—');
+      if (freeEl)  freeEl.textContent  = (d.free_gb  != null ? d.free_gb.toFixed(2)  : '—');
+      if (totalEl) totalEl.textContent = (d.total_gb != null ? d.total_gb.toFixed(2) : '—');
+      if (pctEl)   pctEl.textContent   = (d.used_pct != null ? d.used_pct.toFixed(1) : '0.0');
+  
+      // Actualitza barra
+      if (barEl) {
+        barEl.classList.remove('bg-success', 'bg-warning', 'bg-danger');
+        barEl.classList.add(barClass);
+        var w = Math.max(0, Math.min(100, Math.round(d.used_pct || 0)));
+        barEl.style.width = w + '%';
+        barEl.setAttribute('aria-valuenow', w);
+      }
+    }
+  </script>
+  
+  
+
+{% endblock scripts %}

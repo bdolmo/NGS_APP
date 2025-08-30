@@ -13,6 +13,7 @@ db = "/ngs-db/NGS_DB/NGS.db"
 data_dir = "/ngs-results/"
 ngs_app_url = "http://172.16.83.24:5000"
 gene_panels_api_url = "http://172.16.83.24:8000/api/gene_panels"
+api_gene_panels = "http://172.16.83.24:8000"
 compendium_url = "http://172.16.83.24:8001"
 
 
@@ -58,7 +59,10 @@ class Config(object):
     REF_YAML = os.path.join(pipeline_main, "reference_resources.yaml")
     BIN_YAML = os.path.join(pipeline_main, "binary_resources.yaml")
     NGS_PIPELINE_EXE = os.path.join(pipeline_main, "gc_ngs_pipeline.py")
-    SOMATIC_REPORT_TEMPLATES = os.path.join(main_dir, "reporting_templates", "1.9")
+    # SOMATIC_REPORT_TEMPLATES = os.path.join(main_dir, "reporting_templates", "1.9")
+    SOMATIC_REPORT_TEMPLATES = os.path.join(main_dir, "reporting_templates", "1.10")
+
+
     SOMATIC_REPORT_IMG = os.path.join(main_dir, "reporting_templates", "img")
     SOMATIC_REPORT_CSS = os.path.join(
         main_dir, "reporting_templates", "css", "style.css"

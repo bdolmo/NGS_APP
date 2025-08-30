@@ -1,0 +1,303 @@
+{% extends "base.html" %}
+
+{% block body %}
+<div class="container-fluid py-4 rounded mb-4 mt-4 bg-light" style="margin:0 auto; width:90%;">
+
+  <!-- Capçalera -->
+  <div class="d-flex align-items-center justify-content-between mb-4">
+    <div>
+      <h1 class="h3 mb-1">
+        Cua de tasques: {{ queue_name }}
+      </h1>
+    </div>
+  </div>
+
+
+
+  <ul class="nav nav-tabs mb-3" id="rqTabs" role="tablist">
+    <li class="nav-item">
+      <a class="nav-link active" id="pending-tab" data-toggle="tab" href="#pending" role="tab">
+        Pendents <span class="badge badge-pill badge-primary ml-1">{{ pending_count }}</span>
+      </a>
+    </li>
+    <li class="nav-item">
+      <a class="nav-link" id="started-tab" data-toggle="tab" href="#started" role="tab">
+        Iniciats <span class="badge badge-pill badge-info ml-1">{{ started_count }}</span>
+      </a>
+    </li>
+    <li class="nav-item">
+      <a class="nav-link" id="stopped-tab" data-toggle="tab" href="#stopped" role="tab">
+        Aturats <span class="badge badge-pill badge-secondary ml-1">{{ stopped_count }}</span>
+      </a>
+    </li>
+    <li class="nav-item">
+      <a class="nav-link" id="failed-tab" data-toggle="tab" href="#failed" role="tab">
+        Fallits <span class="badge badge-pill badge-danger ml-1">{{ failed_count }}</span>
+      </a>
+    </li>
+    <!-- <li class="nav-item">
+      <a class="nav-link" id="deferred-tab" data-toggle="tab" href="#deferred" role="tab">
+        Diferits <span class="badge badge-pill badge-secondary ml-1">{{ deferred_count }}</span>
+      </a>
+    </li> -->
+    <li class="nav-item">
+      <a class="nav-link" id="scheduled-tab" data-toggle="tab" href="#scheduled" role="tab">
+        Programats <span class="badge badge-pill badge-warning ml-1">{{ scheduled_count }}</span>
+      </a>
+    </li>
+  </ul>
+  
+
+  <div class="tab-content" id="rqTabsContent">
+
+    <!-- Pendent -->
+    <div class="tab-pane fade show active" id="pending" role="tabpanel">
+      <div class="card shadow-sm border-0">
+        <div class="card-header bg-white">
+          <strong>Pendent (en cua)</strong>
+        </div>
+        <div class="card-body p-0">
+          {% if pending %}
+          <div class="table-responsive">
+            <table class="table table-sm table-hover mb-0">
+              <thead class="thead-light">
+                <tr>
+                  <th>RQ Job ID</th>
+                  <th>Command</th>
+                  <th class="w-25">Args</th>
+                  <th class="w-25">Kwargs</th>
+                  <th>En cua des de</th>
+                </tr>
+              </thead>
+              <tbody>
+              {% for job in pending %}
+                <tr>
+                  <td class="">
+                    <a href="{{ url_for('rq_job_detail_view', job_id=job.id) }}">{{ job.id }}</a>
+                  </td>
+                  <td><span class="badge badge-light">{{ job.func_name }}</span></td>
+                  <td><pre class="mb-0 small text-monospace">{{ job.args }}</pre></td>
+                  <td><pre class="mb-0 small text-monospace">{{ job.kwargs }}</pre></td>
+                  <td><span class="small text-muted">{{ (job.enqueued_at or job.created_at) }}</span></td>
+                </tr>
+              {% endfor %}
+              </tbody>
+            </table>
+          </div>
+          {% else %}
+            <div class="p-4 text-center text-muted">No hi ha tasques pendents</div>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+
+    <!-- Iniciats -->
+    <div class="tab-pane fade" id="started" role="tabpanel">
+      <div class="card shadow-sm border-0">
+        <div class="card-header bg-white">
+          <strong>Iniciats</strong>
+        </div>
+        <div class="card-body p-0">
+          {% if started %}
+          <div class="table-responsive">
+            <table class="table table-sm table-hover mb-0">
+              <thead class="thead-light">
+                <tr>
+                  <th>ID del treball</th>
+                  <th>Funció</th>
+                  <th>Iniciat a</th>
+                </tr>
+              </thead>
+              <tbody>
+              {% for job in started %}
+                <tr>
+                  <td class="text-monospace">
+                    <a href="{{ url_for('rq_job_detail_view', job_id=job.id) }}">{{ job.id }}</a>
+                  </td>
+                  <td><span class="badge badge-light">{{ job.func_name }}</span></td>
+                  <td><span class="small text-muted">{{ job.started_at }}</span></td>
+                </tr>
+              {% endfor %}
+              </tbody>
+            </table>
+          </div>
+          {% else %}
+          <div class="p-4 text-center text-muted">No hi ha tasques iniciades</div>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+
+<!-- Aturats -->
+<div class="tab-pane fade" id="stopped" role="tabpanel">
+    <div class="card shadow-sm border-0">
+      <div class="card-header bg-white">
+        <strong>Aturats</strong>
+      </div>
+      <div class="card-body p-0">
+        {% if stopped %}
+        <div class="table-responsive">
+          <table class="table table-sm table-hover mb-0">
+            <thead class="thead-light">
+              <tr>
+                <th>ID del treball</th>
+                <th>Funció</th>
+                <th>Finalitzat</th>
+                <th style="min-width: 360px;">Motiu (si disponible)</th>
+              </tr>
+            </thead>
+            <tbody>
+            {% for job in stopped %}
+              <tr>
+                <td class="text-monospace">
+                  <a href="{{ url_for('rq_job_detail_view', job_id=job.id) }}">{{ job.id }}</a>
+                </td>
+                <td><span class="badge badge-light">{{ job.func_name }}</span></td>
+                <td><span class="small text-muted">{{ job.ended_at }}</span></td>
+                <td>
+                  <pre class="mb-1 small text-monospace" style="white-space: pre-wrap">
+  {{ (job.exc_info or '')[:300] }}{% if job.exc_info and job.exc_info|length > 300 %}…{% endif %}
+                  </pre>
+                </td>
+              </tr>
+            {% endfor %}
+            </tbody>
+          </table>
+        </div>
+        {% else %}
+          <div class="p-4 text-center text-muted">No hi ha tasques aturades</div>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+  
+
+    <!-- Fallits -->
+    <div class="tab-pane fade" id="failed" role="tabpanel">
+      <div class="card shadow-sm border-0">
+        <div class="card-header bg-white d-flex align-items-center justify-content-between">
+          <strong>Fallits</strong>
+          {% if failed %}
+            <span class="badge badge-danger">{{ failed|length }} errors</span>
+          {% endif %}
+        </div>
+        <div class="card-body p-0">
+          {% if failed %}
+          <div class="table-responsive">
+            <table class="table table-sm table-hover mb-0">
+              <thead class="thead-light">
+                <tr>
+                  <th>ID del treball</th>
+                  <th>Funció</th>
+                  <th>Finalitzat</th>
+                  <th style="min-width: 360px;">Error (truncat)</th>
+                </tr>
+              </thead>
+              <tbody>
+              {% for job in failed %}
+                <tr>
+                  <td class="text-monospace">
+                    <a href="{{ url_for('rq_job_detail_view', job_id=job.id) }}">{{ job.id }}</a>
+                  </td>
+                  <td><span class="badge badge-light">{{ job.func_name }}</span></td>
+                  <td><span class="small text-muted">{{ job.ended_at }}</span></td>
+                  <td>
+                    <div>
+                      <pre class="mb-1 small text-monospace" style="white-space: pre-wrap">{{ (job.exc_info or '')[:300] }}{% if job.exc_info and job.exc_info|length > 300 %}…{% endif %}</pre>
+                      {% if job.exc_info and job.exc_info|length > 300 %}
+                        <a class="btn btn-link btn-sm p-0" href="{{ url_for('rq_job_detail_view', job_id=job.id) }}">Veure traça completa</a>
+                      {% endif %}
+                    </div>
+                  </td>
+                </tr>
+              {% endfor %}
+              </tbody>
+            </table>
+          </div>
+          {% else %}
+          <div class="p-4 text-center text-muted">No hi ha tasques fallides</div>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+
+    <!-- Diferits -->
+    <div class="tab-pane fade" id="deferred" role="tabpanel">
+      <div class="card shadow-sm border-0">
+        <div class="card-header bg-white">
+          <strong>Diferits</strong>
+        </div>
+        <div class="card-body p-0">
+          {% if deferred %}
+          <div class="table-responsive">
+            <table class="table table-sm table-hover mb-0">
+              <thead class="thead-light">
+                <tr>
+                  <th>ID del treball</th>
+                  <th>Funció</th>
+                </tr>
+              </thead>
+              <tbody>
+              {% for job in deferred %}
+                <tr>
+                  <td class="text-monospace">
+                    <a href="{{ url_for('rq_job_detail_view', job_id=job.id) }}">{{ job.id }}</a>
+                  </td>
+                  <td><span class="badge badge-light">{{ job.func_name }}</span></td>
+                </tr>
+              {% endfor %}
+              </tbody>
+            </table>
+          </div>
+          {% else %}
+          <div class="p-4 text-center text-muted">No hi ha tasques iniciades</div>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+
+    <!-- Programats -->
+    <div class="tab-pane fade" id="scheduled" role="tabpanel">
+      <div class="card shadow-sm border-0">
+        <div class="card-header bg-white">
+          <strong>Programats</strong>
+        </div>
+        <div class="card-body p-0">
+          {% if scheduled %}
+          <div class="table-responsive">
+            <table class="table table-sm table-hover mb-0">
+              <thead class="thead-light">
+                <tr>
+                  <th>ID del treball</th>
+                  <th>Funció</th>
+                </tr>
+              </thead>
+              <tbody>
+              {% for job in scheduled %}
+                <tr>
+                  <td class="text-monospace">
+                    <a href="{{ url_for('rq_job_detail_view', job_id=job.id) }}">{{ job.id }}</a>
+                  </td>
+                  <td><span class="badge badge-light">{{ job.func_name }}</span></td>
+                </tr>
+              {% endfor %}
+              </tbody>
+            </table>
+          </div>
+          {% else %}
+          <div class="p-4 text-center text-muted">No hi ha tasques programades</div>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- Estils opcionals -->
+<style>
+  pre { background: #f8f9fa; border-radius: .25rem; padding: .5rem .75rem; }
+  .nav-tabs .nav-link { border: none; }
+  .nav-tabs .nav-link.active { border-bottom: 2px solid #007bff; }
+</style>
+{% endblock body %}

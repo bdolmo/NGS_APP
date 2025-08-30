@@ -48,8 +48,16 @@
 
     <tr style="background-color:#f0f4f8;border-bottom: 1pt solid lightgrey;">
       <td style="background-color:white;">
-          <b style="font-size:15px;margin:0px 0px 2px 0px;"><i>{{ var.gene }} </i></b><br>
 
+          {% if var.variant_type == "SV" %}
+            {% if no_enac %}
+              <b style="font-size:15px;margin:0px 0px 2px 0px;"><i>{{ var.gene }} </i></b><br>
+            {% else %}
+              <b style="font-size:15px;margin:0px 0px 2px 0px;"><i>{{ var.gene }}* </i></b><br>
+            {% endif %}
+          {% else %}
+            <b style="font-size:15px;margin:0px 0px 2px 0px;"><i>{{ var.gene }} </i></b><br>
+          {% endif %}
           {% if var.refseq %}
           <p style="margin:0px;margin:0px 0px 2px 0px;">{{ var.refseq }}</p>
           {% else %}
@@ -83,7 +91,20 @@
               {% if hgvsg != "." %}
                 <p style="margin:0px;font-size:11px">{{ var.hgvsg }}</p>
               {% endif %}
-              <p style="margin:0px;font-size:11px">Tipus: {{ var.variant_type }}</p>
+
+              {% if var.variant_type == "SV" %}
+                {% if no_enac %}
+                 <p style="margin:0px;font-size:11px">Tipus: {{ var.variant_type }}</p>
+                {% else %}
+                  <p style="margin:0px;font-size:11px">Tipus: {{ var.variant_type }}<b>*</b></p>
+                {% endif %}
+
+
+              {% else %}
+
+                <p style="margin:0px;font-size:11px">Tipus: {{ var.variant_type }}</p>
+              {% endif %}
+
             </div>
             <div class="col" style="width:25%;">
               {% set tier_color = "" %}
@@ -161,10 +182,6 @@
       <b>VAF:</b> freqüència al·lèlica de la variant;
       <b>Max AF:</b> freqüencia de l'al·lel més alta a la població;
       <b>Població:</b> població a la qual s'ha trobat la Max AF<br>
-      {% if ns.has_been_marked == "1" %}
-        <b>*</b> La variant no compleix els criteris de qualitat establerts (en el cas de que s'indiqui)
-      {% endif %}
-      La detecció de fusions no està emparada per l'acreditació d'ENAC.
     </small>
     </p>
 </div>

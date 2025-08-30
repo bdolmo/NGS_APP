@@ -604,26 +604,60 @@
 <script type="text/javascript">
 
   document.addEventListener("DOMContentLoaded", function () {
-    const options =
-        {
-            locus: "{{ locus }} ",
-            genome: "hg19",
-            tracks:[
-              {
-                type:'alignment',
-                format: 'bam',
-                url : "{{ url_for('download_sample_bam', run_id=sample_info.run_id, sample=sample_info.lab_id) }}" ,
-                indexURL: "{{ url_for('download_sample_bai', run_id=sample_info.run_id, sample=sample_info.lab_id) }}"
-              }
-            ]
-        };
+    // const options =
+    //     {
+    //         locus: "{{ locus }} ",
+    //         genome: "hg19",
+    //         tracks:[
+    //           {
+    //             type:'alignment',
+    //             format: 'bam',
+    //             url : "{{ url_for('download_sample_bam', run_id=sample_info.run_id, sample=sample_info.lab_id) }}" ,
+    //             indexURL: "{{ url_for('download_sample_bai', run_id=sample_info.run_id, sample=sample_info.lab_id) }}"
+    //           }
+    //         ]
+    //     };
 
     const igvDiv = document.getElementById('igvDiv');
-    igv.createBrowser(igvDiv, options)
-        .then(function (browser) {
-            igv.browser = browser;
-            console.log("Created IGV browser");
-        })
+    // igv.createBrowser(igvDiv, options)
+    //     .then(function (browser) {
+    //         igv.browser = browser;
+    //         console.log("Created IGV browser");
+    //     })
+
+
+    var options =
+      {
+          locus: "{{ locus }}",
+          // genome: "hg19",
+          showCenterGuide: true,
+
+          reference: {
+                  id: "hg19",
+                  fastaURL: "https://s3.amazonaws.com/igv.broadinstitute.org/genomes/seq/hg19/hg19.fasta",
+                  indexURL: "https://s3.amazonaws.com/igv.broadinstitute.org/genomes/seq/hg19/hg19.fasta.fai",
+                  cytobandURL: "https://s3.amazonaws.com/igv.broadinstitute.org/genomes/seq/hg19/cytoBand.txt"
+              },
+
+
+
+          tracks:[
+            {
+              type:'alignment',
+              format: 'bam',
+              url : "{{ url_for('download_sample_bam', run_id=sample_info.run_id, sample=sample_info.lab_id) }}" ,
+              indexURL: "{{ url_for('download_sample_bai', run_id=sample_info.run_id, sample=sample_info.lab_id) }}"
+            }
+          ]
+      };
+      setTimeout(function(){
+        igv.createBrowser(igvDiv, options)
+            .then(function (browser) {
+                igv.browser = browser;
+                console.log("Created IGV browser");
+            });
+    }, 3000);    
+
   });
 
  </script>

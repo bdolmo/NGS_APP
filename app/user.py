@@ -49,6 +49,7 @@ def login_user_prv():
     session['user'] = "admin"
     session["idClient"] = "admin"
     session["email"] = "admin@udmmp.cat"
+    session["acronim"] = "ADMIN"
 
     digest = md5(session['email'].lower().encode('utf-8')).hexdigest()
     user_url_img =  'https://www.gravatar.com/avatar/{}?d=identicon&s={}'.format(
@@ -81,6 +82,8 @@ def login_external():
     session["username"] = user_info_data['user']
     session['user'] = user_info_data['user']
     session["idClient"] = user_info_data['id_client']
+    session["email"] = user_info_data['email']
+    session["acronim"] = user_info_data['acronim']
     # session["last_access_date"] = user_info_data['last_access_date']
     digest = md5(session['email'].lower().encode('utf-8')).hexdigest()
     user_url_img =  'https://www.gravatar.com/avatar/{}?d=identicon&s={}'.format(
@@ -109,6 +112,7 @@ def receive_token():
         session['email'] = decoded_token.get('email_tok', 'Usuario no encontrado')
         session['idClient'] = decoded_token.get('id_client_tok', 'Usuario no encontrado')
         session['rol'] = decoded_token.get('rol_tok', 'Usuario no encontrado')
+        session['acronim'] = decoded_token.get('acronim_tok', 'Usuario no encontrado')
         digest = md5(session['email'].lower().encode('utf-8')).hexdigest()
         user_url_img =  'https://www.gravatar.com/avatar/{}?d=identicon&s={}'.format(
                     digest, 80)
@@ -119,6 +123,7 @@ def receive_token():
         print(session['email'])
         print(session['idClient'])
         print(session['rol'])
+        print(session['acronim'])
         return redirect(url_for('ngs_applications'))
     except Exception:
         return redirect('/logout')
@@ -127,7 +132,7 @@ def receive_token():
 @app.route('/apps')
 def apps():
     tocken_cookies = {'user_tok': session['user'], 'rols_tok': session['rols'], 'email_tok': session['email'],
-                      'id_client_tok': session['idClient'], 'rol_tok': 'None'}
+                      'id_client_tok': session['idClient'], 'rol_tok': 'None', 'acronim_tok': session['acronim']}
     secret_key = '12345'
     token = jwt.encode(tocken_cookies, secret_key, algorithm='HS256')
     url = f'http://172.16.83.23:5000/apps/token?token={token}'

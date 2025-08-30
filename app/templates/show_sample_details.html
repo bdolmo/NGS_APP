@@ -14,7 +14,6 @@
           <div class="modal-header">
               <h5 class="modal-title" id="addVariantModalLabel">Afegeix una nova variant</h5>
 
-
               <button type="button" class="close" data-dismiss="modal" aria-label="Close">
                 <span aria-hidden="true">&times;</span>
               </button>
@@ -25,6 +24,8 @@
                       <div class="col">
                           <label for="gene" class="form-label">Gen <span class="text-danger">*</span></label>
                           <input type="text" class="form-control" id="gene" name="gene" required>
+                          <small><p>En el cas de fusions es recomana afegir el partner <i>(e.g. EML4::ALK)</i></p></small>
+
                       </div>
                       <div class="col">
                           <label for="enst_id" class="form-label">Isoforma</label>
@@ -36,16 +37,13 @@
                           <label for="hgvsg" class="form-label">HGVSg</label>
                           <input type="text" class="form-control" id="hgvsg" name="hgvsg">
                       </div>
-                      <div class="col">
-                          <label for="hgvsc" class="form-label">HGVSc</label>
-                          <input type="text" class="form-control" id="hgvsc" name="hgvsc" >
-                      </div>
+
                   </div>
                   <div class="row mb-3">
-                      <div class="col">
-                          <label for="hgvsc" class="form-label">HGVSc</label>
-                          <input type="text" class="form-control" id="hgvsc" name="hgvsc">
-                      </div>
+                    <div class="col">
+                        <label for="hgvsc" class="form-label">HGVSc</label>
+                        <input type="text" class="form-control" id="hgvsc" name="hgvsc" >
+                    </div>
                       <div class="col">
                           <label for="hgvsp" class="form-label">HGVSp</label>
                           <input type="text" class="form-control" id="hgvsp" name="hgvsp">
@@ -76,19 +74,21 @@
                           <input type="text" class="form-control" id="intron" name="intron" >
                       </div>
                       <div class="col">
-                          <label for="depth" class="form-label">Profunditat <span class="text-danger">*</span></label>
-                          <input type="number" class="form-control" id="depth" name="depth" required>
-                      </div>
+                        <label for="read_support" class="form-label">Read Support <span class="text-danger">*</span></label>
+                        <input type="number" class="form-control" id="read_support" name="read_support" required>
+                    </div>
                   </div>
                   <div class="row mb-3">
                       <div class="col">
-                          <label for="allele_frequency" class="form-label">Freq. al·lèlica</label>
+                          <label for="allele_frequency" class="form-label">Freq. al·lèlica (0 - 1)</label>
                           <input type="number" class="form-control" id="allele_frequency" name="allele_frequency" step="0.01" readonly>
                       </div>
                       <div class="col">
-                          <label for="read_support" class="form-label">Read Support <span class="text-danger">*</span></label>
-                          <input type="number" class="form-control" id="read_support" name="read_support" required>
-                      </div>
+                        <label for="depth" class="form-label">Profunditat <span class="text-danger">*</span></label>
+                        <input type="number" class="form-control" id="depth" name="depth" required>
+                    </div>
+
+
                   </div>
                   <div class="row mb-3">
                       <div class="col">
@@ -292,8 +292,8 @@
     <div href="#" class="list-group-item list-group-item-action" style="background-color:#d9f7f7;">
       
       <div style="font-size:24px;"><img class="card-img rounded-circle" style="width:32px;height:32px;font-size:28px;" src="{{ session['avatar'] }}">
-    {{ session["username"] }}</div>
-    <i style="color:green;" class="fas fa-circle"></i><span style="font-size:13px;"> Online</span>
+    {{ session["username"] }} <i style="color:green;font-size:14px" class="fas fa-circle"></i><span style="font-size:13px;"> Online</span></div>
+    
     <!-- <p style="font-size:13px;"><b>Últim accés:</b>  </p> -->
    </div>
     <div href="#" class="list-group-item list-group-item-action bg-light">
@@ -306,7 +306,7 @@
         <div class="col">
           <ul>
           {% for job in All_jobs %}
-            <li> <a href="{{ url_for('show_run_details', run_id=job.Job_id) }}"><b>{{ job.Job_id }}</b></a></li>
+            <li> <a style="word-wrap:break-word;color:{{colour}};" href="{{ url_for('show_run_details', run_id=job.Job_id) }}"><b>{{ job.Job_id }}</b></a></li>
           {% endfor %}
          </ul>
         </div>
@@ -335,7 +335,7 @@
 
               <li>
                 <a style="word-wrap:break-word;colour:{{colour}};">{{ All_changes_dict[change]['action_name'] }}
-                  <a href="{{ url_for('redo_action', action_id=change, run_id=sample_info.run_id, sample=sample_info.lab_id, sample_id=sample_info.id, active="General")}}" role="button">
+                  <a style="word-wrap:break-word;color:{{colour}};" href="{{ url_for('redo_action', action_id=change, run_id=sample_info.run_id, sample=sample_info.lab_id, sample_id=sample_info.id, active="General")}}" role="button">
                     <span class="badge badge-secondary"><i class="fas fa-redo"></i></span>
                   </a>
                 </a>
@@ -367,10 +367,10 @@
 <div class="container-fluid rounded" style="margin-right:90px;background-color:white; width:80%">
 
   <nav aria-label="breadcrumb ">
-    <ol class="breadcrumb mt-3">
+    <ol class="breadcrumb mt-3 p-1">
       <li class="breadcrumb-item"><a href="{{ url_for('status') }}">Resultats</a></li>
       <li class="breadcrumb-item"><a href="{{ url_for('show_run_details', run_id=sample_info.run_id) }}" id="run_id_tag">{{ sample_info.run_id }}</a></li>
-      <li class="breadcrumb-item active" aria-current="page"><h5>{{ sample_info.lab_id }}</h5></li>
+      <li class="breadcrumb-item active" aria-current="page"><h5 id="lab_id_tag">{{ sample_info.lab_id }}</h5></li>
     </ol>
   </nav>
 
@@ -419,10 +419,13 @@
     {% else %}
     <div class="tab-pane fade" id="General" role="tabpanel" aria-labelledby="General-tab">
     {% endif %}
-    <div class="card card-body border-0 mt-2" style="outline-bottom: 1px solid grey;background-color:white;">
+    <div class="card card-body border-0 " style="padding:4px;background-color:white;">
+
       <div class="row" style="font-size:16px;">
         <div class="col-4">
-          <h5><i class="fas fa-id-card"></i> Pacient</h5>
+          <h5><i class="fas fa-id-card"></i> Pacient</h5>      
+          <a class="btn btn-sm btn-secondary" style="float:left;width:80px;padding:0px;color:white;" onclick="updatePatient()"><i class="fas fa-edit"></i>Modifica</a>
+
           <hr style="margin:0px;">
           <div class="row">
             <div class="col">
@@ -463,6 +466,10 @@
         <div class="col-4">
           <h5><i class="fas fa-vials"></i> Mostra</h5>
           <hr style="margin:0px;">
+
+
+          <p style="display:none;" id="sample_num_id"> {{sample_info.id}}</p>
+
           <div class="row">
             <div class="col">
               <div style="display:inline-block;margin:0px;">
@@ -566,60 +573,88 @@
           </div>
         </div>
        </div>
-      <a class="btn btn-sm btn-secondary" style="float:left;width:80px;padding:0px;color:white;" onclick="updatePatient()"><i class="fas fa-edit"></i>Modifica</a>
     </div>
         
-    <div class="card border-1 mt-2">
-      <h5 class="card-header">Distribució de variants</h5>
+    <div class="card border-1 ">
+      <h6 class="card-header" style="padding:4px;">Distribució de variants</h6>
       <div class=" card-body " style="outline-bottom: 1px solid grey;background-color:white;">
       <div class = "row">
 
         <div class = "col">
           <h6>Freq. canvis</h6>
-          <br>
           <div class="chart" id="bar">
           <script>
             var graphs = {{snv_plot | safe}};
-            Plotly.plot('bar',graphs,{});
+            // Plotly.plot('bar',graphs,{});
           </script>
           </div>
         </div>
         <div class = "col">
           <h6>VAF</h6>
-          <br>
           <div class="chart" id="hist">
           <script>
             var graphs = {{vaf_plot | safe}};
-            Plotly.plot('hist',graphs,{});
+            // Plotly.plot('hist',graphs,{});
           </script>
           </div>
         </div>
 
         <div class = "col">
           <h6>Localització Efecte</h6>
-          <br>
           <div class="chart" id="pie">
           <script>
             var graphs = {{pie_plot | safe}};
-            Plotly.plot('pie',graphs,{});
+            // Plotly.plot('pie',graphs,{});
           </script>
           </div>
         </div>
       </div>
       </div>
     </div>
-    <div class="card border-1 mt-4">
+    <div class="card border-1 mt-2">
       <div class="card">
-        <h5 class="card-header">Perfil de <i> Copy Number</i></h5>
-      <div class="card-body " style="outline-bottom: 1px solid grey;background-color:white;">
-      <div class="chart" id="scatter">
-        <script>
-          var graphs = {{cnv_plot | safe}};
-          Plotly.plot('scatter',graphs,{});
-        </script>
+        <h6 class="card-header" style="padding:4px;">Perfil de <i> Copy Number</i></h6>
+
+        <div class="card-body p-3" style="background-color:white;">
+          <div class="d-flex">
+            <!-- Left: 85% width for the plot -->
+            <div style="flex: 0 0 90%; max-width:90%;">
+              <div id="scatter"><!-- SVG will be injected here at 900×300 --></div>
+            </div>
+        
+            <!-- Right: 15% width for the filters -->
+            <div style="flex: 0 0 10%; max-width:10%; padding-left:1rem;">
+              <div id="scatter-controls" class="d-flex flex-column h-50" style="font-size:12px;">
+                <!-- Chromosome selector -->
+                <div class="mb-3">
+                  <label for="chrFilter" class="form-label mb-1">Cromosoma</label>
+                  <select id="chrFilter" class="form-select form-select-sm">
+                    <option value="">Tots</option>
+                    <!-- …populated by JS… -->
+                  </select>
+                </div>
+                <!-- Coordinate range -->
+                <div class="mb-3">
+                  <label class="form-label mb-1">Coordenades</label>
+                  <div class="input-group input-group-sm mb-1">
+                    <input type="number" id="regionMin" class="form-control" placeholder="start">
+                  </div>
+                  <div class="input-group input-group-sm">
+                    <input type="number" id="regionMax" class="form-control" placeholder="end">
+                  </div>
+                </div>
+                <!-- Apply button at bottom -->
+                <div class="mt-auto">
+                  <button id="applyFilter" class="btn btn-outline-primary btn-sm w-30">Aplica</button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        
+        
+
       </div>
-      </div>
-    </div>
     </div>
     </div>
     <div class="tab-pane fade" id="QC" role="tabpanel" aria-labelledby="QC-tab">
@@ -815,7 +850,7 @@
             <br>
         </div>
 
-        <div style="margin-top:15px;background-color:#e8f4f8;width:100%;padding:10px;">
+        <div style="margin-top:15px;background-color:#e8f4f8;width:100%;padding:10px;font-size:14px;">
           <form id="report_form">
             <div class="row">
               <div class="col-4">
@@ -866,6 +901,8 @@
           <button type="button" id="new_variant_button" class="btn btn-primary btn-sm mb-1" data-bs-toggle="modal" data-bs-target="#addEntryModal">
             <i class="fas fa-plus-circle" ></i> Afegir variant
           </button>
+          <button class="btn btn-secondary btn-sm mb-1" id="copyButton" onclick="copyVariantInfo()"> <i class="fas fa-copy" ></i>Copiar variants</button>
+
           <table id="therapeutic_table" class="table table-sm table-striped table-bordered dt-responsive wrap" style="width:100%;background-color:white;">
             <div id="delete_multiple_button" style="margin-bottom:15px;display:none;">
               <hr>
@@ -884,7 +921,39 @@
             </thead>
             <tbody>
             {% for var in relevant_variants %}
-            <tr>
+            {% set var_json = var.var_json  %}
+
+            {% if var.blacklist == "yes" %}
+              <tr style="background-color:rgb(255, 222, 222)"
+              
+              data-gene="{{ var.gene }}" 
+              data-exon="{{ var.exon }}" 
+              data-intron="{{ var.intron }}"
+              data-refseq="{{ var.refseq }}" 
+              data-isoform="{{ var.enst_id }}" 
+              data-pcode="{{ var.hgvsp }}" 
+              data-ccode="{{ var.hgvsc }}"
+              data-read_support="{{ var.read_support }}"
+              data-depth="{{ var.depth }}"
+              
+              >
+
+            {% else %}
+              <tr
+              data-gene="{{ var.gene }}" 
+              data-exon="{{ var.exon }}" 
+              data-intron="{{ var.intron }}"
+              data-refseq="{{ var.refseq }}" 
+              data-isoform="{{ var.enst_id }}" 
+              data-pcode="{{ var.hgvsp }}" 
+              data-ccode="{{ var.hgvsc }}"
+              data-read_support="{{ var.read_support }}"
+              data-depth="{{ var.depth }}"
+          
+              
+              >
+            {% endif %}
+
             <td>
               <input type="checkbox" id="check_var_{{ var.hgvsg }}" name="check_therapeutic_variant"/>
             </td>
@@ -905,15 +974,37 @@
                   <a data-toggle="modal" data-target="#edit_report_{{var.id}}" role="button">
                     <i class="fas fa-edit" style="color:rgb(109, 106, 106)"></i><small></small>
                   </a>
-                  <a class="" href="{{ url_for('remove_variant', run_id=sample_info.run_id, sample=sample_info.lab_id, sample_id=sample_info.id, var_id=var.id, var_classification=var.classification) }}" onclick="return confirm('Segur que vols eliminar aquesta Variant?');" method="POST" enctype="multipart/form-data" id="update_therapeutic_variant"><i class="fas fa-trash" style="color: rgba(209, 20, 20, 0.938)"></i><small></small></a>
+                  <!-- <a class="" href="{{ url_for('remove_variant', run_id=sample_info.run_id, sample=sample_info.lab_id, sample_id=sample_info.id, var_id=var.id, var_classification=var.classification) }}" onclick="return confirm('Segur que vols eliminar aquesta Variant?');" method="POST" enctype="multipart/form-data" id="update_therapeutic_variant"><i class="fas fa-trash" style="color: rgba(209, 20, 20, 0.938)"></i><small></small></a> -->
 
-                  {% set var_json = var.var_json  %}
+
+
+                  <a href="#"
+                  class="delete-variant-btn text-danger"
+                  data-url="{{ url_for('remove_variant',
+                                        run_id=sample_info.run_id,
+                                        sample=sample_info.lab_id,
+                                        sample_id=sample_info.id,
+                                        var_id=var.id,
+                                        var_classification=var.classification) }}">
+                 <i class="fas fa-trash"></i>
+               </a>
+
                   <a onclick='showIgvVariant({{ var_json }});' role="button">
                     <div>
                       <i class="fas fa-image fa" style="border-radius:3px;margin:0px;padding:2px;color:white;background-color:#0d98ba"></i> <small><b>IGV</b></small>
                     </div>
                   </a>
-                </div>
+                  {% if (var.blacklist == "yes") %}
+                  <div class="row">
+                    <div class="col">
+                      <span class="badge badge-warning">
+                        BLACKLIST
+                      </span>
+                    </div>
+                  </div>
+                  {% endif %}
+
+                </div>               
               </div>
 
               <div class="modal fade bd-example-modal" id="edit_report_{{var.id}}" tabindex="-1" aria-labelledby="modal_edit_report_{{var.id}}" aria-hidden="true">
@@ -965,7 +1056,7 @@
                 </form>
               </div>
             </td>
-            <td>
+            <td style="min-width:60px;max-width:60px;">
                 <div class="row">
                   <div class="col">
                     {% if (var.variant_type == "Amplification" or var.variant_type == "Loss" or var.variant_type == "SV") %}
@@ -977,7 +1068,8 @@
                 </div>
                 <div class="row">
                   <div class="col">
-                    <i>{{ var.enst_id }}</i>
+                    <!-- <i>{{ var.enst_id }}</i> -->
+                    {{ var.refseq }}
                   </div>
                 </div>
                 <br>
@@ -987,7 +1079,7 @@
                   <b>Intró: </b>{{ var.intron }}
                 {% endif %}
               </td>
-              <td style="min-width:150px;max-width:250px;">
+              <td style="min-width:220px;max-width:250px;">
                 <div class="row">
                   <div class="col" id="{{ var.id }}" style="display:inline-block;" >
                     <span ><b>{{ var.hgvsp }}</b>
@@ -1028,7 +1120,8 @@
                       {% else %}
                         {% set read_support = var.read_support|int %}
                         {% set depth = var.depth|int %}
-                        <b>VAF (%):</b> {{ 100*(read_support/depth)|float|round(5)}}
+                        {% set vaf = 100*(read_support/depth)|float|round(5) %}
+                        <b>VAF (%):</b> {{ '%0.3f'| format(vaf|float) }}
                       {% endif %}
                   </div>
                 </div>
@@ -1052,9 +1145,9 @@
                   <div class="col">
                     <b> Tipus: </b> {{ var.variant_type }}
                   </div>
-                  <div class="col">
+                  <!-- <div class="col">
                     <b>Max Pop AF: </b>{{ var.max_pop_af }}
-                  </div>
+                  </div> -->
                 </div>
 
                 <div class="row">
@@ -1062,27 +1155,13 @@
                       <p class="text-truncate;word-wrap:break-word"><b> Localització/Efecte: </b> {{ var.consequence }}</p>
                   </div>
                   <div class="col">
-                    <b>Max AF: </b>{{ var.max_af }} <br>
+                    <!-- <b>Max AF: </b>{{ var.max_af }} <br> -->
                     {% set var_db_freq = (100*(var.db_detected_number/var.db_sample_count))|float| round(2) %}
-                    <b>Freq. DB: </b>{{ var_db_freq }}% {{ var.db_detected_number }}/{{ var.db_sample_count }}
+                    <b>Freq. DB: </b>{{ var_db_freq }}%  {{ var.db_detected_number }} de {{ var.db_sample_count }}
                   </div>
                 </div>
 
                 </div>
-                {% if (var.blacklist == "yes") %}
-                <div class="row">
-                  <div class="col">
-                    <span class="badge badge-dark">
-                      BLACKLIST
-                    </span>
-                  </div>
-                </div>
-                {% else %}
-                <div class="row">
-                  <div class="col">
-                  </div>
-                </div>
-               {% endif %}
               </td>
               <td style="min-width:150px;max-width:250px;">
                 <div class="row">
@@ -1093,9 +1172,9 @@
                       <text x="12.5" y="15" font-size="9" text-anchor="middle" fill="white" font-family="Comic Sans MS, sans-serif">
                         CGI 
                       </text>
-                      <title>Cancer Genome Interpreter: Summary / CGI Prediction</title>
+                      <title>Cancer Genome Interpreter: Summary | CGI Prediction</title>
                     </svg>
-                    {{ var.kb['Oncogenic summary'] }} / {{ var.kb['Oncogenic prediction'] }}
+                    {{ var.kb['Oncogenic summary'] }} | {{ var.kb['Oncogenic prediction'] }}
                     {% endif %}
                   </div>
                 </div>
@@ -1107,9 +1186,9 @@
                       <text x="12.5" y="15" font-size="9" text-anchor="middle" fill="white" font-family="Comic Sans MS, sans-serif">
                         CV
                       </text>
-                      <title>ClinVar: Germline / Somatic</title>
+                      <title>ClinVar: Germline | Somatic</title>
                     </svg>
-                    {{ var.kb['ClinVar Germline']}} / {{ var.kb['ClinVar Somatic'] }}
+                    {{ var.kb['ClinVar Germline']}} | {{ var.kb['ClinVar Somatic'] }}
                     {% endif %}
                   </div>
                 </div>
@@ -1134,9 +1213,9 @@
                       <text x="12.5" y="15" font-size="12" text-anchor="middle" fill="white" font-family="Comic Sans MS, sans-serif">
                         F
                       </text>
-                      <title>Franklink Germline / Somatic</title>
+                      <title>Franklink Germline | Somatic</title>
                     </svg>
-                    {{ var.kb['Franklin ACMG'] }} / {{ var.kb['Franklin Oncogenicity'] }}
+                    {{ var.kb['Franklin ACMG'] }} | {{ var.kb['Franklin Oncogenicity'] }}
                     {% endif %}
                   </div>
                 </div>
@@ -1155,10 +1234,17 @@
                   </div>
                 </div>
                 <div class="row">
+                  <div class="col">
+                    <small style="margin-left:0px;">                  
+                      {% if var.kb %}
+                      <b>Data de classificació: </b>  
+                        {{ var.kb['Data Classificació'] }}
+                      {% endif %}
 
+                    </small>
+                  </div>
                 </div>
               </td>
-
             </tr>
             {% endfor %}
             </tbody>
@@ -1273,7 +1359,7 @@
           </td>
         <td>
             <div class="row">
-              <div class="col">
+              <div class="col-2">
                  <a href="https://www.genecards.org/cgi-bin/carddisp.pl?gene={{var.gene}} "><b><i>{{ var.gene }}</i></b></a>
               </div>
             </div>
@@ -1312,7 +1398,7 @@
             </div>
             <b> Localització/Efecte: <br></b> {{ var.consequence }}
             {% if (var.blacklist == "yes") %}
-            <span class="badge badge-dark">
+            <span class="badge badge-warning">
               BLACKLIST
             </span>
             {% endif %}
@@ -1323,9 +1409,6 @@
 
                 {% set read_support = var.read_support|float %}
                 {% set depth = var.depth|float %}
-
-
-
                 <b>VAF (%):</b> {{ 100*(read_support/depth)|float|round(4)}}
               </div>
             </div>
@@ -1529,7 +1612,511 @@
 </div>
 
 {% block script %}
+
+
 <script>
+  const snvData     = {{ snv_data | safe }};
+  const vafData     = {{ vaf_data | safe }};
+  const consData    = {{ cons_data | safe }};
+  const vartypeData = {{ vartype_data | safe }};
+  const cnvData = {{ cnv_data | safe }};
+
+</script>
+
+<script>
+ 
+ document.addEventListener('DOMContentLoaded', function(){
+  // 1) Shared dimensions & margins
+  const WIDTH  = 300, HEIGHT = 240;
+  const M = { top:10, right:20, bottom:20, left:40 };
+
+  // 2) Global tooltip div
+  const tooltip = d3.select("body")
+    .append("div")
+    .attr("class","tooltip")
+    .style("opacity",0);
+
+  // ───────── SNV Bar Chart ─────────
+  ;(function(){
+  const data = Object.entries(snvData || {}).flatMap(([ref, alts]) =>
+    Object.entries(alts || {}).map(([alt, cnt]) => ({ label:`${ref}>${alt}`, value:cnt }))
+  );
+  const W = 300 - M.left - M.right,
+        H = 220 - M.top  - M.bottom;
+
+  const svg = d3.select("#bar").append("svg")
+      .attr("width", 360).attr("height", HEIGHT)
+    .append("g")
+      .attr("transform", `translate(${M.left},${M.top})`);
+
+  const x = d3.scaleBand().domain(data.map(d=>d.label)).range([0,W]).padding(0.1);
+  const y = d3.scaleLinear().domain([0, d3.max(data,d=>d.value)||1]).nice().range([H,0]);
+
+   const ffpe = new Set(["C>T","G>A"]);
+
+  svg.append("g")
+   .attr("transform", `translate(0,${H})`)
+   .call(d3.axisBottom(x))
+   .call(g => g.selectAll("path, line").attr("stroke", "#555"))
+   .call(g => g.selectAll("text")
+    .attr("transform", "rotate(60)")    // rotate 60°
+    .attr("dx", "0.8em")                // move label right
+    .attr("dy", "0.15em")               // move label down a bit
+    .style("text-anchor", "start")      // align text to the start of the tick
+    .attr("fill", "#333"));
+
+  svg.append("g")
+    .call(d3.axisLeft(y).ticks(5))
+    .call(g => g.selectAll("path, line").attr("stroke", "#555"))
+    .call(g => g.selectAll("text").attr("fill",   "#333"));
+
+  svg.selectAll("rect")
+    .data(data).enter().append("rect")
+      .attr("x",   d=> x(d.label))
+      .attr("y",   d=> y(d.value))
+      .attr("width",  x.bandwidth())
+      .attr("height", d=> H - y(d.value))
+      .attr("fill",  d=> ffpe.has(d.label)
+                          ? "rgba(255,0,0,0.35)"
+                          : "rgba(35,203,167,0.55)")
+    .on("mouseover", function(event,d){
+      tooltip.html(`${d.label}: <b>${d.value}</b>`)
+        .style("left", (event.pageX+10)+"px")
+        .style("top",  (event.pageY+10)+"px")
+        .transition().duration(100).style("opacity",1);
+      const px = x(d.label)+x.bandwidth()/2,
+            py = y(d.value)-5;
+      d3.select(this.parentNode).append("text")
+        .attr("class","hover-label")
+        .attr("x",px).attr("y",py)
+        .attr("text-anchor","middle")
+        .style("font-size","12px")
+        .text(d.value);
+    })
+    .on("mouseout", function(){
+      tooltip.transition().duration(100).style("opacity",0);
+      d3.select(this.parentNode).selectAll(".hover-label").remove();
+    });
+})();
+
+
+  // ───────── VAF Histogram ─────────
+;(function(){
+  // 1) bin the data into 20 buckets
+  const bins = d3.bin()
+    .domain([0,1])
+    .thresholds(50)(vafData || []);
+
+  const W = WIDTH - M.left - M.right;
+  const H = 220 - M.top  - M.bottom;
+
+  const svg = d3.select("#hist")
+    .append("svg")
+      .attr("width",  WIDTH)
+      .attr("height", HEIGHT)
+    .append("g")
+      .attr("transform", `translate(${M.left},${M.top})`);
+
+  // 2) scales
+  const x = d3.scaleLinear().domain([0,1]).range([0, W]);
+  const y = d3.scaleLinear()
+    .domain([0, d3.max(bins, d=>d.length) || 1]).nice()
+    .range([H, 0]);
+
+  // 3) axes — note the .ticks(5) on the left axis!
+
+  svg.append("g")
+   .attr("transform", `translate(0,${H})`)
+   .call(d3.axisBottom(x).ticks(5))
+   .call(g => g.selectAll("path, line").attr("stroke", "#555"))
+   .call(g => g.selectAll("text").attr("fill",   "#333"));
+
+  svg.append("g")
+    .call(d3.axisLeft(y).ticks(5))
+    .call(g => g.selectAll("path, line").attr("stroke", "#555"))
+    .call(g => g.selectAll("text").attr("fill",   "#333"));
+
+  // 4) bars
+  svg.selectAll("rect.hist-bar")
+    .data(bins)
+    .enter().append("rect")
+      .attr("class","hist-bar")
+      .attr("x",    d=> x(d.x0) + 1)
+      .attr("y",    d=> y(d.length))
+      .attr("width",d=> Math.max(0, x(d.x1) - x(d.x0) - 1))
+      .attr("height",d=> H - y(d.length))
+      .attr("fill","#89aacd")
+    // 5) hover interactions
+    .on("mouseover", function(event, d){
+      if (!d || d.x0===undefined) return;
+      tooltip.html(
+          `[${d.x0.toFixed(2)}–${d.x1.toFixed(2)}]: <b>${d.length}</b>`
+        )
+        .style("left", (event.pageX+10)+"px")
+        .style("top",  (event.pageY+10)+"px")
+        .transition().duration(100)
+        .style("opacity",1);
+      const cx = (x(d.x0) + x(d.x1)) / 2;
+      const cy = y(d.length) - 5;
+      d3.select(this.parentNode).append("text")
+        .attr("class","hover-label")
+        .attr("x", cx).attr("y", cy)
+        .attr("text-anchor","middle")
+        .style("font-size","12px")
+        .text(d.length);
+    })
+    .on("mouseout", function(){
+      tooltip.transition().duration(100).style("opacity",0);
+      d3.select(this.parentNode).selectAll(".hover-label").remove();
+    });
+})();
+  // ───────── Consequence Donut + Legend ─────────
+
+
+  ;(function(){
+  // Shared dimensions
+  const WIDTH  = 300,
+        HEIGHT = 220;
+
+  // 1) Prepare data
+  const raw    = consData || {};
+  const data   = Object.entries(raw).map(([label,value]) => ({ label, value }));
+  if (!data.length) return;
+
+  // 2) Compute legend width from the longest label
+  const charWidth = 7; // approx px per character
+  const maxChars  = d3.max(data, d => d.label.length);
+  const LEG_W     = maxChars * charWidth + 30; // extra padding
+  const TOTAL_W   = WIDTH + LEG_W + 20;        // extra margin
+  const TOTAL_H   = HEIGHT;
+
+  // 3) Clear and create SVG
+  d3.select('#pie').selectAll('*').remove();
+  const svg = d3.select('#pie')
+    .append('svg')
+      .attr('width',  TOTAL_W)
+      .attr('height', TOTAL_H);
+
+  // 4) Donut center group
+  const cx = WIDTH/2,
+        cy = HEIGHT/2;
+  const g  = svg.append('g')
+    .attr('transform', `translate(${cx},${cy})`);
+
+  // 5) Radii
+  const R      = 100,
+        innerR = R * 0.35;
+
+  // 6) Pie + Arc
+  const pieGen   = d3.pie().value(d => d.value);
+  const arcs     = pieGen(data);
+  const arcGen   = d3.arc().innerRadius(innerR).outerRadius(R);
+
+  // 7) Professional palette
+  const color = d3.scaleOrdinal(d3.schemeSet3);
+
+  // 8) Draw slices
+  g.selectAll('path.slice')
+    .data(arcs)
+    .enter().append('path')
+      .attr('class','slice')
+      .attr('d', arcGen)
+      .attr('fill', (d,i) => color(i))
+    .on('mouseover', function(event,d){
+      tooltip.html(`${d.data.label}: <b>${d.data.value}</b>`)
+        .style('left', (event.pageX+10)+'px')
+        .style('top',  (event.pageY+10)+'px')
+        .transition().duration(100).style('opacity',1);
+      const [lx,ly] = arcGen.centroid(d);
+      g.append('text')
+        .attr('class','hover-label')
+        .attr('transform', `translate(${lx},${ly})`)
+        .attr('text-anchor','middle')
+        .style('font-size','12px')
+        .text(d.data.value);
+    })
+    .on('mouseout', function(){
+      tooltip.transition().duration(100).style('opacity',0);
+      g.selectAll('.hover-label').remove();
+    });
+
+  // 9) Legend
+  const legend = svg.append('g')
+    .attr('transform', `translate(${WIDTH + 20}, 20)`);
+
+  data.forEach((d,i) => {
+    const row = legend.append('g')
+      .attr('transform', `translate(0,${i * 20})`);
+    row.append('rect')
+      .attr('width', 12)
+      .attr('height',12)
+      .attr('fill', color(i));
+    row.append('text')
+      .attr('x', 16)
+      .attr('y', 10)
+      .text(d.label)
+      .style('font-size','12px')
+      .attr('alignment-baseline','middle');
+  });
+})();
+
+
+
+// Function: createCNVScatter
+function createCNVScatter(cnvData, config) {
+  const {
+    containerId,
+    filterSelectId,
+    minInputId,
+    maxInputId,
+    applyBtnId,
+    width = 300,
+    height = 300
+  } = config;
+
+  const M = { top:20, right:20, bottom:40, left:50 };
+  const W = width  - M.left - M.right;
+  const H = height - M.top  - M.bottom;
+
+  // 1) Parse & sort baseData
+  let baseData = cnvData.map(d => ({
+    chromosome:   d.chromosome,
+    region:       +d.region,
+    pos:     +d.position,
+    roi_log2:     +d.roi_log2,
+    segment_log2: +d.segment_log2,
+    gene:         d.gene || "",
+    idx:          null
+  }));
+
+  const CHR_ORDER = [
+    ...Array.from({length:22}, (_,i) => String(i+1)), // "1","2",…,"22"
+    "X", "Y", "MT"
+  ];
+
+  // 2) Build a lookup map so lookups are O(1)
+  const CHR_INDEX = CHR_ORDER.reduce((m, chr, i) => (m[chr] = i, m), {});
+
+  // 3) When you sort, use that map (fallback to a high index for unknowns)
+  baseData.sort((a, b) => {
+    const ia = CHR_INDEX[a.chromosome] ?? CHR_ORDER.length;
+    const ib = CHR_INDEX[b.chromosome] ?? CHR_ORDER.length;
+    if (ia !== ib) return ia - ib;
+    // same chromosome: sort by region
+    return a.region - b.region;
+  });
+
+  // 2) Populate chromosome dropdown
+  const uniqueChrs = [...new Set(baseData.map(d=>d.chromosome))];
+  const chrFilter = document.getElementById(filterSelectId);
+  uniqueChrs.forEach(chr => {
+    const opt = document.createElement("option");
+    opt.value = chr;
+    opt.text  = chr;
+    chrFilter.appendChild(opt);
+  });
+
+  // 3) Tooltip
+  const tooltip = d3.select("body")
+    .append("div")
+      .attr("class","tooltip");
+
+  // 4) Render function
+  function renderPlot(data) {
+    // a) assign idx
+    data.forEach((d,i)=>d.idx=i);
+
+    // b) group + compute blocks
+    const byChr      = d3.group(data, d=>d.chromosome);
+    const chromOrder = Array.from(byChr.keys());
+    const blocks     = chromOrder.map(chr=>byChr.get(chr));
+    const midpoints  = blocks.map(b=> (b[0].idx + b[b.length-1].idx)/2 );
+    const boundaries = blocks.slice(1).map(b=> b[0].idx );
+
+    // c) clear container
+    d3.select("#"+containerId).selectAll("*").remove();
+
+    // d) SVG
+    const svg = d3.select("#"+containerId)
+      .append("svg")
+        .attr("width",  width)
+        .attr("height", height)
+      .append("g")
+        .attr("transform",`translate(${M.left},${M.top})`);
+
+    // e) scales
+    const x = d3.scaleLinear().domain([0,data.length-1]).range([0,W]);
+    const y = d3.scaleLinear()
+      .domain(d3.extent(data.flatMap(d=>[d.roi_log2,d.segment_log2])))
+      .nice()
+      .range([H,0]);
+
+    // f) axes
+    svg.append("g")
+      .call(d3.axisLeft(y).ticks(5))
+      .call(g=>g.selectAll("path,line").attr("stroke","#555"))
+      .call(g=>g.selectAll("text").attr("fill","#333"));
+
+    svg.append("g")
+      .attr("transform",`translate(0,${H})`)
+      .call(
+        d3.axisBottom(x)
+          .tickValues(midpoints)
+          .tickFormat((_,i)=> chromOrder[i])
+      )
+      .call(g=>g.selectAll("path,line").attr("stroke","#555"))
+      .call(g=>g.selectAll("text").attr("fill","#333"));
+
+    // g) boundaries
+    svg.selectAll("line.boundary")
+      .data(boundaries)
+      .enter().append("line")
+        .attr("x1",d=>x(d)).attr("x2",d=>x(d))
+        .attr("y1",0).attr("y2",H)
+        .attr("stroke","#999").attr("stroke-dasharray","3,2");
+
+    // h) segment_log2 line
+    const lineGen = d3.line()
+      .x(d=>x(d.idx)).y(d=>y(d.segment_log2));
+    svg.append("path")
+      .datum(data)
+      .attr("fill","none")
+      .attr("stroke","red")
+      .attr("stroke-width",1.5)
+      .attr("d", lineGen);
+
+    // i) alternating colors
+    const palette = ["steelblue","grey"];
+    const colorMap = {};
+    chromOrder.forEach((chr,i)=> colorMap[chr] = palette[i % palette.length]);
+
+    // j) ROI points
+    svg.selectAll("circle.cnv-point")
+      .data(data)
+      .enter().append("circle")
+        .attr("class","cnv-point")
+        .attr("cx",d=>x(d.idx))
+        .attr("cy",d=>y(d.roi_log2))
+        .attr("r",3)
+        .attr("fill",d=>colorMap[d.chromosome])
+        .attr("opacity",0.8)
+      .on("mouseover",function(event,d){
+        tooltip.html(
+            `<b><i>${d.gene}</i></b><br>`+
+            `${d.chromosome}:${d.pos}<br>`+
+            `ROI log2: <b>${d.roi_log2.toFixed(2)}</b><br>`+
+            `Seg log2: <b>${d.segment_log2.toFixed(2)}</b><br>`
+          )
+          .style("left",(event.pageX+10)+"px")
+          .style("top",(event.pageY+10)+"px")
+          .transition().duration(100).style("opacity",1);
+        d3.select(this.parentNode)
+          .append("text")
+            .attr("class","hover-label")
+            .attr("x", x(d.idx)+6)
+            .attr("y", y(d.roi_log2)-6)
+            .style("font-size","10px")
+            .text(d.roi_log2.toFixed(2));
+      })
+      .on("mouseout",function(){
+        tooltip.transition().duration(100).style("opacity",0);
+        svg.selectAll(".hover-label").remove();
+      });
+
+    // k) axis titles
+    svg.append("text")
+      .attr("x",W/2).attr("y",H+35)
+      .attr("text-anchor","middle")
+      .style("font-size","12px");
+    svg.append("text")
+      .attr("transform","rotate(-90)")
+      .attr("x",-H/2).attr("y",-35)
+      .attr("text-anchor","middle")
+      .style("font-size","12px")
+      .text("log₂ ratio");
+  }
+
+  // 5) Initial draw
+  renderPlot(baseData);
+
+  // 6) Hook up filter
+  document.getElementById(applyBtnId)
+    .addEventListener("click", ()=>{
+      const selChr = document.getElementById(filterSelectId).value;
+      const minR   = parseFloat(document.getElementById(minInputId).value);
+      const maxR   = parseFloat(document.getElementById(maxInputId).value);
+      const filtered = baseData.filter(d=>{
+        if (selChr && d.chromosome!==selChr) return false;
+        if (!isNaN(minR) && d.region<minR)   return false;
+        if (!isNaN(maxR) && d.region>maxR)   return false;
+        return true;
+      });
+      renderPlot(filtered);
+    });
+}
+
+// Finally, invoke it:
+createCNVScatter(cnvData, {
+  containerId:   'scatter',
+  filterSelectId:'chrFilter',
+  minInputId:    'regionMin',
+  maxInputId:    'regionMax',
+  applyBtnId:    'applyFilter',
+  width:         1300,
+  height:        270
+});
+
+}); // end DOMContentLoaded
+
+</script>
+
+
+<script>
+
+document.addEventListener('DOMContentLoaded', () => {
+  // Attach a click‐handler to every delete button
+  document.querySelectorAll('.delete-variant-btn')
+    .forEach(btn => btn.addEventListener('click', handleDeleteVariant));
+});
+
+async function handleDeleteVariant(event) {
+  event.preventDefault();
+  const btn = event.currentTarget;
+
+  // 1) confirm
+  if (!confirm('Segur que vols eliminar aquesta variant?')) return;
+
+  const url = btn.getAttribute('data-url');
+
+  try {
+    // 2) fire off AJAX POST
+    const resp = await fetch(url, {
+      method: 'POST',
+      headers: {
+        'X-Requested-With': 'XMLHttpRequest'
+      }
+    });
+    if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+
+    // 3) parse JSON
+    const { status, message, deleted_var_id } = await resp.json();
+    if (status !== 'ok') throw new Error(message);
+
+    // 4) show flash message in your #message_div
+    const msgDiv  = document.getElementById('message_div');
+    const msgSpan = document.getElementById('message_span');
+    msgSpan.textContent = message;
+    msgDiv.style.display = 'block';
+
+    // 5) remove the <tr> containing this button
+    const row = btn.closest('tr');
+    if (row) row.remove();
+
+  } catch (err) {
+    console.error('Deletion failed:', err);
+    alert('Error eliminant la variant. Torna-ho a provar.');
+  }
+}
 
 
 button_new_variant = document.getElementById("new_variant_button");
@@ -1602,7 +2189,7 @@ function calculateAlleleFrequency() {
     const readSupport = parseFloat(document.getElementById('read_support').value);
 
     if (!isNaN(depth) && depth > 0 && !isNaN(readSupport) && readSupport >= 0) {
-        const alleleFrequency = Math.min(readSupport / depth, 1).toFixed(2); // Ensure max is 1
+        const alleleFrequency = Math.min(readSupport / depth, 1).toFixed(4); // Ensure max is 1
         document.getElementById('allele_frequency').value = alleleFrequency;
     } else {
         document.getElementById('allele_frequency').value = '';
@@ -1703,6 +2290,12 @@ function calculateAlleleFrequency() {
       biopsy_date = tmp[2] + "/" + tmp[1] + "/" +tmp[0];
     }
 
+    if (recieved_date) {
+      let tmp = recieved_date.split("-");
+      recieved_date = tmp[2] + "/" + tmp[1] + "/" +tmp[0];
+    }
+
+
     sex = document.getElementById("modal_edit_sex").value; 
     age = document.getElementById("modal_edit_age").value; 
 
@@ -1733,7 +2326,6 @@ function calculateAlleleFrequency() {
       age: age,
       sample_block: sample_block,
       service: service
-
     }
 
     fetch('/update_patient_info', {
@@ -1750,7 +2342,37 @@ function calculateAlleleFrequency() {
       console.log(data["info"]);
       $('#edit_sample').modal('hide');
     }).then(() => {
-      window.location.reload();
+      //window.location.reload();
+
+      document.getElementById("edit_lab_id").innerText = lab_id;
+      document.getElementById("edit_modulab_id").innerText = modulab_id;
+      document.getElementById("edit_ext2_id").innerText = hc_id;
+      document.getElementById("edit_ext3_id").innerText = cip_id;
+      document.getElementById("edit_sample_type").innerText = sample_type;
+      document.getElementById("edit_recieved_date").innerText = recieved_date;
+
+      document.getElementById("edit_tumoral_pct").innerText = tumor_pct;
+      document.getElementById("edit_hospital").innerText = hospital;
+
+
+      document.getElementById("edit_physician_name").innerText = physician_name;
+      document.getElementById("edit_biopsy_date").innerText = biopsy_date;
+      document.getElementById("edit_tumor_origin").innerText = tumor_origin;
+      document.getElementById("edit_age").innerText = age;
+      document.getElementById("edit_sex").innerText = sex;
+      document.getElementById("edit_sample_block").innerText = sample_block;
+      document.getElementById("edit_service").innerText = service;
+      document.getElementById("lab_id_tag").innerText = lab_id;
+
+      let sample_num_id = document.getElementById("sample_num_id").innerText;
+
+      const baseUrl = window.location.origin;  // e.g., "http://172.16.83.24:5000"
+      const newPath = `/show_sample_details/${run_id}/${lab_id}/${sample_num_id}/General`;
+      const newUrl = baseUrl + newPath;
+
+      window.history.pushState({ path: newUrl }, '', newUrl);
+
+
     });
 
 
@@ -1817,8 +2439,12 @@ function calculateAlleleFrequency() {
 
 
   function showIgvVariant(locus) {
-    var start = parseInt(locus['POS']) +2;
+    // var start = parseInt(locus['POS']) +2;
+    // var coordinates = locus['CHROM'] + ':' + start.toString();
+
+    var start = parseInt(locus['POS']);
     var coordinates = locus['CHROM'] + ':' + start.toString();
+
     console.log(coordinates);
 
     var igvDiv = document.getElementById('igvDiv');
@@ -1905,6 +2531,318 @@ function calculateAlleleFrequency() {
      }
    }
 
+// Diccionari per convertir codis d'aminoàcids de tres lletres a una lletra
+var aminoDict = {
+  "Ala": "A",
+  "Arg": "R",
+  "Asn": "N",
+  "Asp": "D",
+  "Cys": "C",
+  "Glu": "E",
+  "Gln": "Q",
+  "Gly": "G",
+  "His": "H",
+  "Ile": "I",
+  "Leu": "L",
+  "Lys": "K",
+  "Met": "M",
+  "Phe": "F",
+  "Pro": "P",
+  "Ser": "S",
+  "Thr": "T",
+  "Trp": "W",
+  "Tyr": "Y",
+  "Val": "V",
+  "Ter": "*",// Stop codon
+  "?": "?" 
+};
+
+
+// Function to convert a long amino acid change to short notation
+function convertLongToShort(longChange) {
+  // Remove "p." prefix if present
+  if (longChange.startsWith("p.")) {
+    longChange = longChange.substring(2).trim();
+  }
+  
+  // If the change contains "fs", process as frameshift
+  if (longChange.includes("fs")) {
+    // Split at "fs"
+    var parts = longChange.split("fs");
+    if (parts.length !== 2) return longChange; // Fallback if unexpected format
+    var leftPart = parts[0];  // e.g., "Thr1556Asn"
+    var rightPart = parts[1]; // e.g., "Ter3"
+    
+    // Process leftPart: expect format [AminoLeft][Number][AminoRight]
+    var patternLeft = /^([A-Za-z]+)(\d+)([A-Za-z]+)$/;
+    var matchLeft = leftPart.match(patternLeft);
+    if (!matchLeft) return longChange;
+    var leftAA = matchLeft[1];   // e.g., "Thr"
+    var pos = matchLeft[2];      // e.g., "1556"
+    var nextAA = matchLeft[3];   // e.g., "Asn"
+    
+    // Convert left amino acids in 3-letter chunks
+    var leftShort = "";
+    for (var i = 0; i < leftAA.length; i += 3) {
+      var chunk = leftAA.substr(i, 3);
+      chunk = chunk.charAt(0).toUpperCase() + chunk.slice(1).toLowerCase();
+      leftShort += aminoDict[chunk] || chunk;
+    }
+    var nextShort = "";
+    for (var i = 0; i < nextAA.length; i += 3) {
+      var chunk = nextAA.substr(i, 3);
+      chunk = chunk.charAt(0).toUpperCase() + chunk.slice(1).toLowerCase();
+      nextShort += aminoDict[chunk] || chunk;
+    }
+    
+    // Process rightPart, expected to be something like "Ter3"
+    var patternRight = /^([A-Za-z]+)(\d+)$/;
+    var matchRight = rightPart.match(patternRight);
+    var rightSuffix = "";
+    if (matchRight) {
+      var stopAA = matchRight[1];
+      var stopNum = matchRight[2];
+      stopAA = stopAA.charAt(0).toUpperCase() + stopAA.slice(1).toLowerCase();
+      rightSuffix = (aminoDict[stopAA] || stopAA) + stopNum;
+    } else {
+      rightSuffix = rightPart; // fallback if unexpected
+    }
+    
+    // Final frameshift short notation: leftShort + pos + nextShort + "fs" + rightSuffix
+    return leftShort + pos + nextShort + "fs" + rightSuffix;
+  } else {
+    // Normal (non-frameshift) case: expected format [AminoLeft][Number][AminoRight]
+    var pattern = /^([A-Za-z]+)(\d+)([A-Za-z]+)$/i;
+    var match = longChange.match(pattern);
+    if (!match) return longChange;
+    var left = match[1];
+    var pos = match[2];
+    var right = match[3];
+    
+    var leftShort = "";
+    for (var i = 0; i < left.length; i += 3) {
+      var chunk = left.substr(i, 3);
+      chunk = chunk.charAt(0).toUpperCase() + chunk.slice(1).toLowerCase();
+      leftShort += aminoDict[chunk] || chunk;
+    }
+    
+    var rightShort = "";
+    for (var i = 0; i < right.length; i += 3) {
+      var chunk = right.substr(i, 3);
+      chunk = chunk.charAt(0).toUpperCase() + chunk.slice(1).toLowerCase();
+      rightShort += aminoDict[chunk] || chunk;
+    }
+    
+    return leftShort + pos + rightShort;
+  }
+}
+
+
+// Funció principal per copiar la informació de totes les files de la taula
+function copyVariantInfo() {
+  const tableElement = document.getElementById("therapeutic_table");
+  const button = document.getElementById("copyButton");
+  
+  // Comprovem si la taula està inicialitzada com a DataTable
+  if ($.fn.DataTable.isDataTable(tableElement)) {
+    const table = $('#therapeutic_table').DataTable();
+    const originalPageLength = table.page.len();
+    
+    // Adjunta l'escoltador de l'esdeveniment 'draw' ABANS de canviar la paginació
+    table.one('draw', function() {
+      // Recupera totes les files ara visibles (incloent les ocultes)
+      const rows = Array.from(table.rows().nodes());
+      let infoList = [];
+      
+      rows.forEach(row => {
+        const gene = row.getAttribute('data-gene');
+        const exon = row.getAttribute('data-exon');
+        const intron = row.getAttribute('data-intron');
+        const isoform = row.getAttribute('data-isoform');
+        const refseq = row.getAttribute('data-refseq');
+        const pcode = row.getAttribute('data-pcode'); // canvi llarg, per exemple "Val560Glu"
+        const ccode = row.getAttribute('data-ccode');
+        const readSupport = parseFloat(row.getAttribute('data-read_support'));
+        const depth = parseFloat(row.getAttribute('data-depth'));
+  
+        let vaf = "";
+        if (depth && readSupport) {
+          vaf = (100 * (readSupport / depth)).toFixed(2);
+        }
+  
+        // Decideix si utilitzar "exó" o "intró" segons quin camp tingui dades (si exon no és ".")
+        let intronExon = ".";
+        if (exon !== ".") {
+          intronExon = "exó";
+        }
+        if (intron !== ".") {
+          intronExon = "intró";
+        }
+  
+        // Extreu el valor numèric inicial de l'exon/intró (per exemple, "21" de "exó 21/21")
+        let exonText = (exon && exon !== '.') ? `exó ${exon}` : `intró ${intron}`;
+        let firstValue = "";
+        if (exonText.includes(" ")) {
+          let parts = exonText.split(' ');
+          if (parts.length > 1) {
+            firstValue = parts[1].split('/')[0];
+          }
+        }
+  
+        // Converteix el canvi llarg al seu format curt
+        const shortPcode = convertLongToShort(pcode);
+        let displayPcode = ".";
+        let longPcodeRaw = pcode.startsWith("p.") ? pcode.substring(2) : pcode;
+        if (exon != ".") {
+          displayPcode = "p.(" + longPcodeRaw + ")";
+        }
+
+        // Construeix la cadena final, incloent el canvi llarg i el seu equivalent curt
+        // Exemple: "GENE: exó 21(ISOFORM); Val560Glu (V560E); ccode. VAF:33.27%"
+        const info = `${gene} (${refseq}) ${intronExon} ${firstValue}: ${ccode}; ${displayPcode}.[${shortPcode}] VAF:${vaf}%`;
+        infoList.push(info);
+      });
+  
+      const finalInfo = infoList.join("\n");
+  
+      // Copia al clipboard utilitzant la Clipboard API (o fallback)
+      if (navigator.clipboard && window.isSecureContext) {
+        navigator.clipboard.writeText(finalInfo)
+          .then(() => {
+            updateButtonTick(button);
+            // Restaura la paginació original
+            table.page.len(originalPageLength).draw();
+          })
+          .catch(err => {
+            console.error("Clipboard API error:", err);
+            fallbackCopyTextToClipboard(finalInfo, function() {
+              updateButtonTick(button);
+              table.page.len(originalPageLength).draw();
+            });
+          });
+      } else {
+        fallbackCopyTextToClipboard(finalInfo, function() {
+          updateButtonTick(button);
+          table.page.len(originalPageLength).draw();
+        });
+      }
+    });
+    
+    // Canvia la paginació per mostrar totes les files
+    table.page.len(-1).draw();
+  
+  } else {
+    // Si no és DataTable, simplement processa tots els <tr> amb data-gene
+    const rows = document.querySelectorAll('tr[data-gene]');
+    let infoList = [];
+    
+    rows.forEach(row => {
+      const gene = row.getAttribute('data-gene');
+      const exon = row.getAttribute('data-exon');
+      const intron = row.getAttribute('data-intron');
+      const isoform = row.getAttribute('data-isoform');
+      const pcode = row.getAttribute('data-pcode');
+      const ccode = row.getAttribute('data-ccode');
+      const readSupport = parseFloat(row.getAttribute('data-read_support'));
+      const depth = parseFloat(row.getAttribute('data-depth'));
+  
+      let vaf = "";
+      if (depth && readSupport) {
+        vaf = (100 * (readSupport / depth)).toFixed(2);
+      }
+  
+      let intronExon = ".";
+      if (exon !== ".") {
+        intronExon = "exó";
+      }
+      if (intron !== ".") {
+        intronExon = "intró";
+      }
+  
+      let exonText = (exon && exon !== '.') ? `exó ${exon}` : `intró ${intron}`;
+      let firstValue = "";
+      if (exonText.includes(" ")) {
+        let parts = exonText.split(' ');
+        if (parts.length > 1) {
+          firstValue = parts[1].split('/')[0];
+        }
+      }
+      let displayPcode = ".";
+      let longPcodeRaw = pcode.startsWith("p.") ? pcode.substring(2) : pcode;
+      if (exon !== ".") {
+        displayPcode = "p.(" + longPcodeRaw + ")";
+      }
+  
+      const shortPcode = convertLongToShort(pcode);
+      const info = `${gene} (${isoform}) ${intronExon} ${firstValue}: ${ccode}; ${displayPcode}.[${shortPcode}] VAF:${vaf}%`;
+      infoList.push(info);
+    });
+    const finalInfo = infoList.join("\n");
+  
+    if (navigator.clipboard && window.isSecureContext) {
+      navigator.clipboard.writeText(finalInfo)
+        .then(() => updateButtonTick(button))
+        .catch(err => {
+          console.error("Clipboard API error:", err);
+          fallbackCopyTextToClipboard(finalInfo, function() {
+            updateButtonTick(button);
+          });
+        });
+    } else {
+      fallbackCopyTextToClipboard(finalInfo, function() {
+        updateButtonTick(button);
+      });
+    }
+  }
+}
+  
+// Fallback que utilitza un textarea temporal per copiar el text al clipboard
+function fallbackCopyTextToClipboard(text, callback) {
+  const button = document.getElementById("copyButton");
+  const textArea = document.createElement("textarea");
+  textArea.value = text;
+  textArea.style.position = "fixed";
+  textArea.style.top = "0";
+  textArea.style.left = "0";
+  textArea.style.opacity = "0";
+  document.body.appendChild(textArea);
+  textArea.focus();
+  textArea.select();
+  
+  try {
+    const successful = document.execCommand('copy');
+    if (successful) {
+      // En lloc d'un alert, actualitzem el botó afegint una icona tick de Font Awesome
+      updateButtonTick(button);
+    }
+  } catch (err) {
+    console.error("Fallback error:", err);
+  }
+  
+  document.body.removeChild(textArea);
+  
+  if (callback && typeof callback === 'function') {
+    callback();
+  }
+}
+  
+// Funció per actualitzar el botó amb una icona tick (Font Awesome)
+function updateButtonTick(button) {
+  if (button) {
+    // Guarda el contingut original del botó si no està guardat
+    if (!button.getAttribute('data-original-text')) {
+      button.setAttribute('data-original-text', button.innerHTML);
+    }
+    // Actualitza el contingut del botó per mostrar una icona tick
+    button.innerHTML = "";
+    button.innerHTML += ' <i class="fas fa-check"></i>';
+    
+    // Opcional: es pot revertir el botó al contingut original després de 2 segons
+    setTimeout(function() {
+      button.innerHTML = button.getAttribute('data-original-text');
+    }, 2000);
+  }
+}
  </script>
 {% endblock %}
 

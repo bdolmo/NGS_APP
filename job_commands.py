@@ -6,6 +6,8 @@ import os
 import subprocess
 import glob
 from config import data_dir
+import shutil
+
 
 def launch_ngs_analysis(params):
     '''
@@ -52,7 +54,6 @@ def launch_ngs_analysis(params):
         :rtype: str or None
 
         :raises Exception: If the analysis fails, raises an Exception with the error message.
-        
     '''
 
     lab_data = ""
@@ -70,11 +71,24 @@ def launch_ngs_analysis(params):
         params['BIN_YAML'], '--run_id', params['RUN_NAME'], '--bwamem2'
     ]
     cmd = [str(item) for item in cmd]
-    print(' '.join([str(item) for item in cmd]))
-    
+   
     commands_file = os.path.join(data_dir, 'pipeline_logs.txt')
     with open(commands_file, 'a') as f:
         f.write(' '.join(cmd) + '\n')
+
+    # List of all YAML keys you might want to copy
+    yaml_keys = ['ANN_YAML', 'DOCKER_YAML', 'REF_YAML', 'BIN_YAML']
+    for key in yaml_keys:
+        src = params.get(key)
+        if src and os.path.isfile(src):
+            # destination filename: keep the same basename
+            dst = os.path.join(params['OUTPUT_DIR'], os.path.basename(src))
+            try:
+                shutil.copy(src, dst)
+                print(f' INFO: Copied {key} ({src}) → {dst}')
+            except Exception as e:
+                print(f' ERROR: Warning: could not copy {src} to {dst}: {e}')
+
     
     cmd = ' '.join([str(item) for item in cmd])
 
@@ -85,12 +99,7 @@ def launch_ngs_analysis(params):
     if p1.returncode != 0:
         for err in error.split('\n'):
             print(f'FOUND error: {err}')
-        raise Exception(error)
-
-    # Remove raw fastq files
-    # fastq_list = glob.glob(os.path.join(params['OUTPUT_DIR'], '*fastq.gz'))
-    # for fq in fastq_list:
-    #     os.remove(fq)
+        raise Exception(f"{cmd}\n{error}")
 
     print('Task complete')
     if output:

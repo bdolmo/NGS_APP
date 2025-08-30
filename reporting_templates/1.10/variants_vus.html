@@ -18,7 +18,6 @@
   </thead>
   <tbody>
   {% for var in rare_variants %}
-
     {% set accredited = "" %}
     {% set accreditation_class = "" %}
     {% if ((var.read_support|int >= 4) and (var.depth|int >= 100) and (var.allele_frequency|float >= 0.05)) %}

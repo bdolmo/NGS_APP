@@ -19,4 +19,4 @@ app.config.from_object("config.DevelopmentConfig")
 
 db = SQLAlchemy(app)
 
-from app import panel_analysis, petitions, user, results, management, search, gene_panels
+from app import panel_analysis, petitions, user, results, management, search, gene_panels, pipelines

@@ -1,0 +1,191 @@
+{% extends "base.html" %}
+
+{% block body %}
+<div class="container-fluid py-4">
+  <style>
+    .pipeline-card:hover { transform: translateY(-2px); transition: transform .15s ease; }
+    .card-actions .btn { padding: .25rem .5rem; }
+    .muted-chip { font-size:.825rem; }
+  </style>
+
+  <div class="d-flex align-items-center justify-content-between mb-3" style="margin:0 auto;width:90%;">
+    <h2 class="mb-0">Workflows disponibles</h2>
+    <div class="d-flex gap-2">
+      <a class="btn btn-primary" href="{{ url_for('pipeline_config_page') }}">
+        <i class="fas fa-plus"></i> Nou workflow
+      </a>
+    </div>
+  </div>
+
+  <!-- <div class="card shadow-sm mb-3">
+    <div class="card-body"> -->
+      <div class="row g-2 mb-4" style="margin:0 auto;width:90%;">
+        <div class="col-md-2">
+          <input id="searchBox" class="form-control" placeholder="Cerca per nom o intèrpret…">
+        </div>
+      </div>
+    <!-- </div>
+  </div> -->
+
+  <!-- Cards grid -->
+  <div class="row g-3" id="cardsWrap" style="margin:0 auto;width:90%;">
+    <!-- cards via JS -->
+  </div>
+
+  <!-- Empty state -->
+  <div id="emptyState" class="text-center text-muted py-5 d-none">
+    Cap pipeline
+  </div>
+</div>
+
+<!-- Detalls modal -->
+<div class="modal fade" id="detailsModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-xl modal-dialog-scrollable">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">Detalls del pipeline</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Tanca"></button>
+      </div>
+      <div class="modal-body">
+        <div id="pipeMeta" class="mb-3"></div>
+        <h6 class="mb-2">Paràmetres</h6>
+        <div class="table-responsive">
+          <table class="table table-sm table-striped">
+            <thead>
+              <tr>
+                <th>Nom</th><th>Tipus</th><th>Per defecte</th><th>Req.</th><th>Posicional</th><th>Pos.</th><th>Opcions</th><th>Desc.</th>
+              </tr>
+            </thead>
+            <tbody id="paramsBody"></tbody>
+          </table>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <a id="goConfigure" class="btn btn-outline-primary" href="{{ url_for('pipeline_config_page') }}">Crea una configuració</a>
+        <button class="btn btn-secondary" data-bs-dismiss="modal">Tanca</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  // API endpoints
+  const API_LIST_PIPELINES      = "{{ url_for('api_list_pipelines') }}";
+  const API_GET_PIPELINE_TPL    = "{{ url_for('api_get_pipeline', pipeline_id=0).replace('/0','/__ID__') }}";
+  const API_DELETE_PIPELINE_TPL = "{{ url_for('api_delete_pipeline', pipeline_id=0).replace('/0','/__ID__') }}";
+  const EDIT_URL_TPL            = "{{ url_for('pipeline_edit_page', pipeline_id=0).replace('/0','/__ID__') }}";
+
+  const cardsWrap  = document.getElementById('cardsWrap');
+  const emptyState = document.getElementById('emptyState');
+  const searchBox  = document.getElementById('searchBox');
+
+  async function loadPipelines(){
+    const r = await fetch(API_LIST_PIPELINES);
+    const j = await r.json();
+    window.__allPipes = (j.pipelines || []);
+    renderCards(window.__allPipes);
+  }
+
+  function renderCards(rows){
+    const q = (searchBox.value || '').toLowerCase();
+    const filt = rows.filter(p =>
+      (!q) ||
+      (String(p.name||'').toLowerCase().includes(q)) ||
+      (String(p.interpreter||'').toLowerCase().includes(q))
+    );
+    if(!filt.length){
+      cardsWrap.innerHTML = '';
+      emptyState.classList.remove('d-none');
+      return;
+    }
+    emptyState.classList.add('d-none');
+    cardsWrap.innerHTML = filt.map(p => cardHTML(p)).join('');
+  }
+
+  function cardHTML(p){
+    const version = p.version ? `v${p.version}` : '';
+    if (p.interpreter == "python3") {
+       p.interpreter = `<span class="badge badge-primary">python3</span>`;
+    }
+    if (p.interpreter == "snakemake") {
+      p.interpreter = `<span class="badge badge-success">snakemake</span>`;
+    }
+
+
+    const interp  = p.interpreter;
+    const description = p.description ? `<p>${p.description}</p>` : '';
+    return `
+      <div  style="width: 13rem;margin-right:25px;">
+        <div class="card shadow-sm p-0">
+
+          <img src={{ url_for('static', filename="bioinformatics_workflow.png") }} style="display:block;margin: auto 0px;padding:5px;magin:10px">
+          <hr style="margin:0px;padding:0px;">
+          <div class="card-body p-1 ml-1 d-flex flex-column">
+            <div class="d-flex align-items-start justify-content-between">
+              <a href="${EDIT_URL_TPL.replace('/__ID__','/'+p.id)}"><h5 class="card-title mb-0">${escapeHtml(p.name || '—')}</h5></a>
+              
+            </div>
+            <div class="mb-2">${interp}</div>
+            <div class="">${description}</div>
+           <strong>${version}</strong>
+           
+            </div>
+          </div>
+        </div>
+      </div>
+    `;
+  }
+
+  function escapeHtml(s){
+    return String(s==null?'':s)
+      .replace(/&/g,'&amp;').replace(/</g,'&lt;')
+      .replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
+  }
+
+  async function viewDetails(id){
+    const url = API_GET_PIPELINE_TPL.replace('/__ID__','/'+id);
+    const r = await fetch(url); const j = await r.json();
+    const p = j.pipeline || {};
+    const params = j.params || [];
+
+    document.getElementById('pipeMeta').innerHTML = `
+      <div><b>Nom:</b> ${escapeHtml(p.name||'')}</div>
+      <div><b>Versió:</b> ${escapeHtml(p.version||'—')}</div>
+      <div><b>Intèrpret:</b> ${escapeHtml(p.interpreter||'—')}</div>
+      <div><b>Punt d’entrada:</b> ${p.entrypoint ? '<code>'+escapeHtml(p.entrypoint)+'</code>' : '—'}</div>
+      <div><b>Workdir:</b> ${escapeHtml(p.workdir||'—')}</div>
+    `;
+    document.getElementById('paramsBody').innerHTML = params.map(x => `
+      <tr>
+        <td><code>${escapeHtml(x.name)}</code></td>
+        <td>${escapeHtml(x.type)}</td>
+        <td>${x.type==='bool' ? (x.default ? 'true':'false') : escapeHtml(x.default||'')}</td>
+        <td>${x.required ? '✔' : ''}</td>
+        <td>${x.is_positional ? '✔' : ''}</td>
+        <td>${x.position || ''}</td>
+        <td>${(x.choices||[]).map(escapeHtml).join(', ')}</td>
+        <td>${escapeHtml(x.description || '')}</td>
+      </tr>
+    `).join('') || `<tr><td colspan="8" class="text-muted">Sense paràmetres</td></tr>`;
+
+    const modal = new bootstrap.Modal(document.getElementById('detailsModal'));
+    modal.show();
+  }
+
+  async function deletePipeline(id){
+    if(!confirm('Segur que vols eliminar aquest pipeline?')) return;
+    const url = API_DELETE_PIPELINE_TPL.replace('/__ID__','/'+id);
+    const r = await fetch(url, { method: 'DELETE' });
+    const j = await r.json();
+    if(j.ok){
+      window.__allPipes = (window.__allPipes || []).filter(p => p.id !== id);
+      renderCards(window.__allPipes);
+    }else{
+      alert('No s’ha pogut eliminar.');
+    }
+  }
+
+  searchBox.addEventListener('input', ()=> renderCards(window.__allPipes || []));
+  loadPipelines();
+</script>
+{% endblock body %}
