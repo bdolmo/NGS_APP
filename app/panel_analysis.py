@@ -4,6 +4,7 @@ from datetime import datetime
 import shutil
 import redis
 import yaml
+import re
 from app import app, db
 from flask import Flask, abort
 from flask import (
@@ -28,8 +29,8 @@ from rq.command import send_stop_job_command
 from rq.registry import StartedJobRegistry, FinishedJobRegistry, FailedJobRegistry, DeferredJobRegistry, ScheduledJobRegistry, CanceledJobRegistry
 from rq.job import Job as RQJob  # <-- add this
 
-from job_commands import launch_ngs_analysis
-from config import compendium_url, ngs_app_url
+from job_commands import launch_ngs_analysis, launch_workflow_job
+from config import compendium_url, ngs_app_url, Config
 from pathlib import Path
 from app.models import (
     SampleTable,
@@ -38,6 +39,8 @@ from app.models import (
     RareVariantsTable,
     SummaryQcTable,
     BiomakerTable,
+    AllCnas,
+    LostExonsTable
 )
 from app.models import Job as DBJob
 # from app.server_info import _server_stats
@@ -47,6 +50,8 @@ import json
 import sys
 import time
 from werkzeug.routing import BuildError
+from werkzeug.utils import secure_filename
+
 import platform
 import subprocess
 import shutil
@@ -60,6 +65,242 @@ sys.path.append("/home/udmmp/AutoLauncherNGS")
 sys.path.append("/home/udmmp/NGS_APP")
 sys.path.append("/home/udmmp/AutoLauncherNGS/modules")
 sys.path.append("/home/udmmp/NGS_APP/modules")
+
+
+UPLOAD_ROOT = Path(Config.UPLOADS)
+ANNOTATION_YAML_CANDIDATES = (
+    "annotation_resources_hg19.yaml",
+    "annotation_resources_hg38.yaml",
+    "annotation_resources.yaml",
+)
+BIN_YAML_FILENAME = "binary_resources.yaml"
+REF_YAML_FILENAME = "reference_resources.yaml"
+DOCKER_YAML_FILENAME = "docker_resources.yaml"
+
+# .fastq, .fq, .fastq.gz, .fq.gz
+_FASTQ_RE = re.compile(r"\.(fastq|fq)(\.gz)?$", re.IGNORECASE)
+
+def _is_fastq(name: str) -> bool:
+    return bool(name) and bool(_FASTQ_RE.search(name))
+
+def _dest_dir(job_id: str, panel: str) -> Path:
+    job = secure_filename(job_id) or "run"
+    dest = UPLOAD_ROOT / job / panel
+    dest.mkdir(parents=True, exist_ok=True)
+    return dest
+
+
+def _resolve_analysis_config_paths(run_id: str, panel_name: str, current_paths: dict | None = None) -> dict[str, str]:
+    analysis_dir = _dest_dir(run_id, panel_name)
+    current_paths = current_paths or {}
+
+    def _pick_annotation_yaml() -> str:
+        existing_name = os.path.basename(str(current_paths.get("ann_yaml", "") or "").strip())
+        candidates = []
+        if existing_name:
+            candidates.append(existing_name)
+        candidates.extend(name for name in ANNOTATION_YAML_CANDIDATES if name not in candidates)
+        for filename in candidates:
+            candidate = analysis_dir / filename
+            if candidate.is_file():
+                return str(candidate)
+        return str(analysis_dir / candidates[0])
+
+    return {
+        "ann_yaml": _pick_annotation_yaml(),
+        "bin_yaml": str(analysis_dir / BIN_YAML_FILENAME),
+        "ref_yaml": str(analysis_dir / REF_YAML_FILENAME),
+        "docker_yaml": str(analysis_dir / DOCKER_YAML_FILENAME),
+    }
+
+def _timestamp_log(input_dir: str | Path) -> Path:
+    input_dir = Path(input_dir)
+    input_dir.mkdir(parents=True, exist_ok=True)
+    date_time = datetime.now().strftime("%Y%m%d")
+    logname = os.path.basename(os.path.normpath(str(input_dir)))
+    return input_dir / f"{logname}.{date_time}.pipeline.log"
+
+
+def count_samples_by_prefix(input_dir: str | Path) -> int:
+    """
+    Collapse common mate suffixes to count unique samples:
+      foo_R1.fastq.gz / foo_R2.fastq.gz
+      foo.1.fq.gz / foo.2.fq.gz
+      foo_R1_001.fastq.gz / foo_R2_001.fastq.gz
+    """
+    p = Path(input_dir)
+    mate_suffix = re.compile(r'(_R?[12]|[._-][12])(?:_001)?\.f(?:ast)?q\.gz$', re.IGNORECASE)
+    prefixes = set()
+    for f in list(p.glob("*.fastq.gz")) + list(p.glob("*.fq.gz")):
+        prefixes.add(mate_suffix.sub("", f.name))
+    return len(prefixes)
+
+# --------- Route: simple test + enqueue + DB row ----------
+@app.route("/workflows/execute_job", methods=["POST"])
+def execute_worfklow_job():
+    """
+    Test endpoint that accepts JSON { cmd_object: {...} } (or just the object),
+    enqueues a job to run the command, and persists a DBJob row.
+    """
+    data = request.get_json(silent=True)
+    if data is None:
+        raw = request.form.get("cmd_object") or request.form.get("params")
+        if raw:
+            try:
+                data = json.loads(raw)
+            except json.JSONDecodeError:
+                return jsonify(error="`cmd_object` is not valid JSON"), 400
+        else:
+            return jsonify(error="No JSON body. Send { cmd_object: {...} }"), 400
+
+    cmd_object = data.get("cmd_object") if isinstance(data, dict) else data
+    if not isinstance(cmd_object, dict):
+        return jsonify(error="`cmd_object` must be a JSON object"), 400
+
+    # Required fields
+    cmd       = cmd_object.get("cmd")
+    run_id    = cmd_object.get("run_id")
+    job_id    = cmd_object.get("job_id")
+    panel_nm  = cmd_object.get("panel_name")
+    input_dir = cmd_object.get("input_dir")
+    if not run_id:
+        if job_id:
+            run_id = job_id
+    if not panel_nm:
+        panel_nm = "."
+
+    if not cmd:
+        return jsonify(error="Missing cmd in cmd_object"), 400
+
+    # Prepare log file and touch it so UI can reference immediately
+    log_file = _timestamp_log(input_dir)
+    try:
+        Path(log_file).touch(exist_ok=True)
+    except Exception:
+        pass
+
+    # Enqueue with RQ
+    try:
+        task = q.enqueue(launch_workflow_job, cmd, job_timeout=-1)
+        rq_status = (task.get_status(refresh=True) or "queued").lower()
+        if rq_status not in ("queued", "started", "deferred", "scheduled", "running"):
+            rq_status = "queued"
+    except Exception as e:
+        return jsonify(error=f"Enqueue error: {e}"), 500
+    
+
+    total_samples = count_samples_by_prefix(input_dir)
+
+    # Persist DB row (use your fields; fall back to sensible defaults)
+    try:
+        config_paths = _resolve_analysis_config_paths(
+            run_id,
+            panel_nm,
+            {
+                "ann_yaml": cmd_object.get("ann_yaml", ""),
+                "bin_yaml": cmd_object.get("bin_yaml", ""),
+                "ref_yaml": cmd_object.get("ref_yaml", ""),
+                "docker_yaml": cmd_object.get("docker_yaml", ""),
+            },
+        )
+
+        row = DBJob(
+            User_id     = cmd_object.get("user_id", ""),
+            Job_id      = run_id,
+            Queue_id    = task.id,
+            Date        = task.enqueued_at or datetime.now(),
+            Analysis    = cmd_object.get("var_class", ""),          # e.g., 'germline'
+            Panel       = panel_nm,                                 # visible name
+            Samples     = total_samples,            # optional
+            Status      = rq_status,
+            Logfile     = str(log_file),
+            Config_yaml_1 = config_paths["ann_yaml"],
+            Config_yaml_2 = config_paths["bin_yaml"],
+            Config_yaml_3 = config_paths["ref_yaml"],
+            Config_yaml_4 = config_paths["docker_yaml"],
+            Job_cmd       = cmd,                                    # store the exact cmd
+        )
+        db.session.add(row)
+        db.session.commit()
+    except Exception as e:
+        # If DB write fails, still return task info so the UI isn't blocked
+        return jsonify(
+            warning=f"Job queued but DB row failed: {e}",
+            queue_id=task.id,
+            status=rq_status,
+            log_file=str(log_file),
+            cmd_str=cmd,
+        ), 202
+
+    return jsonify(
+        message   = "execute_job test OK — enqueued",
+        queue_id  = task.id,
+        status    = rq_status,
+        log_file  = str(log_file),
+        cmd_str   = cmd,
+        received  = cmd_object,
+    ), 200
+
+
+@app.route("/workflows/<pipeline_id>/upload", methods=["POST"])
+def upload_fastqs(pipeline_id):
+    job_id = (request.form.get("job_id") or "").strip()
+    panel  = (request.form.get("select_panel") or request.form.get("panel") or "").strip()
+
+    if panel == "GenOncology-Dx.v1":
+        panel = "GenOncology-Dx"
+
+        
+
+    if not job_id:
+        return jsonify(error="Missing job_id"), 400
+    # if not panel:
+    #     return jsonify(error="Missing panel (select_panel)"), 400
+
+    files = request.files.getlist("fastq_files") or list(request.files.values())
+    if not files:
+        return jsonify(error="No files uploaded"), 400
+
+    if panel and panel != "undefined":
+        dest = _dest_dir(job_id, panel)
+    else:
+        dest = UPLOAD_ROOT / job_id
+        dest.mkdir(parents=True, exist_ok=True)
+    saved, skipped, total_bytes = [], [], 0
+    for fs in files:
+        original = fs.filename
+        if not original:
+            skipped.append({"filename": original, "reason": "empty filename"})
+            continue
+        if not _is_fastq(original):
+            skipped.append({"filename": original, "reason": "unsupported extension"})
+            continue
+
+        target = dest / secure_filename(original)  # overwrites if exists
+        fs.save(target)
+        sz = target.stat().st_size
+        total_bytes += sz
+        saved.append({
+            "filename": original,
+            "saved_as": target.name,
+            "path": str(target),
+            "size": sz
+        })
+
+    status = 201 if saved else 400
+    
+    return jsonify({
+        "pipeline_id": pipeline_id,
+        "job_id": job_id,
+        "panel": panel,
+        "dest_dir": str(dest),
+        "saved_count": len(saved),
+        "skipped_count": len(skipped),
+        "total_bytes": total_bytes,
+        "saved": saved,
+        "skipped": skipped
+    }), status
+
 
 
 
@@ -90,7 +331,6 @@ def _disk_stats(paths):
                 "used_pct": 0.0, "ok": False
             })
     return out
-
 
 
 def _cpu_model_name():
@@ -242,6 +482,33 @@ def get_queue(name="default"):
     return Queue(name, connection=r)
 
 
+def _persist_db_job_status(job_row_id: int, status: str) -> None:
+    with app.app_context():
+        try:
+            db_job = DBJob.query.get(job_row_id)
+            if not db_job:
+                return
+            db_job.Status = status
+            db_job.Date = datetime.now().isoformat(sep=" ", timespec="seconds")
+            db.session.commit()
+        except Exception:
+            db.session.rollback()
+            raise
+        finally:
+            db.session.remove()
+
+
+def launch_workflow_job_with_status(job_row_id: int, cmd: str):
+    try:
+        result = launch_workflow_job(cmd)
+    except Exception:
+        _persist_db_job_status(job_row_id, "failed")
+        raise
+
+    _persist_db_job_status(job_row_id, "finished")
+    return result
+
+
 def _chunked(seq, n=500):
     for i in range(0, len(seq), n):
         yield seq[i:i+n]
@@ -295,6 +562,7 @@ def _discover_queue_names():
     # Garanteix que 'default' aparegui encara que estigui buida
     discovered.add("default")
     return sorted(discovered)
+
 @app.get("/rq")
 def rq_queues_view():
     names = _discover_queue_names()
@@ -322,8 +590,6 @@ def fetch_jobs_by_ids(job_ids):
         except Exception:
             pass
     return jobs
-
-
 
 @app.get("/rq/<queue_name>")
 def rq_queue_view(queue_name):
@@ -620,9 +886,40 @@ def api_jobs():
 # ---------- API: lazy-load config for a job ----------
 @app.get("/api/job/<job_id>/config")
 def api_job_config(job_id):
-    job = DBJob.query.filter_by(Job_id=job_id).first()
+    queue_id = (request.args.get("queue_id") or "").strip()
+    query = DBJob.query.filter_by(Job_id=job_id)
+    if queue_id:
+        query = query.filter_by(Queue_id=queue_id)
+    job = query.order_by(DBJob.Id.desc()).first()
     if not job:
         abort(404)
+
+    resolved_paths = _resolve_analysis_config_paths(
+        job.Job_id,
+        job.Panel,
+        {
+            "ann_yaml": job.Config_yaml_1,
+            "bin_yaml": job.Config_yaml_2,
+            "ref_yaml": job.Config_yaml_3,
+            "docker_yaml": job.Config_yaml_4,
+        },
+    )
+
+    updated = False
+    if resolved_paths["ann_yaml"] != (job.Config_yaml_1 or ""):
+        job.Config_yaml_1 = resolved_paths["ann_yaml"]
+        updated = True
+    if resolved_paths["bin_yaml"] != (job.Config_yaml_2 or ""):
+        job.Config_yaml_2 = resolved_paths["bin_yaml"]
+        updated = True
+    if resolved_paths["ref_yaml"] != (job.Config_yaml_3 or ""):
+        job.Config_yaml_3 = resolved_paths["ref_yaml"]
+        updated = True
+    if resolved_paths["docker_yaml"] != (job.Config_yaml_4 or ""):
+        job.Config_yaml_4 = resolved_paths["docker_yaml"]
+        updated = True
+    if updated:
+        db.session.commit()
 
     cfg = {}
     # load only on demand
@@ -650,7 +947,6 @@ def api_job_logline(job_id):
     return jsonify({"last_line": read_last_line(job.Logfile)})
 
 
-from rq.registry import StartedJobRegistry, DeferredJobRegistry, ScheduledJobRegistry
 
 @app.post("/api/job/<queue_id>/stop", endpoint="api_stop_job")
 def api_stop_job(queue_id):
@@ -688,6 +984,48 @@ def api_stop_job(queue_id):
 
         return jsonify({"ok": True, "status": "stopped"})
     except Exception as e:
+        return jsonify({"ok": False, "error": str(e)}), 500
+
+
+@app.post("/api/job/<queue_id>/rerun", endpoint="api_rerun_job")
+def api_rerun_job(queue_id):
+    try:
+        db_job = DBJob.query.filter_by(Queue_id=queue_id).first()
+        if not db_job:
+            return jsonify({"ok": False, "error": "DB job not found"}), 404
+
+        current_status = (db_job.Status or "").lower()
+        if current_status in ("queued", "started", "running", "deferred", "scheduled"):
+            return jsonify({"ok": False, "error": f"Job is '{current_status}', cannot reanalyze while active"}), 409
+
+        queue_name = "default"
+        try:
+            rq_job = RQJob.fetch(queue_id, connection=r)
+            queue_name = rq_job.origin or "default"
+        except Exception:
+            rq_job = None
+
+        cmd = str(db_job.Job_cmd or "").strip()
+        if not cmd:
+            return jsonify({"ok": False, "error": "Job command is empty; cannot reanalyze"}), 400
+
+        qx = get_queue(queue_name)
+        new_task = qx.enqueue(launch_workflow_job_with_status, db_job.Id, cmd, job_timeout=-1)
+        db_job.Queue_id = new_task.id
+
+        db_job.Status = "running"
+        db_job.Date = datetime.now().isoformat(sep=" ", timespec="seconds")
+        db.session.commit()
+
+        return jsonify({
+            "ok": True,
+            "job_id": db_job.Job_id,
+            "queue_id": db_job.Queue_id,
+            "status": db_job.Status,
+            "requeued_existing_job": False,
+        })
+    except Exception as e:
+        db.session.rollback()
         return jsonify({"ok": False, "error": str(e)}), 500
 
 def load_annotation_resources(yaml_file_path):
@@ -891,58 +1229,88 @@ def change_status():
 
 
 @app.route("/remove_job/<queue_id>/<job_id>/<panel>")
-#@login_required
+# @login_required
 def remove_job(queue_id, job_id, panel):
+    run_id = job_id  # in your app, job_id == run_id
+
     try:
         registry.remove(queue_id, delete_job=True)
     except Exception as e:
         print(str(e))
 
-    job_entry = DBJob.query.filter_by(Job_id=job_id, Panel=panel).first()
-    if job_entry:
-        db.session.delete(job_entry)
+    try:
+        # 1) Find all samples belonging to this run/panel
+        samples = SampleTable.query.filter_by(run_id=run_id, panel=panel).all()
+
+        # 2) For each sample, delete per-sample data filtered by (run_id, lab_id)
+        #    (these are the tables you had commented out + the others you delete elsewhere)
+        per_sample_targets = [
+            TherapeuticTable,
+            OtherVariantsTable,
+            RareVariantsTable,
+            AllCnas,
+            LostExonsTable,
+            SummaryQcTable,
+            # add more here if needed:
+            # LowpassCnv,
+            # BiomakerTable,
+        ]
+
+        deleted_counts = {
+            "samples": 0,
+            "therapeutic_variants": 0,
+            "other_variants": 0,
+            "rare_variants": 0,
+            "all_cnas": 0,
+            "lost_exons": 0,
+            "summary_qc": 0,
+        }
+
+        for s in samples:
+            lab_id = s.lab_id
+
+            # delete per-sample tables
+            for model in per_sample_targets:
+                q = model.query.filter_by(run_id=run_id, lab_id=lab_id)
+                n = q.count()
+                if n:
+                    q.delete(synchronize_session=False)
+
+                # accumulate counts (optional)
+                if model is TherapeuticTable:
+                    deleted_counts["therapeutic_variants"] += n
+                elif model is OtherVariantsTable:
+                    deleted_counts["other_variants"] += n
+                elif model is RareVariantsTable:
+                    deleted_counts["rare_variants"] += n
+                elif model is AllCnas:
+                    deleted_counts["all_cnas"] += n
+                elif model is LostExonsTable:
+                    deleted_counts["lost_exons"] += n
+                elif model is SummaryQcTable:
+                    deleted_counts["summary_qc"] += n
+
+            # delete the sample itself (do NOT commit inside the loop)
+            db.session.delete(s)
+            deleted_counts["samples"] += 1
+
+        # 3) Remove the job entry
+        job_entry = DBJob.query.filter_by(Job_id=run_id, Panel=panel).first()
+        if job_entry:
+            db.session.delete(job_entry)
+
+        # 4) One commit at the end
         db.session.commit()
 
-    samples = SampleTable.query.filter_by(run_id=job_id).all()
-    if samples:
-        for sample in samples:
-            db.session.delete(sample)
-            db.session.commit()
+        flash(f"S'ha eliminat el job {run_id} correctament", "success")
+        # (optional) debug:
+        # print(deleted_counts)
 
-    therapeutic_variants = TherapeuticTable.query.filter_by(run_id=job_id).all()
-    if therapeutic_variants:
-        for variant in therapeutic_variants:
-            db.session.delete(variant)
-            db.session.commit()
+    except Exception as e:
+        db.session.rollback()
+        flash(f"Error eliminant el job {run_id}: {e}", "danger")
 
-    other_variants = OtherVariantsTable.query.filter_by(run_id=job_id).all()
-    if other_variants:
-        for variant in other_variants:
-            db.session.delete(variant)
-            db.session.commit()
-
-    rare_variants = RareVariantsTable.query.filter_by(run_id=job_id).all()
-    if rare_variants:
-        for variant in rare_variants:
-            db.session.delete(variant)
-            db.session.commit()
-
-    summary_entries = SummaryQcTable.query.filter_by(run_id=job_id).all()
-    if summary_entries:
-        for entry in summary_entries:
-            db.session.delete(entry)
-            db.session.commit()
-
-    biomarker_entries = BiomakerTable.query.filter_by(run_id=job_id).all()
-    if biomarker_entries:
-        for entry in biomarker_entries:
-            db.session.delete(entry)
-            db.session.commit()
-
-    flash("S'ha eliminat el job " + job_id + " correctament", "success")
     return redirect(url_for("status"))
-
-
 @app.route("/panels_app")
 #@login_required
 def panels_app():
@@ -964,6 +1332,7 @@ def complete_analysis():
             panel_name = panel["Panel_id"]
             if panel_name == "GenOncology-Dx":
                 panel_name = "GenOncology-Dx.v1"
+                
             gene_panels.append(panel_name)
     return render_template(
         "targeted_seq_analysis.html",
@@ -1205,6 +1574,9 @@ def submit_ngs_job():
     elif panel == "GenOncology-Dx_1.5":
         panel_dir = os.path.join(run_dir, "GenOncology-Dx_1.5")
         var_analysis = "somatic"
+    elif panel == "GenOncology-Dx_1.6":
+        panel_dir = os.path.join(run_dir, "GenOncology-Dx_1.6")
+        var_analysis = "somatic"
     else:
         panel_dir = os.path.join(run_dir, panel)
 
@@ -1314,6 +1686,17 @@ def submit_ngs_job():
         ]
         cmd_str = " ".join(cmd)
 
+        config_paths = _resolve_analysis_config_paths(
+            job_id,
+            panel,
+            {
+                "ann_yaml": params["ANN_YAML"],
+                "bin_yaml": params["BIN_YAML"],
+                "ref_yaml": params["REF_YAML"],
+                "docker_yaml": params["DOCKER_YAML"],
+            },
+        )
+
         row = DBJob(
             User_id=user_id,
             Job_id=job_id,
@@ -1324,10 +1707,10 @@ def submit_ngs_job():
             Samples=total_samples,
             Status=rq_status,                 # ← take it from RQ (key change)
             Logfile=log_file,
-            Config_yaml_1=params["ANN_YAML"],
-            Config_yaml_2=params["BIN_YAML"],
-            Config_yaml_3=params["REF_YAML"],
-            Config_yaml_4=params["DOCKER_YAML"],
+            Config_yaml_1=config_paths["ann_yaml"],
+            Config_yaml_2=config_paths["bin_yaml"],
+            Config_yaml_3=config_paths["ref_yaml"],
+            Config_yaml_4=config_paths["docker_yaml"],
             Job_cmd=cmd_str,
         )
         db.session.add(row)

@@ -1,0 +1,1011 @@
+{% extends "base.html" %}
+
+{% block body %}
+<style>
+/* Per-file row fade-out */
+.progress-row {
+  transition: opacity .35s ease, max-height .35s ease, margin .35s ease, padding .35s ease;
+  overflow: hidden;
+}
+.progress-row.hide {
+  opacity: 0;
+  max-height: 0;
+  margin: 0 !important;
+  padding-top: 0 !important;
+  padding-bottom: 0 !important;
+}
+
+.table_component {
+    overflow: auto;
+    width: 100%;
+}
+
+.table_component table {
+    height: 100%;
+    width: 100%;
+    table-layout: fixed;
+    border-collapse: collapse;
+    border-spacing: 1px;
+    text-align: left;
+}
+
+.table_component caption {
+    caption-side: top;
+    text-align: left;
+}
+
+.table_component th {
+    background-color: #eceff1;
+    color: #000000;
+    padding: 5px;
+}
+
+.table_component td {
+    background-color: #ffffff;
+    color: #000000;
+    padding: 5px;
+}
+
+.table_component tr {
+  border-bottom: 1px solid #ebe9e9;
+}
+  /*  here a few custom css for the piepliines */
+ .wf-sidebar {
+    background: #ffffff;
+    border: 1px solid #e6e6e7;
+    border-radius: .75rem;
+    /* box-shadow: 0 .125rem .25rem rgba(0,0,0,.075); */
+    position: sticky;
+    top: 1rem;
+    padding: .75rem;
+  }
+  .wf-brand {
+    display: flex; 
+    align-items: center; 
+    gap: .5rem;
+    padding: .5rem .75rem; 
+    border-radius: .5rem;
+    background: #ffffff; 
+    color: #495057; 
+    margin-bottom: .5rem;
+  }
+  .wf-brand img { 
+    width: 24px; 
+    height: 24px; 
+    object-fit: contain; 
+  }
+  .wf-brand .title { 
+    font-weight: 600; 
+  }
+
+  .wf-step.nav-link {
+    display: flex; 
+    align-items: center; gap: .5rem;
+    border-radius: .5rem;
+    color: rgb(68, 67, 67);
+    padding: .5rem .75rem;
+    background: white;
+  }
+
+  .wf-step .mini { 
+    font-size: .75rem; 
+    color: #6c757d; 
+  }
+  .wf-step .badge { 
+    font-weight: 500; 
+  }
+  .wf-step.active { 
+    color: #525252;
+    font-weight: 700;
+
+    background-color: rgba(255, 255, 255, 0.422);
+  }  /* default bs nav-pills gives bg-primary */
+  .wf-dot {
+    width: 1.75rem; 
+    height: 1.75rem; 
+    border-radius: 50%;
+    display: grid; 
+    place-items: center; 
+    font-size: .85rem; 
+    font-weight: 700;
+    color: #fff; 
+    background: #bdcdde; /* Bootstrap primary */
+  }
+  .wf-dot.active {
+    background-color:rgb(33, 78, 226);
+  }
+  .wf-card { 
+    border-radius: .75rem;
+    color:black;
+  }
+  .sticky-header { 
+    position: sticky;
+    top: 0; 
+    background: #fff; 
+    z-index: 1; 
+    padding-bottom: .25rem;
+  }
+  .numberCircle {
+    width: 32px; 
+    height: 32px; 
+    border-radius: 50%;
+    background: rgb(33, 78, 226);
+    color: #fff; 
+    font-weight: 700;
+    display: grid; 
+    place-items: center; 
+    font-size: .85rem;
+  }
+  /* Tables */
+  .table thead th { 
+    border-top: 0;
+  }
+  .table-sm td, .table-sm th { 
+    vertical-align: middle; 
+  }
+  @media (max-width: 991.98px) {
+    .wf-sidebar { position: static; }
+  }
+</style>
+
+<div class="container-fluid" style="width:100%;height: 100vh;background-color:white">
+
+  <!-- Header -->
+  <div class="row py-3">
+    <div class="col">
+      <nav aria-label="breadcrumb">
+        <ol class="breadcrumb ">
+          <li class="breadcrumb-item"><a href="{{ url_for('analyze_workflows') }}">Workflows</a></li>
+          <li class="breadcrumb-item active" aria-current="page">
+            {{ pipeline.name }}
+          </li>
+        </ol>
+      </nav>
+    </div>
+  </div>
+
+  {# ==== Count params for badge ==== #}
+  {% set ns = namespace(param_count=0) %}
+  {% for g in grouped_params %}
+    {% set ns.param_count = ns.param_count + (g.params | length) %}
+  {% endfor %}
+
+  <div class="row">
+    <!-- LEFT: light sidebar -->
+    <div class="col-md-2 col-lg-3">
+      <aside class="wf-sidebar">
+        <div class="wf-brand">
+          <!-- <img src="{{ url_for('static', filename='bioinformatics_workflow.png') }}" alt="WF"> -->
+          <div>
+            <div class="title">{{ pipeline.name }} <small>  v{{ pipeline.version }}</small></div>
+          </div>
+        </div>
+        <hr style="padding:0px;margin:0px;">
+
+        <div class="nav flex-column" id="wf-sections" role="tablist" aria-orientation="vertical">
+          <a class="wf-step nav-link active" id="tab-inputs-link" data-toggle="pill" href="#tab-inputs" role="tab"
+             aria-controls="tab-inputs" aria-selected="true">
+            <div class="wf-dot">1</div>
+            <div class="d-flex flex-column">
+              <span style="font-size:18px;"></i></i> Input</span>
+              <small class="mini">Selecciona FASTQ</small>
+            </div>
+            <span class="badge badge-light ml-auto">{{ inputs|length }}</span>
+          </a>
+
+          <a class="wf-step nav-link" id="tab-params-link" data-toggle="pill" href="#tab-params" role="tab"
+             aria-controls="tab-params" aria-selected="false">
+            <div class="wf-dot">2</div>
+            <div class="d-flex flex-column">
+              <span style="font-size:18px;"> Paràmetres</span>
+              <small class="mini">Configura paràmetres</small>
+            </div>
+            <span class="badge badge-light ml-auto">{{ ns.param_count }}</span>
+          </a>
+
+          <a class="wf-step nav-link" id="tab-exec-link" data-toggle="pill" href="#tab-exec" role="tab"
+             aria-controls="tab-exec" aria-selected="false">
+            <div class="wf-dot">3</div>
+            <div class="d-flex flex-column">
+              <span style="font-size:18px;">Anàlisi</span>
+              <small class="mini">Assigna Job ID</small>
+            </div>
+            <span class="badge badge-light ml-auto">run</span>
+          </a>
+        </div>
+      </aside>
+    </div>
+
+    <!-- RIGHT: Canvas (tab panes) -->
+    <div class="col-md-9 col-lg-8">
+      <form action="#" method="POST" enctype="multipart/form-data" id="workflow_form">
+        <div class="tab-content" id="wf-content">
+
+          <div class="tab-pane fade show active" id="tab-inputs" role="tabpanel" aria-labelledby="tab-inputs-link">
+            <div class="card wf-card border-1 m-2">
+              <div class="card-body">
+                <div class="d-flex align-items-center mb-3 sticky-header">
+                  <div class="numberCircle">1</div>
+                  <h5 class="ml-2 mb-0">Input </h5>
+                </div>
+
+                {% if inputs %}
+                  {% for p in inputs %}
+                    <div class="form-group mb-3 w-80">
+                       {% if p.description %}<div class="small text-muted mb-1">{{ p.description }}</div>{% endif %}
+
+                      <div class="small text-muted mb-1">Format admesos: {{ p.group_format}}</div>
+
+                      <div class="input-group">
+                        <div class="input-group-prepend"><span class="input-group-text">Selecciona</span></div>
+                        <div class="custom-file">
+                          <input type="file"
+                          class="custom-file-input"
+                          id="fastq_files"
+                          name="param_{{ p.id }}"
+                          multiple
+                          required
+                          onchange="showFilesToUpload()"
+                          data-cli-flag="--fastq"
+                          data-repeat="repeat">
+                    <label class="custom-file-label" for="fastq_files">Escull Arxiu{% if p.group_format == 'FASTQ' %}s{% endif %}</label>
+                    {# remove the duplicate label line that referenced in_{{ p.id }} #}
+                   
+                        </div>
+                      </div>
+                      {% if p.default %}
+                      {% endif %}
+                    </div>
+                  {% endfor %}
+                {% else %}
+                  <div class="text-muted">Cap paràmetre d'entrada definit.</div>
+                {% endif %}
+
+                  <!-- Preview of selected FASTQs -->
+                  <div id="fastq_list" class="mt-5 alert alert-info" style="display:none;padding:2px;"></div>
+                  <!-- Validation error -->
+                  <div id="fastq_error_msg" class="alert alert-warning mt-2" style="display:none;">
+                    S'han trobat arxius no compatibles amb el format FASTQ. Si us plau, torna a seleccionar les mostres amb el format FASTQ (suffix acabat en fastq.gz o fq.gz).
+                  </div>
+
+              </div>
+            </div>
+          </div>
+
+          <div class="tab-pane fade" id="tab-params" role="tabpanel" aria-labelledby="tab-params-link">
+            <div class="card wf-card border-1 m-2">
+              <div class="card-body">
+                <div class="d-flex align-items-center mb-3 sticky-header">
+                  <div class="numberCircle">2</div>
+                  <h5 class="ml-2 mb-0">Paràmetres</h5>
+                </div>
+
+                {# --- Macros for controls --- #}
+                {% macro render_bool_radio(p, prefix) -%}
+                  {% set name = 'param_' ~ p.id %}
+                  {% set rid_yes = prefix ~ '_' ~ p.id ~ '_yes' %}
+                  {% set rid_no  = prefix ~ '_' ~ p.id ~ '_no'  %}
+                  {% set is_on = p.default in ['true','True', true, '1', 1, 'yes', 'Sí', 'si'] %}
+                  <div class="d-inline-flex flex-wrap align-items-center">
+                    <div class="custom-control custom-checkbox custom-control-inline mr-3">
+                      <input type="checkbox" id="{{ rid_yes }}" name="{{ name }}" class="custom-control-input" value="1" {% if is_on %}checked{% endif %}>
+                      <label class="custom-control-label" for="{{ rid_yes }}"></label>
+                    </div>
+                  </div>
+                {%- endmacro %}
+
+                {% macro render_choice_control(p, prefix) -%}
+                  {% set use_radio = (p.group_format == 'radio') or (p.choices|length <= 4) %}
+                  {% if use_radio %}
+                    <div class="d-inline-flex flex-wrap">
+                      {% for c in p.choices %}
+                        {% set rid = prefix ~ '_' ~ p.id ~ '_' ~ loop.index %}
+                        <div class="custom-control custom-radio custom-control-inline mr-3">
+                          <input type="radio" id="{{ rid }}" name="param_{{ p.id }}"
+                                 class="custom-control-input" value="{{ c.value }}"
+                                 {% if p.default and (p.default == c.value or p.default == c.label) %}checked{% endif %}>
+                          <label class="custom-control-label" for="{{ rid }}">{{ c.label }}</label>
+                        </div>
+                      {% endfor %}
+                    </div>
+                  {% else %}
+                    <select class="custom-select custom-select-sm w-auto d-inline-block" name="param_{{ p.id }}">
+                      {% for c in p.choices %}
+                        <option value="{{ c.value }}"
+                                {% if p.default and (p.default == c.value or p.default == c.label) %}selected{% endif %}>
+                          {{ c.label }}
+                        </option>
+                      {% endfor %}
+                    </select>
+                  {% endif %}
+                {%- endmacro %}
+
+                {% macro render_param_value(p, prefix='tbl') -%}
+                  {% if p.group_name == "Panel" %}
+                    <select class="form-control form-control-sm w-100" name="select_panel" id="select_panel" >
+                      <option value="0" selected>Selecciona un panell</option>
+                      {% for panel_name in gene_panels %}
+                        <option value="{{ panel_name }}">{{ panel_name }}</option>
+                      {% endfor %}
+                    </select>
+                  {% else %}
+
+                    {% if p.choices %}
+                      {{ render_choice_control(p, prefix) }}
+
+                    {% else %}
+                      {% if p.type == 'file' %}
+                        <input type="text"
+                              class="form-control form-control-sm"
+                              name="param_{{ p.id }}"
+                              id="{{ prefix }}_{{ p.id }}"
+                              placeholder="/path/to/file{% if p.group_format == 'multi' %}1, /path/to/file2{% endif %}"
+                              value="{{ p.default or '' }}">
+                        {% if p.group_format == 'multi' %}
+                          <small class="text-muted">Múltiples: separats per comes.</small>
+                        {% endif %}
+                      {% elif p.type == 'dir' %}
+                        <input type="text"
+                              class="form-control form-control-sm w-100"
+                              name="param_{{ p.id }}"
+                              id="{{ prefix }}_{{ p.id }}"
+                              placeholder="/path/to/dir"
+                              value="{{ p.default or '' }}">
+                      {% elif p.type == 'bool' %}
+                        {{ render_bool_radio(p, prefix) }}
+                      {% elif p.type == 'choice' %}
+                      {% elif p.type == 'int' %}
+                        <input type="number" step="1" class="form-control form-control-sm w-auto d-inline-block"
+                              name="param_{{ p.id }}" value="{{ p.default or '' }}">
+                      {% elif p.type == 'float' %}
+                        <input type="number" step="any" class="form-control form-control-sm w-auto d-inline-block"
+                              name="param_{{ p.id }}" value="{{ p.default or '' }}">
+                      {% else %}
+                        <input type="text" class="form-control form-control-sm w-100"
+                              name="param_{{ p.id }}" value="{{ p.default or '' }}">
+                      {% endif %}
+                    {% endif %}
+                  {% endif %}
+                {%- endmacro %}
+
+                {% if grouped_params %}
+                  {% for group in grouped_params %}
+                    <!-- <h6 class="mt-2 mb-2">{{ group.name }}</h6> -->
+                    <div class="table-responsive mb-3">
+                      <!-- <table class="table table-sm table-striped table-hover align-middle mb-0"> -->
+                      <table class="table_component">
+                        <thead class="thead">
+                          <tr>
+                            <th style="width: 150px;color:green">{{ group.name }}</th>
+                            <th style="width: 150px;"></th>
+                            <!-- <th style="width: 150px;"></th> -->
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {% for p in group.params %}
+                            {% if p.required %}
+                              <tr>
+                                <td>
+                                  <div class="font-weight-bold">{{ p.name }} {% if p.required %} <span class="text-danger">*</span>{% endif %}</div>
+                                  {% if p.is_positional %}<span class="badge badge-primary">positional</span>{% else %} {% endif %}
+                                  {% if p.description %}<div class="text-muted small">{{ p.description }}</div>{% endif %}
+                                </td>
+                                <td>{{ render_param_value(p, 'tbl') }}</td>
+                                <!-- <td>
+                                  <span class="badge badge-light">{{ p.type }}</span>
+                                  {% if p.is_pathlike %}<span class="badge badge-info ml-1">path</span>{% endif %}
+                                </td> -->
+                                <!-- <td>{{ p.group_name }}</td> -->
+                              </tr>
+                              {% endif %}
+                            {% endfor %}
+                            {% if not group.params %}
+                              <tr><td colspan="5" class="text-muted">No s'han trobat paràmetres en aquest grup.</td></tr>
+                          {% endif %}
+                          
+                        </tbody>
+                      </table>
+                    </div>
+                    {% if not loop.last %}<hr class="my-2">{% endif %}
+                  {% endfor %}
+                {% else %}
+                  <div class="text-muted">No s'han trobat paràmetres addicionals.</div>
+                {% endif %}
+              </div>
+            </div>
+          </div>
+
+          {# ================== TAB 3: EXECUCIÓ ================== #}
+          <div class="tab-pane fade" id="tab-exec" role="tabpanel" aria-labelledby="tab-exec-link">
+            <div class="card wf-card border-1 m-2">
+              <div class="card-body">
+                <div class="d-flex align-items-center mb-3 sticky-header">
+                  <div class="numberCircle">3</div>
+                  <h5 class="ml-2 mb-0">Anàlisi</h5>
+                </div>
+
+                <div class="row align-items-end">
+                  <div class="col-md-6">
+                    <label for="job_id" class="font-weight-bold mb-1">Job ID <span class="text-danger">*</span></label>
+                    <input type="text" class="form-control form-control-sm" name="job_id" id="job_id" placeholder="Nom del Run" >
+                  </div>
+                </div>
+
+                <div class="row align-items-end mt-1">
+                  <div class="col-md-6  mt-md-0">
+                    <div class="d-flex">
+                      <button class="btn btn-primary btn-sm mr-2" type="button" id="submit_analysis">Envia</button>
+                      <button class="btn btn-secondary btn-sm" type="button" >Reset</button>
+                    </div>
+                  </div>
+                </div>
+
+              </div>
+            </div>
+
+              <!-- Upload progress -->
+              <div id="upload_status" class="mt-3" style="display:none;">
+                <div class="d-flex align-items-center mb-1">
+                  <strong class="mr-2">Pujant arxius…</strong>
+                  <span id="upload_percent">0%</span>
+                  <span class="ml-auto small text-muted" id="upload_speed"></span>
+                </div>
+                <div class="progress" style="height: .875rem;">
+                  <div id="upload_progress"
+                      class="progress-bar progress-bar-striped progress-bar-animated"
+                      role="progressbar"
+                      style="width:0%"
+                      aria-valuemin="0" aria-valuemax="100"></div>
+                </div>
+                <div class="small mt-1 text-muted">
+                  <span id="upload_eta">ETA —</span>
+                </div>
+              </div>
+
+
+
+              <!-- Per-file progress list -->
+              <div id="file_progress_area" class="mt-3" style="display:none;">
+                <h6 class="mb-2">Progrés per fitxer</h6>
+                <div id="file_progress_list"></div>
+              </div>
+
+              <!-- Overall result (optional) -->
+              <div id="upload_result" class="alert mt-3" style="display:none;"></div>
+
+          </div>
+
+        </div> <!-- /tab-content -->
+      </form>
+    </div> <!-- /right -->
+  </div> <!-- /row -->
+</div>
+
+{% block script %}
+
+
+<script>
+
+
+
+// ---------- UI helpers ----------
+function humanBytes(bytes) {
+  if (!Number.isFinite(bytes)) return '';
+  const units = ['B','KB','MB','GB','TB'];
+  let i = 0, n = bytes;
+  while (n >= 1024 && i < units.length - 1) { n /= 1024; i++; }
+  return n.toFixed(n >= 100 ? 0 : n >= 10 ? 1 : 2) + ' ' + units[i];
+}
+function humanTime(sec) {
+  if (!Number.isFinite(sec)) return '—';
+  sec = Math.max(0, Math.round(sec));
+  const m = Math.floor(sec/60), s = sec%60;
+  return (m ? m + 'm ' : '') + s + 's';
+}
+function hideRowAfter(rowEl, delayMs = 900) {
+  if (!rowEl) return;
+  setTimeout(() => {
+    rowEl.classList.add('hide');                 // triggers CSS transition
+    rowEl.addEventListener('transitionend', () => rowEl.remove(), { once: true });
+  }, delayMs);                                   // short pause so users see 100%
+}
+
+
+// Create/refresh rows for each selected file
+function renderPerFileRows(fileList) {
+  const area = document.getElementById('file_progress_area');
+  const list = document.getElementById('file_progress_list');
+  if (!list) return;
+
+  list.innerHTML = '';
+  if (!fileList || !fileList.length) {
+    area.style.display = 'none';
+    return;
+  }
+  area.style.display = 'block';
+
+  Array.from(fileList).forEach((file, idx) => {
+    const id = `file_${idx}`;
+    const row = document.createElement('div');
+    row.className = 'mb-2 p-2 border rounded progress-row';
+    row.id = `${id}_row`;                // <-- add row id
+    row.innerHTML = `
+      <div class="d-flex align-items-center mb-1">
+        <div class="font-weight-bold mr-2" title="${file.name}">${file.name}</div>
+        <span class="badge badge-light ml-2">${humanBytes(file.size)}</span>
+        <span class="ml-auto small text-muted" id="${id}_speed"></span>
+      </div>
+      <div class="progress" style="height:.875rem;">
+        <div id="${id}_bar" class="progress-bar progress-bar-striped progress-bar-animated"
+             role="progressbar" style="width:0%" aria-valuemin="0" aria-valuemax="100"></div>
+      </div>
+      <div class="d-flex justify-content-between small mt-1">
+        <span id="${id}_percent">0%</span>
+        <span id="${id}_eta">ETA —</span>
+      </div>
+    `;
+    list.appendChild(row);
+  });
+}
+
+// Hook into your existing file picker preview
+const _origShowFilesToUpload = window.showFilesToUpload;
+window.showFilesToUpload = function() {
+  try { _origShowFilesToUpload && _origShowFilesToUpload(); } catch (_) {}
+  const fq = document.getElementById('fastq_files');
+  if (fq && fq.files) renderPerFileRows(fq.files);
+};
+
+// ---------- Upload, one request per file, with per-file progress ----------
+function uploadSingleFile({ url, jobId, panel, file, index }) {
+  return new Promise((resolve, reject) => {
+    const id = `file_${index}`;
+    const bar = document.getElementById(`${id}_bar`);
+    const pctEl = document.getElementById(`${id}_percent`);
+    const speedEl = document.getElementById(`${id}_speed`);
+    const etaEl = document.getElementById(`${id}_eta`);
+
+    // FormData for this file only (plus metadata)
+    const fd = new FormData();
+    fd.append('job_id', jobId);
+    fd.append('select_panel', panel);
+    fd.append('fastq_files', file, file.name);
+
+    const xhr = new XMLHttpRequest();
+    xhr.open('POST', url, true);
+
+    const start = Date.now();
+    xhr.upload.onprogress = (e) => {
+      if (!e.lengthComputable) return;
+      const pct = Math.round((e.loaded / e.total) * 100);
+      if (bar) bar.style.width = pct + '%';
+      if (pctEl) pctEl.textContent = pct + '%';
+
+      const elapsed = (Date.now() - start) / 1000;
+      const speed = e.loaded / Math.max(elapsed, 0.001);
+      if (speedEl) speedEl.textContent = humanBytes(speed) + '/s';
+      const remaining = e.total - e.loaded;
+      if (etaEl) etaEl.textContent = 'ETA ' + humanTime(remaining / Math.max(speed, 1));
+    };
+
+    xhr.onreadystatechange = () => {
+      if (xhr.readyState !== 4) return;
+      let data = null;
+      try { data = JSON.parse(xhr.responseText); } catch (_) {}
+
+      // stop animation
+      bar && bar.classList.remove('progress-bar-animated','progress-bar-striped');
+
+      if (xhr.status >= 200 && xhr.status < 300) {
+        bar && bar.classList.add('bg-success');
+        // fade out and remove this file's row
+        const row = document.getElementById(`${id}_row`);
+        hideRowAfter(row, 900);
+        resolve(data);
+      } else {
+        // failure: keep row visible (turns red)
+        bar && bar.classList.add('bg-danger');
+        const msg = (data && (data.error || data.message)) || ('HTTP ' + xhr.status);
+        reject(new Error(msg));
+      }
+
+    };
+
+    xhr.onerror = () => {
+      bar && bar.classList.remove('progress-bar-animated','progress-bar-striped');
+      bar && bar.classList.add('bg-danger');
+      reject(new Error('network error'));
+    };
+
+    xhr.send(fd);
+  });
+}
+
+  async function uploadFastqsPerFile() {
+    const fq = document.getElementById('fastq_files');
+    const jobId = document.getElementById('job_id')?.value?.trim();
+    const panel = document.getElementById('select_panel')?.value?.trim();
+    // alert(panel)
+    const resultBox = document.getElementById('upload_result');
+    const btn = document.getElementById('submit_analysis');
+
+    if (!jobId) { alert('Cal indicar el Job ID.'); return null; }
+    //if (!panel || panel === '0') { alert('Cal seleccionar un panell.'); return null; }
+    if (!fq || !fq.files || fq.files.length === 0) { alert('Cal seleccionar almenys un FASTQ.'); return null; }
+
+    // Render rows (in case user didn’t change selection after page load)
+    renderPerFileRows(fq.files);
+
+    btn.disabled = true;
+    resultBox.style.display = 'none';
+
+    const url = "{{ url_for('upload_fastqs', pipeline_id=pipeline.id) }}";
+    const files = Array.from(fq.files);
+    const results = { saved: 0, failed: 0, errors: [] };
+
+    for (let i = 0; i < files.length; i++) {
+      try {
+        await uploadSingleFile({ url, jobId, panel, file: files[i], index: i });
+        results.saved += 1;
+      } catch (err) {
+        results.failed += 1;
+        results.errors.push({ file: files[i].name, error: err.message });
+      }
+    }
+    btn.disabled = false;
+    // summarize
+    if (results.failed === 0) {
+      resultBox.className = 'alert alert-success mt-3';
+      resultBox.innerHTML = `S'han pujat les dades correctament`;
+      
+
+    } 
+    else {
+      resultBox.className = 'alert alert-warning mt-3';
+      const lines = results.errors.map(e => `• ${e.file}: ${e.error}`).join('<br>');
+      resultBox.innerHTML =
+        `Pujats: <b>${results.saved}</b> — Fallits: <b>${results.failed}</b><br>${lines}`;
+    }
+    resultBox.style.display = 'block';
+    return results.failed === 0 ? results : null;
+  }
+
+  // ---------- Button: upload per file, then show command ----------
+  document.getElementById('submit_analysis')?.addEventListener('click', async () => {
+    const res = await uploadFastqsPerFile();
+    if (res) {
+
+      const cmd_object = buildParamMapWithCmd();
+
+      fetch("/workflows/execute_job", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ cmd_object })
+      })
+        .then(r => r.json())
+        .then(data => {
+          console.log("Server said:", data);
+          window.location.href = "status";
+
+        })
+        .catch(err => console.error(err));
+
+    }
+  });
+
+
+  function getParamValue(paramId) {
+  // Grab *all* elements sharing name="param_<id>" (radio groups, etc.)
+  const nodes = document.querySelectorAll(`[name="param_${paramId}"]`);
+  if (!nodes || nodes.length === 0) return '';
+
+  const first = nodes[0];
+
+  // --- RADIO GROUP ---
+  if (first.tagName === 'INPUT' && first.type === 'radio') {
+    const checked = document.querySelector(
+      `input[type="radio"][name="param_${paramId}"]:checked`
+    );
+    return checked ? checked.value : '';
+  }
+
+  // --- CHECKBOX(ES) ---
+  if (first.tagName === 'INPUT' && first.type === 'checkbox') {
+    // If multiple checkboxes share the same name, return comma-joined checked values.
+    if (nodes.length > 1) {
+      const vals = Array.from(nodes)
+        .filter(n => n.checked)
+        .map(n => n.value || '1');
+      return vals.join(',');
+    }
+    // Single checkbox: presence-style
+    return first.checked ? (first.value || '1') : '';
+  }
+
+  // --- SELECT (single or multiple) ---
+  if (first.tagName === 'SELECT') {
+    if (first.multiple) {
+      const vals = Array.from(first.selectedOptions).map(o => o.value);
+      return vals.join(',');
+    }
+    return first.value || '';
+  }
+
+  // --- FILE INPUT ---
+  if (first.tagName === 'INPUT' && first.type === 'file') {
+    const files = first.files || [];
+    return files.length ? Array.from(files).map(f => f.name).join(',') : '';
+  }
+
+  // --- TEXT/NUMBER/OTHER INPUTS ---
+  return first.value || '';
+}
+
+
+function buildParamMapWithCmd() {
+  let p_params = {{ workflow_command | tojson | safe }};
+  let  job_id   = document.getElementById("job_id")?.value || "";
+  let panel_name = document.getElementById("select_panel")?.value || "";
+
+  if (panel_name === "GenOncology-Dx.v1") {
+    panel_name = "GenOncology-Dx";
+  }
+
+  let map = {};
+  let resolved = [];
+
+  console.log(p_params)
+
+
+  map["job_id"] = job_id
+  for (let element of p_params["params"] || []) {
+    const name     = element["name"];
+    const param_id = element["id"];
+
+    let current_value = element["default_value"];
+    try {
+      const v = getParamValue(param_id);
+      if (v !== undefined && v !== null && String(v) !== "") current_value = v;
+    } catch (_) {}
+
+    // Special cases
+
+    if (panel_name == "GenOncology-Dx.v1") {
+      panel_name = "GenOncology-Dx";
+    }
+    console.log(panel_name)
+
+    if (name === "run_id")     current_value = job_id;
+    if (name === "input_dir")  current_value = "/ngs-results/" + job_id + "/" + panel_name;
+    if (name === "output_dir") current_value = "/ngs-results/" + job_id + "/" + panel_name;
+    if (name === "panel_name") current_value = panel_name;
+
+    if (current_value === undefined || current_value === null || String(current_value) === "") {
+      continue;
+    }
+
+    resolved.push({ name, value: current_value, positional: element["positional"] });
+    map[name] = current_value;
+  }
+  console.log(resolved);
+
+  const interpreter = (p_params["interpreter"] || "").trim();
+  const entrypoint  = (p_params["entrypoint"]  || "").trim();
+  let cmd = interpreter;
+
+  if (interpreter.includes("snakemake"))  {
+    if (entrypoint) {
+      cmd += " -s " + entrypoint;
+    }
+
+    let cores = null;
+    const configPairs = [];
+
+    for (const { name, value } of resolved) {
+      if (name === "cores") {
+        cores = value;
+      } else {
+        configPairs.push(name + "=" + value); // no "--"
+      }
+    }
+
+    if (cores) {
+      cmd += " --cores " + cores;
+    }
+    if (configPairs.length) {
+      cmd += " --config " + configPairs.join(" ");
+    }
+  } else {
+    if (entrypoint) {
+      cmd += " " + entrypoint;
+    }
+
+    for (const { name, value, positional } of resolved) {
+      console.log(positional);
+      if (positional) {
+        cmd += " " + value;
+      }
+      else {
+        cmd += " --" + name + " " + value;
+      }
+    }
+  }
+//  alert(cmd)
+  map["cmd"] = cmd;
+  return map;
+}
+
+
+
+
+  function printCommand() { 
+
+    const p_params = {{ workflow_command | tojson | safe }}; 
+
+    job_id = document.getElementById("job_id").value; 
+    console.log("job_id", job_id); 
+
+
+    let spacer = "--";
+    if (p_params["interpreter"].includes("snakemake"))  {
+      spacer = "";
+    }
+
+    let cmd = ""; cmd += p_params["interpreter"]; 
+    cmd += " " + p_params["entrypoint"]; 
+
+    let panel_name = document.getElementById("select_panel").value; 
+    console.log("panel_name", panel_name)
+
+    for (const element of p_params["params"]) { 
+      console.log(element["is_positional"]); 
+      let current_value = element["default_value"]; 
+
+      // get current value of the param 
+      let param_id = element["id"]; 
+
+      // get current value of the param
+      try {
+        current_value = getParamValue(param_id);
+      }
+      catch { 
+        console.log("notfound") 
+      }
+
+      if (element["name"] == "run_id"){ 
+          current_value = job_id; 
+      } 
+      if (element["name"] == "input_dir"){ 
+        current_value = "/ngs-results/" + job_id + "/" + panel_name;
+      } 
+      if (element["name"] == "output_dir"){ 
+        current_value = "/ngs-results/" + job_id + "/" + panel_name; 
+      } 
+      if (element["name"] == "panel_name") {
+        current_value = panel_name;
+      }
+      if (current_value) { 
+        console.log(current_value) 
+      }
+      if (element["positional"] == 1) {
+        cmd+= " "+ current_value;
+      } 
+      else {
+        cmd+= " --"+element["name"] + " " + current_value; 
+      } 
+    } 
+    console.log(cmd);
+    return cmd
+  }
+
+</script>
+
+
+ 
+
+
+<script>
+  // Accept .fastq, .fq, .fastq.gz, .fq.gz
+  function validFastq(name) {
+    if (!name) return false;
+    var lower = name.toLowerCase();
+    return (
+      lower.endsWith('.fastq') ||
+      lower.endsWith('.fq') ||
+      lower.endsWith('.fastq.gz') ||
+      lower.endsWith('.fq.gz')
+    );
+  }
+  
+  function showFilesToUpload() {
+
+    var fastqInput = document.getElementById("fastq_files");
+    var fastqList = document.getElementById("fastq_list");
+    var submitBtn = document.getElementById("submit_analysis");
+    var errorMsg = document.getElementById("fastq_error_msg");
+  
+    if (!fastqInput || !fastqList || !submitBtn || !errorMsg) return;
+  
+    fastqList.style.display = 'block';
+    fastqList.className = "mt-5 alert alert-success";
+  
+    var children = "";
+    children += '<ul style="margin-top:15px;list-style-type:none;padding-left:15px;columns:2;-webkit-columns:2;-moz-columns:2;">';
+  
+    var num_fastq = 0;
+    var is_ok = true;
+  
+    for (var i = 0; i < (fastqInput.files ? fastqInput.files.length : 0); ++i) {
+      var file = fastqInput.files.item(i);
+      var name = file ? file.name : '';
+      if (validFastq(name)) {
+        num_fastq++;
+        children += '<li><i class="fas fa-check" style="margin-right:6px;"></i>' + name + '</li>';
+      } else {
+        is_ok = false;
+        children += '<li><i class="fas fa-times" style="margin-right:6px;color:red;"></i>' + name + '</li>';
+      }
+    }
+  
+    if (!is_ok) {
+      submitBtn.style.pointerEvents = "none";
+      submitBtn.classList.add("disabled");
+      errorMsg.style.display = "block";
+    } else {
+      submitBtn.style.pointerEvents = "auto";
+      submitBtn.classList.remove("disabled");
+      errorMsg.style.display = "none";
+    }
+  
+    children += '</ul>';
+    fastqList.innerHTML = children + '<h6 class="card-title mt-2 pl-4"><b>FASTQs trobats:</b> ' + num_fastq + ' </h6>';
+  }
+
+
+  document.addEventListener('click', (e) => {
+    const step = e.target.closest('.wf-step');
+    if (!step) return;
+
+    // clicked one goes red (and mark it active if you want)
+    step.style.backgroundColor = '#eaedef';
+    step.classList.add('active');
+
+    let circles = step.querySelector(".wf-dot").style.backgroundColor = "rgb(33, 78, 226)";
+
+    document.querySelectorAll('.wf-step').forEach(el => {
+      if (el !== step && !el.classList.contains('active')) {
+        el.style.backgroundColor = 'white';
+        let circles = el.querySelector(".wf-dot").style.backgroundColor = "#bdcdde";
+      }
+    });
+  });
+
+  // Persist active tab in URL hash & keep sidebar highlighting in sync
+  (function() {
+    function activateFromHash(hash) {
+      if (!hash) return;
+      var trigger = document.querySelector('a[href="' + hash + '"]');
+      if (trigger) $(trigger).tab('show');
+    }
+    activateFromHash(window.location.hash);
+
+    $('a[data-toggle="pill"]').on('shown.bs.tab', function (e) {
+      history.replaceState(null, null, e.target.getAttribute('href'));
+    });
+
+    // Update custom-file labels on Inputs tab
+    document.addEventListener('change', function(e){
+      if (e.target && e.target.classList.contains('custom-file-input')){
+        var label = e.target.nextElementSibling;
+        if (!label) return;
+        if (e.target.files && e.target.files.length > 1) {
+          label.textContent = e.target.files.length + ' fitxers seleccionats';
+        } else {
+          label.textContent = (e.target.value.split('\\').pop() || 'Arxiu');
+        }
+      }
+    });
+  })();
+</script>
+{% endblock %}
+{% endblock body %}

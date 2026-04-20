@@ -38,6 +38,7 @@ class Config(object):
     STATIC_URL_PATH = os.path.join(ngs_results_dir)
     ENABLE_CORS_REQUEST = True
     HG19_CHROMOSOMES = os.path.join(main_dir, "/app/bait_resources/hg19.txt")
+    MANE_TRANSCRIPTS = "/home/udmmp/panel_master/app/wizard/resources/MANE/hg19/MANE.hg19.v0.95.select_ensembl_genomic.gff.gz"
     GENCODE_ALL_HG19 = str(
         Path(main_dir)
         / "app/bait_resources/GENCODE/hg19/gencode.v39lift37.annotation.gff3.gz"

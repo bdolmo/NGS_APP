@@ -1,9 +1,82 @@
 {% extends "base.html" %}
 
 {% block body %}
+<style>
+  body {
+    background: #f6f8fb;
+  }
+  .petition-page {
+    width: 75%;
+    margin: 80px auto 0 auto;
+  }
+  .petition-page .results-card {
+    border: 1px solid #e2e8f0;
+    border-radius: 0.6rem;
+    overflow: hidden;
+    background: #fff;
+  }
+  .petition-page .section-card {
+    border: 1px solid #e3e8ee;
+    background: #fafbfd;
+    border-radius: 0.6rem;
+  }
+  .petition-page .results-toolbar {
+    background: #fff;
+    border-bottom: 1px solid #e2e8f0;
+    padding: 0.85rem 1rem;
+  }
+  .petition-page .results-toolbar .badge {
+    font-size: 0.75rem;
+  }
+  .petition-page .results-toolbar .form-control-sm,
+  .petition-page .results-toolbar .btn-sm {
+    white-space: nowrap;
+    min-height: 34px;
+    font-size: 0.87rem;
+  }
+  .petition-page .results-toolbar .form-control-sm {
+    padding-top: 0.12rem;
+    padding-bottom: 0.12rem;
+  }
+  .petition-page .dataTables_wrapper .dataTables_filter {
+    display: none;
+  }
+  .petition-page .dataTables_wrapper table.dataTable {
+    margin-bottom: 0;
+    font-size: 0.9rem;
+  }
+  .petition-page .dataTables_wrapper table.dataTable th,
+  .petition-page .dataTables_wrapper table.dataTable td {
+    padding: 0.4rem 0.38rem;
+    vertical-align: top;
+    box-sizing: border-box;
+  }
+  .petition-page .dataTables_wrapper table.dataTable thead th {
+    background: #f1f4f8;
+    font-size: 0.88rem;
+    font-weight: 600;
+    line-height: 1.2;
+  }
+  .petition-page .dataTables_wrapper table.dataTable tbody td {
+    line-height: 1.25;
+  }
+  .petition-page .dataTables_wrapper .dataTables_scrollHead,
+  .petition-page .dataTables_wrapper .dataTables_scrollBody {
+    border-color: #dee2e6;
+  }
+  .petition-page .dataTables_wrapper .dataTables_scrollHead table.dataTable,
+  .petition-page .dataTables_wrapper .dataTables_scrollBody table.dataTable {
+    margin: 0 !important;
+    border-collapse: separate;
+    border-spacing: 0;
+  }
+  .petition-page .dataTables_wrapper .dataTables_scrollBody {
+    max-height: 72vh !important;
+  }
+</style>
 
-<div class="d-flex justify-content-center pt-3 mt-3 rounded" style="background-color:white; width:100%">
-    <div class="container-fluid rounded" style="background-color:white; width:75%">
+<div class="d-flex justify-content-center pt-3 mt-3 rounded petition-page">
+    <div class="container-fluid rounded" style="width:100%">
 
       <div id="alert_id" style="margin:0 auto;width:70%;display:none;padding:0px;">
         <div class="alert alert-success alert-dismissible fade show"  role="alert">
@@ -14,9 +87,11 @@
         </div>
       </div>
 
-        <div class="card card-body border-0" style="background-color:rgb(248, 248, 248);">
-        <h2 id="create_petition_title" class="card-title">Nova petició de càncer</h2>
-          <hr style="color:1px solid black;margin:0px;">
+        <div class="card results-card">
+          <div class="results-toolbar">
+            <h5 id="create_petition_title" class="mb-0">Nova petició NGS càncer</h5>
+          </div>
+          <div class="p-3">
           <div class="row">
             <div class="col-sm mt-3">
               <!-- Button trigger modal -->
@@ -44,69 +119,55 @@
               </button>
             </div>
           </div>
+          </div>
         </div>
-        <div class="card card-body border-0 mt-3" style="background-color:rgb(248, 248, 248);">
-          <h2 class="card-title">Llista de peticions de càncer</h2>
-          <hr style="margin:0px;">
-
-          <div class="collapse show" id="petition_container">
-          <div class="row" id="petition_row">
-            <div class="container-fluid pt-1 rounded mb-3 mt-3" style="width:100%">
-                <table id="petition_table" class="table table-sm table-striped table-bordered" style="background-color:white;width:100;font-size:16px;">
-                  <thead>
-                    <tr>
-                      <th>ID</th>
-                      <th>Origen tumoral</th>
-                      <th>Codi CIP</th>
-                      <th>Codi AP</th>
-                      <th>Num. HC</th>
-                      <!-- <th>Data Biòpsia Original</th> -->
-                      <!-- <th>Data Extracció</th> -->
-                      <th>Data Petició</th>
-                      <th>%Tumoral</th>
-                      <th>Metge sol·licitant</th>
-                      <th>Unitat de facturació</th>
-                      <th>Accions</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {% for p in petitions %}
-                    <tr >
-                      <td id="petition_id">{{ p.Id }}</td>
-                      <td id="tumour_origin">{{ p.Tumour_origin }}</td>
-                      <td id="cip_code">{{ p.CIP_code }}</td>
-                      <td id="ap_code"><b>{{ p.AP_code }}</b></td>
-                      <td id="hc_code">{{ p.HC_code }}</td>
-                      <!-- <td id="petition_date">{{ p.Date_original_biopsy | replace("00:00:00","") }}</td> -->
-                      <!-- <td id="petition_date">{{ p.Date }}</td> -->
-                      <td id="petition_date">{{ p.Date }}</td>
-                      <td id="tumor_pct">{{ p.Tumour_pct }}</td>
-                      <td id="medical_doctor">{{ p.Medical_doctor }}</td>
-                      <td id="billing_unit">{{ p.Billing_unit }}</td>
-                      <td id="{{ p.Id }}"> <a role="button" onclick="updatePetition(this);"><i class="fas fa-edit fa-lg" style="color:rgb(109, 106, 106)"></i></a>
-                        <!-- {{ url_for('remove_sample', id=p.Id) }} -->
-                        <a  role="button" onclick="removePetition(this);">
-                          <i class="fas fa-trash fa-lg" style="color: rgba(209, 20, 20, 0.938)"></i>
-                        </a>
-                      </td>
-                    </tr>
-                   {% endfor %}
-                  </tbody>
-                </table>
+        <div class="card results-card mt-3">
+          <div class="results-toolbar">
+            <div class="d-flex justify-content-between align-items-center flex-wrap">
+              <div class="mb-2 mb-sm-0">
+                <h5 class="mb-1">Llista de peticions de càncer</h5>
+                <span class="badge badge-light mr-2">Total: <span id="petitionTotal">0</span></span>
+                <span class="badge badge-light">Filtrats: <span id="petitionFiltered">0</span></span>
+              </div>
+              <div class="d-flex align-items-center">
+                <input id="petitionTableSearch" type="search" class="form-control form-control-sm" placeholder="Cerca petició" style="min-width: 230px;">
+                <a href="{{ url_for('download_all_petitions_xlsx') }}" class="btn btn-outline-success btn-sm ml-2" title="Descarrega totes les peticions" aria-label="Descarrega totes les peticions">
+                  <i class="fas fa-file-excel mr-1"></i>Descarrega
+                </a>
+              </div>
             </div>
           </div>
+
+          <div class="p-3">
+            <table id="petition_table" data-server-side="1" class="table table-sm table-bordered" style="background-color:white;width:100%;">
+              <thead>
+                <tr>
+                  <th>ID</th>
+                  <th>Origen tumoral</th>
+                  <th>Codi CIP</th>
+                  <th>Codi AP</th>
+                  <th>Num. HC</th>
+                  <th>Data d'extracció</th>
+                  <th>Data origen biòpsia</th>
+                  <th>Data petició</th>
+                  <th>%Tumoral</th>
+                  <th>Accions</th>
+                </tr>
+              </thead>
+            </table>
           </div>
-          <div id="edit_petition" class="modal fade">
+          <div id="edit_petition" class="modal fade" tabindex="-1" role="dialog" data-backdrop="true" data-keyboard="true">
             <form action="/update_petition" method="POST" enctype="multipart/form-data" id="update_petition">
-              <div class="modal-dialog modal-lg">
-                <div class="modal-content">
+              <input type="hidden" name="edit_petition_id" id="edit_petition_id" value="">
+              <div class="modal-dialog" style="max-width: 1100px; width: 95vw;">
+                <div class="modal-content" style="max-height: 88vh; display: flex; flex-direction: column;">
                   <div class="modal-header" style="background-color:rgb(248, 248, 248);">
                     <h4 class="modal-title" id="edit_petition_name">Edita petició</h4>
                     <button type="button" class="close" data-dismiss="modal" aria-label="Close">
                       <span aria-hidden="true">&times;</span>
                     </button>
                   </div>
-                  <div class="modal-body">
+                  <div class="modal-body" style="max-height: calc(88vh - 130px); overflow-y: auto; padding-bottom: .5rem;">
                     <div class="row mt-3">
 
                       <div class="col-sm">
@@ -120,10 +181,10 @@
                       </div>
 
                       <div class="col-sm">
-                        <h6><b>Data d'extracció</b> <small>(MM/DD/YYYY)</small></h6>
+                        <h6><b>Data d'extracció</b> <small>(DD/MM/YYYY)</small></h6>
                         <div class="form-group">
                           <div id="datepicker" data-provide="datepicker">
-                            <input class="form-control" name="Date" type="date" value="" id="edit_petition_date">
+                            <input class="form-control petition-date-input" name="edit_extraction_date" type="text" value="" id="edit_extraction_date" placeholder="DD/MM/YYYY" autocomplete="off">
                             <div class="input-group-addon">
                                 <span class="glyphicon glyphicon-th"></span>
                             </div>
@@ -135,10 +196,10 @@
                     <div class="row mt-3">
 
                       <div class="col-sm">
-                        <h6><b>Data origen biòpsia</b><small>(MM/DD/YYYY)</small></h6>
+                        <h6><b>Data origen biòpsia</b><small> (DD/MM/YYYY)</small></h6>
                         <div class="form-group">
                           <div id="datepicker" data-provide="datepicker">
-                            <input class="form-control" name="Date" type="date" value="" id="edit_biopsy_petition_date">
+                            <input class="form-control petition-date-input" name="edit_biopsy_petition_date" type="text" value="" id="edit_biopsy_petition_date" placeholder="DD/MM/YYYY" autocomplete="off">
                             <div class="input-group-addon">
                                 <span class="glyphicon glyphicon-th"></span>
                             </div>
@@ -147,10 +208,10 @@
                       </div>
 
                       <div class="col-sm">
-                        <h6><b>Data petició</b> <small>(MM/DD/YYYY)</small></h6>
+                        <h6><b>Data petició</b> <small>(DD/MM/YYYY)</small></h6>
                         <div class="form-group">
                           <div id="datepicker" data-provide="datepicker">
-                            <input class="form-control" name="Date" type="date" value="" id="edit_petition_date">
+                            <input class="form-control petition-date-input" name="edit_petition_date" type="text" value="" id="edit_petition_date" placeholder="DD/MM/YYYY" autocomplete="off">
                             <div class="input-group-addon">
                                 <span class="glyphicon glyphicon-th"></span>
                             </div>
@@ -211,59 +272,89 @@
                       </div>
                     </div>
                     </div>
-                    <div class="d-flex justify-content-center align-items-center mt-1 mb-2">
-                      <button class="btn btn-primary mt-2 mb-2" style="width:15%;" type="submit" id="add_sample">Desa</button>
+                    <div class="modal-footer justify-content-center" style="padding-top: .5rem; padding-bottom: .5rem;">
+                      <button class="btn btn-primary px-4" type="submit" id="save_petition_button">Desa</button>
                     </div>
                   </div>
               </div>
             </form>
           </div>
 
-          <div id="new_sample" class="modal fade">
+          <div id="new_sample" class="modal fade" tabindex="-1" role="dialog" data-backdrop="true" data-keyboard="true">
             <form action="/create_petition" method="POST" enctype="multipart/form-data" id="create_petition">
-              <div class="modal-dialog modal-lg">
-                <div class="modal-content">
+              <div class="modal-dialog" style="max-width: 1100px; width: 95vw;">
+                <div class="modal-content" style="max-height: 88vh; display: flex; flex-direction: column;">
                   <div class="modal-header" style="background-color:rgb(248, 248, 248);">
                     <h4 class="modal-title" id="modal_new_sample">Nova petició</h4>
                     <button type="button" class="close" data-dismiss="modal" aria-label="Close">
                       <span aria-hidden="true">&times;</span>
                     </button>
                   </div>
-                  <div class="modal-body">
+                  <div class="modal-body" style="max-height: calc(88vh - 130px); overflow-y: auto; padding-bottom: .5rem;">
                     <div class="row mt-3">
                       <div class="col-sm">
-                        <h6><b>Data d'extracció</b></h6>
-                        <div class="form-group">
+                        <h6><b>Origen tumoral</b></h6>
+                        <input type="text" name="Tumour_origin" class="form-control" id="tumour_origin">
+                      </div>
+                      <div class="col-sm">
+                        <h6><b>Data d'extracció</b> <small>(DD/MM/YYYY)</small></h6>
+                        <div class="form-group mb-0">
                           <div id="datepicker" data-provide="datepicker">
-                            <input class="form-control" name="Date" type="date" value="" id="new_petition_date">
+                            <input class="form-control petition-date-input" name="Date" type="text" value="" id="new_petition_date" placeholder="DD/MM/YYYY" autocomplete="off">
                             <div class="input-group-addon">
                                 <span class="glyphicon glyphicon-th"></span>
                             </div>
                           </div>
                         </div>
                       </div>
+                    </div>
 
-                      <div class="col-sm ">
-                        <h6><b>Codi d'Anatomia Patològica</b></h6>
-                        <div class="input-group mb-3">
-                          <!-- <div class="input-group-prepend">
-                            <span class="input-group-text" id="basic-addon1">Codi AP</span>
-                          </div> -->
-                          <input type="text" name="AP_code" class="form-control" placeholder="" aria-label="Username" aria-describedby="basic-addon1">
+                    <div class="row mt-3">
+                      <div class="col-sm">
+                        <h6><b>Data origen biòpsia</b><small> (DD/MM/YYYY)</small></h6>
+                        <div class="form-group mb-0">
+                          <div id="datepicker" data-provide="datepicker">
+                            <input class="form-control petition-date-input" name="Date_original_biopsy" type="text" value="" id="new_biopsy_date" placeholder="DD/MM/YYYY" autocomplete="off">
+                            <div class="input-group-addon">
+                                <span class="glyphicon glyphicon-th"></span>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                      <div class="col-sm">
+                        <h6><b>Data petició</b> <small>(DD/MM/YYYY)</small></h6>
+                        <div class="form-group mb-0">
+                          <div id="datepicker" data-provide="datepicker">
+                            <input class="form-control petition-date-input" name="Petition_date" type="text" value="" id="new_tech_petition_date" placeholder="DD/MM/YYYY" autocomplete="off">
+                            <div class="input-group-addon">
+                                <span class="glyphicon glyphicon-th"></span>
+                            </div>
+                          </div>
                         </div>
                       </div>
                     </div>
+
                     <div class="row mt-3">
+                      <div class="col-sm">
+                        <h6><b>Codi d'Anatomia Patològica</b></h6>
+                        <div class="input-group mb-3">
+                          <input type="text" name="AP_code" class="form-control" placeholder="" aria-label="Username" aria-describedby="basic-addon1">
+                        </div>
+                      </div>
                       <div class="col-sm">
                         <h6><b>Número d'Història clínica</b></h6>
                         <div class="input-group mb-3">
-                          <!-- <div class="input-group-prepend">
-                            <span class="input-group-text" id="basic-addon1">Num. HC</span>
-                          </div> -->
                           <input type="text" name="HC_code" class="form-control" placeholder="" aria-label="Username" aria-describedby="basic-addon1">
                         </div>
                       </div>
-                      <div class="col-sm ">
+                    </div>
+
+                    <div class="row mt-3">
+                      <div class="col-sm">
+                        <h6><b>Número CIP</b></h6>
+                        <input type="text" name="CIP_code" class="form-control" id="cip_code">
+                      </div>
+                      <div class="col-sm">
                         <h6><b>%Tumoral</b></h6>
                         <select class="custom-select" name="Tumoral_pct" id="inputGroupSelect01">
                           <option selected>%</option>
@@ -292,42 +383,6 @@
                       </div>
                     </div>
                     <div class="row mt-3">
-                      <div class="col-sm mb-6">
-                        <h6><b>Volum residual (ul)</b></h6>
-                        <input type="text" name="Residual_volume" class="form-control" id="residual_volume"  min="0" max="200">
-                      </div>
-                      <div class="col-sm mb-6">
-                        <h6><b>Avaluació Post tapestation</b></h6>
-
-                        <div class="custom-control custom-radio custom-control-inline">
-                            <div class="custom-control custom-radio custom-control-inline">
-                              <input type="radio" class="custom-control-input" name="tape_postevaluation" value="1" id="yes">
-                              <label class="custom-control-label" for="yes">
-                                  Sí
-                              </label>
-                            </div>
-                        </div>
-                        <div class="custom-control custom-radio custom-control-inline">
-                            <div class="custom-control custom-radio custom-control-inline">
-                              <input type="radio" class="custom-control-input" name="tape_postevaluation" value="2" id="no">
-                              <label class="custom-control-label" for="no">
-                                  No
-                              </label>
-                            </div>
-                        </div>
-                      </div>
-                   </div>
-                    <div class="row mt-3">
-                      <div class="col-sm ">
-                        <h6><b>Concentració Nanodrop</b></h6>
-                        <input type="text" name="Nanodrop_conc" class="form-control" id="nanodrop_conc"  min="0" max="1000">
-                      </div>
-                      <div class="col-sm ">
-                        <h6><b>Ratio 260/280 Nanodrop</b></h6>
-                        <input type="text" name="Nanodrop_ratio" class="form-control" id="nanodrop_ratio"  min="0" max="1000">
-                      </div>
-                    </div>
-                    <div class="row mt-3">
                       <div class="col-sm ">
                         <h6><b>Metge sol·licitant</b></h6>
                         <input type="text" name="Medical_doctor" class="form-control" id="medical_doctor" >
@@ -338,8 +393,8 @@
                       </div>
                     </div>
                     </div>
-                    <div class="d-flex justify-content-center align-items-center mt-5">
-                      <button class="btn btn-primary mt-2 mb-2" style="width:15%;" type="submit" id="add_sample">Envia</button>
+                    <div class="modal-footer justify-content-center" style="padding-top: .5rem; padding-bottom: .5rem;">
+                      <button class="btn btn-primary px-4" type="submit" id="create_petition_button">Envia</button>
                     </div>
                   </div>
               </div>
@@ -351,69 +406,141 @@
 </div>
 {% block script %}
  <script>
+   let petitionTable = null;
+
+   $(document).ready(function() {
+     function initPetitionDatepickers() {
+       if (!$.fn.datepicker) return;
+       $(".petition-date-input").each(function() {
+         const $el = $(this);
+         try { $el.datepicker("destroy"); } catch (e) {}
+         $el.datepicker({
+           format: "dd/mm/yyyy",
+           autoclose: true,
+           todayHighlight: true
+         });
+       });
+     }
+
+     $.fn.dataTable.ext.errMode = "none";
+     initPetitionDatepickers();
+     $("#edit_petition, #new_sample").on("shown.bs.modal", function() {
+       initPetitionDatepickers();
+     });
+     petitionTable = $("#petition_table").DataTable({
+       destroy: true,
+       processing: true,
+       serverSide: true,
+       scrollX: true,
+       scrollCollapse: true,
+       responsive: false,
+       pageLength: 10,
+       lengthMenu: [[10, 25, 50, 100], [10, 25, 50, 100]],
+       lengthChange: false,
+       info: false,
+       searchDelay: 400,
+       searching: true,
+       ordering: true,
+       order: [[0, "desc"]],
+       autoWidth: false,
+       ajax: {
+         url: "{{ url_for('petition_menu_data') }}",
+         type: "POST",
+         error: function(xhr, status, err) {
+           console.error("Petition table AJAX error:", status, err, xhr.responseText);
+           alert("Error carregant peticions. Torna-ho a provar.");
+         }
+       },
+       columnDefs: [
+         { targets: -1, orderable: false, searchable: false }
+       ],
+       language: {
+         zeroRecords: "No hi ha resultats",
+         info: "Mostrant _START_ a _END_ de _TOTAL_ resultats",
+         infoEmpty: "No hi ha entrades",
+         infoFiltered: "(filtrats de _MAX_ total records)",
+         sSearch: "Cerca:"
+       },
+       drawCallback: function() {
+         const info = this.api().page.info();
+         $("#petitionTotal").text(info.recordsTotal || 0);
+         $("#petitionFiltered").text(info.recordsDisplay || 0);
+       }
+     });
+
+     $("#petitionTableSearch").on("input", function() {
+       petitionTable.search(this.value).draw();
+     });
+   });
 
 
-   function updatePetition(event) {
-    let petition_id = event.parentElement.parentElement;
+   function normalizeToDisplayDate(raw) {
+    const value = (raw || "").trim();
+    if (!value || value === ".") return "";
 
-    let all_fields = petition_id.getElementsByTagName("td");
-    let hidden_fields =  petition_id.getElementsByTagName("input");
-    console.log(all_fields) 
-    let petition_div = document.getElementById("edit_petition");
-    
-    for (let i = 0;i<all_fields.length;i++) {
-        td = all_fields[i]
-        console.log(td.id)
+    // Keep only date segment if timestamp is present.
+    const firstToken = value.split(" ")[0].split("T")[0].trim();
+    if (!firstToken) return "";
 
-        if (td.id == "tumour_origin") {
-          let petition_tumour_origin = petition_div.querySelector("#edit_origin_tumor");
-          petition_tumour_origin.value = td.innerText;
-        }
-
-        if (td.id == "petition_id") {
-          let petition_name_div = petition_div.querySelector("#edit_petition_name");
-          petition_name_div.innerText = `Petition_${td.innerText}`;
-        }
-        if (td.id == "ap_code") {
-          let petition_ap_code = petition_div.querySelector("#edit_ap_code");
-          petition_ap_code.value = td.innerText;
-        }
-        if (td.id == "hc_code") {
-          let petition_hc_code = petition_div.querySelector("#edit_hc_code");
-          petition_hc_code.value = td.innerText;
-        }
-        if (td.id == "cip_code") {
-          let petition_cip_code = petition_div.querySelector("#edit_cip_code");
-          petition_cip_code.value = td.innerText;
-        }
-        if (td.id == "tumor_pct") {
-          let petition_tumoral_pct = petition_div.querySelector("#edit_tumoral_pct");
-          petition_tumoral_pct.value = td.innerText;
-        }
-        if (td.id == "petition_date") {
-          myarr = td.innerText.split("/");
-          mydate = myarr[2]+"-"+myarr[1]+"-"+myarr[0];
-          let petition_date = petition_div.querySelector("#edit_petition_date");
-          petition_date.value = mydate;
-          console.log(mydate)
-          console.log(petition_date);
-        }
-        if (td.id == "medical_doctor") {
-          let medical_doctor = petition_div.querySelector("#edit_medical_doctor");
-          medical_doctor.value = td.innerText;
-        }
-        if (td.id == "billing_unit") {
-          let billing_unit = petition_div.querySelector("#edit_billing_unit");
-          billing_unit.value = td.innerText;
-        }
+    // dd/mm/yyyy -> dd/mm/yyyy
+    if (firstToken.includes("/")) {
+      const parts = firstToken.split("/");
+      if (parts.length === 3) {
+        const day = parts[0].padStart(2, "0");
+        const month = parts[1].padStart(2, "0");
+        const year = parts[2].padStart(4, "0");
+        return `${day}/${month}/${year}`;
+      }
     }
 
-    $('#edit_petition').modal('show'); 
+    // dd-mm-yyyy -> dd/mm/yyyy
+    if (/^\d{1,2}-\d{1,2}-\d{4}$/.test(firstToken)) {
+      const parts = firstToken.split("-");
+      const day = parts[0].padStart(2, "0");
+      const month = parts[1].padStart(2, "0");
+      const year = parts[2];
+      return `${day}/${month}/${year}`;
+    }
+
+    // yyyy-mm-dd (or prefix of timestamp) -> dd/mm/yyyy
+    if (/^\d{4}-\d{1,2}-\d{1,2}$/.test(firstToken)) {
+      const parts = firstToken.split("-");
+      const year = parts[0];
+      const month = parts[1].padStart(2, "0");
+      const day = parts[2].padStart(2, "0");
+      return `${day}/${month}/${year}`;
+    }
+
+    return "";
+   }
+
+   function updatePetition(event) {
+    let petition_div = document.getElementById("edit_petition");
+    const ds = event.dataset || {};
+    const petitionId = ds.petitionId || "";
+    const extractionDate = normalizeToDisplayDate(ds.extractionDate || "");
+    const petitionDate = normalizeToDisplayDate(ds.petitionDate || "");
+    const biopsyDate = normalizeToDisplayDate(ds.biopsyDate || "");
+
+    petition_div.querySelector("#edit_petition_id").value = petitionId;
+    petition_div.querySelector("#edit_origin_tumor").value = ds.tumourOrigin || "";
+    petition_div.querySelector("#edit_petition_name").innerText = `Petition_${petitionId}`;
+    petition_div.querySelector("#edit_ap_code").value = ds.apCode || "";
+    petition_div.querySelector("#edit_hc_code").value = ds.hcCode || "";
+    petition_div.querySelector("#edit_cip_code").value = ds.cipCode || "";
+    petition_div.querySelector("#edit_tumoral_pct").value = ds.tumourPct || "";
+    petition_div.querySelector("#edit_extraction_date").value = extractionDate;
+    petition_div.querySelector("#edit_petition_date").value = petitionDate;
+    petition_div.querySelector("#edit_biopsy_petition_date").value = biopsyDate;
+    petition_div.querySelector("#edit_medical_doctor").value = ds.medicalDoctor || "";
+    petition_div.querySelector("#edit_billing_unit").value = ds.billingUnit || "";
+
+    $('#edit_petition').modal({ backdrop: true, keyboard: true, show: true }); 
 
    }
 
    function removePetition(event) {
-     let petition_id = event.parentElement.id;
+     let petition_id = event.dataset.petitionId;
      let url = `remove_sample/${petition_id}`;
      fetch(url,{
        method: "POST"
@@ -433,6 +560,9 @@
             </button>
         </div>`;
         alert_div.style.display = "block";
+        if (petitionTable) {
+          petitionTable.ajax.reload(null, false);
+        }
 
      });
    }

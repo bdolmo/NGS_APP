@@ -1,492 +1,834 @@
 {% extends "base.html" %}
 
 {% block body %}
+<style>
+  body {
+    background: #f6f8fb;
+  }
+  .config-page {
+    padding-top: 0.6rem;
+    padding-bottom: 1rem;
+    background: #f6f8fb;
+  }
+  .config-page .container-fluid,
+  .config-page .container-xxl {
+    width: 85%;
+    max-width: 85%;
+    margin-left: auto;
+    margin-right: auto;
+    padding-left: 0.25rem;
+    padding-right: 0.25rem;
+  }
+  @media (max-width: 1200px) {
+    .config-page .container-fluid,
+    .config-page .container-xxl {
+      width: 92%;
+      max-width: 92%;
+    }
+  }
+  .config-page .card {
+    border-radius: 0.6rem;
+  }
+  .config-page .section-card {
+    border: 1px solid #e3e8ee;
+    background: #fafbfd;
+    border-radius: 0.6rem;
+  }
+  .config-page .results-card {
+    border: 1px solid #e2e8f0;
+    overflow: hidden;
+    border-radius: 0.6rem;
+    background: #fff;
+  }
+  .config-page .results-toolbar {
+    background: #fff;
+    border-bottom: 1px solid #e2e8f0;
+    padding: 0.85rem 1rem;
+  }
+  .config-page .results-toolbar .badge {
+    font-size: 0.75rem;
+  }
+  .config-page .results-toolbar .form-control-sm,
+  .config-page .results-toolbar .btn-sm {
+    white-space: nowrap;
+    min-height: 34px;
+    font-size: 0.87rem;
+  }
+  .config-page .results-toolbar .form-control-sm {
+    padding-top: 0.12rem;
+    padding-bottom: 0.12rem;
+  }
+  .config-page .toolbar-inline {
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0.4rem;
+  }
+  .config-page .toolbar-row {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.45rem;
+  }
+  .config-page .toolbar-row > * {
+    margin-right: 0 !important;
+    margin-bottom: 0 !important;
+    flex-shrink: 0;
+  }
+  .config-page .upload-card {
+    border: 1px solid #dce6f4;
+    background: linear-gradient(180deg, #f8fbff 0%, #f4f8fe 100%);
+  }
+  .config-page .actions-row {
+    border: 1px solid #e2e8f0;
+    background: #fff;
+    border-radius: 0.6rem;
+    padding: 0.85rem 1rem;
+  }
+  .config-page .upload-dropzone {
+    border: 1px dashed #b9c6d8;
+    border-radius: 0.75rem;
+    padding: 0.8rem 0.9rem;
+    background: #f8fbff;
+  }
+  .config-page .upload-dropzone .custom-file-label {
+    margin-bottom: 0;
+    height: calc(1.4em + 0.38rem + 2px);
+    padding-top: 0.12rem;
+    padding-bottom: 0.12rem;
+    font-size: 0.87rem;
+  }
+  .config-page .upload-help {
+    font-size: 0.82rem;
+    color: #5f6b7a;
+  }
+  .config-page .upload-file-meta {
+    font-size: 0.82rem;
+    color: #394454;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .config-page .table-responsive {
+    max-height: 72vh;
+  }
+  .config-page .dataTables_wrapper table.dataTable {
+    margin-bottom: 0;
+    font-size: 0.9rem;
+  }
+  .config-page .dataTables_wrapper table.dataTable th,
+  .config-page .dataTables_wrapper table.dataTable td {
+    padding: 0.4rem 0.38rem;
+    vertical-align: top;
+    box-sizing: border-box;
+  }
+  .config-page .dataTables_wrapper table.dataTable thead th {
+    background: #f1f4f8;
+    font-size: 0.88rem;
+    font-weight: 600;
+    line-height: 1.2;
+  }
+  .config-page .dataTables_wrapper table.dataTable tbody td {
+    line-height: 1.25;
+  }
+  .config-page .dataTables_wrapper .dataTables_scrollHead,
+  .config-page .dataTables_wrapper .dataTables_scrollBody {
+    border-color: #dee2e6;
+  }
+  .config-page .dataTables_wrapper .dataTables_scrollHead table.dataTable,
+  .config-page .dataTables_wrapper .dataTables_scrollBody table.dataTable {
+    margin: 0 !important;
+    border-collapse: separate;
+    border-spacing: 0;
+  }
+  .config-page .dataTables_wrapper .dataTables_filter {
+    display: none;
+  }
+  .config-page .btn-group .btn {
+    border-radius: 0.35rem !important;
+  }
+  .config-page .dropdown-menu .dropdown-item {
+    font-size: 0.9rem;
+  }
+  .config-page .modal-section-title {
+    font-size: 0.78rem;
+    letter-spacing: 0.03em;
+    color: #6c757d;
+    text-transform: uppercase;
+    margin-top: 0.25rem;
+    margin-bottom: 0.1rem;
+  }
+</style>
+<div class="config-page">
 
-
+<!-- ========== Add Variant Modal ========== -->
 <div class="modal fade" id="addNewModal" tabindex="-1" aria-labelledby="addNewModalLabel" aria-hidden="true">
-    <div class="modal-dialog modal-lg">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title" id="addNewModalLabel">Add New Variant</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Tanca"></button>
-            </div>
-            <form id="addNewForm" method="POST">
-                <div class="modal-body">
-                    <div class="mb-3">
-                        <label for="newGene" class="form-label">Gene</label>
-                        <input type="text" class="form-control" id="newGene" name="gene" required>
-                    </div>
-                    <div class="mb-3">
-                        <label for="newHGVSG" class="form-label">HGVSg</label>
-                        <input type="text" class="form-control" id="newHGVSG" name="hgvsg" required>
-                    </div>
-                    <div class="mb-3">
-                        <label for="newHGVSC" class="form-label">HGVSc</label>
-                        <input type="text" class="form-control" id="newHGVSC" name="hgvsc" required>
-                    </div>
-                    <div class="mb-3">
-                        <label for="newHGVSP" class="form-label">HGVSp</label>
-                        <input type="text" class="form-control" id="newHGVSP" name="hgvsp">
-                    </div>
-                    <div class="mb-3">
-                        <label for="newCancerType" class="form-label">Tipus de càncer</label>
-                        <input type="text" class="form-control" id="newCancerType" name="cancer_type">
-                    </div>
-                    <div class="mb-3">
-                        <label for="newCGI" class="form-label">CGI Summary</label>
-                        <input type="text" class="form-control" id="cgi_summary" name="cgi_summary">
-                    </div>
-
-                    <div class="mb-3">
-                        <label for="newCGI" class="form-label">CGI Prediction</label>
-                        <input type="text" class="form-control" id="cgi_prediction" name="cgi_prediction">
-                    </div>
-
-                    <div class="mb-3">
-                        <label for="newOncoKB" class="form-label">OncoKB</label>
-                        <input type="text" class="form-control" id="newOncoKB" name="oncokb">
-                    </div>
-                    <div class="mb-3">
-                        <label for="newFranklinGermline" class="form-label">Franklin Germline</label>
-                        <input type="text" class="form-control" id="newFranklinGermline" name="franklin_germline">
-                    </div>
-                    <div class="mb-3">
-                        <label for="newFranklinSomatic" class="form-label">Franklin Somatic</label>
-                        <input type="text" class="form-control" id="newFranklinSomatic" name="franklin_somatic">
-                    </div>
-                    <div class="mb-3">
-                        <label for="newMTBP" class="form-label">MTBP</label>
-                        <input type="text" class="form-control" id="newMTBP" name="mtbp">
-                    </div>
-                    <div class="mb-3">
-                        <label for="newClinVarGermline" class="form-label">ClinVar Germline</label>
-                        <input type="text" class="form-control" id="newClinVarGermline" name="clinvar_germline">
-                    </div>
-                    <div class="mb-3">
-                        <label for="newClinVarSomatic" class="form-label">ClinVar Somatic</label>
-                        <input type="text" class="form-control" id="newClinVarSomatic" name="clinvar_somatic">
-                    </div>
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Tanca</button>
-                    <button type="submit" class="btn btn-primary">Afegeix variant</button>
-                </div>
-            </form>
-        </div>
-    </div>
-</div>
-
-
-<!-- Modal for Updating Variant -->
-<div class="modal fade" id="updateModal" tabindex="-1" aria-labelledby="updateModalLabel" aria-hidden="true">
-    <div class="modal-dialog modal-lg">
-      <div class="modal-content">
-        <div class="modal-header">
-          <h5 class="modal-title" id="updateModalLabel">Update Variant Details</h5>
-          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-        </div>
-        <form id="updateForm" method="POST" action="{{ url_for('update_variant') }}">
-          <div class="modal-body">
-            <input type="hidden" name="variant_id" id="variantId">
-            <div class="row">
-                <div class="col">
-                    <div class="mb-3">
-                        <label for="gene" class="form-label"><b>Gene</b></label>
-                        <input type="text" class="form-control" id="gene" name="gene">
-                    </div>
-                </div>
-                <div class="col">
-                    <div class="mb-3">
-                        <label for="hgvsg" class="form-label"><b>HGVSg</b></label>
-                        <input type="text" class="form-control" id="hgvsg" name="hgvsg">
-                    </div>
-                </div>
-            </div>
-            <div class="row">
-                <div class="col">
-                    <div class="mb-3">
-                        <label for="hgvsc" class="form-label"><b>HGVSc</b></label>
-                        <input type="text" class="form-control" id="hgvsc" name="hgvsc">
-                    </div>
-                </div>
-                <div class="col">
-                    <div class="mb-3">
-                        <label for="hgvsp" class="form-label"><b>HGVSp</b></label>
-                        <input type="text" class="form-control" id="hgvsp" name="hgvsp">
-                    </div>
-                </div>
-            </div>
-            <div class="row">
-                <div class="col">
-                    <div class="mb-3">
-                        <label for="cgi_summary" class="form-label"><b>CGI Summary</b></label>
-                        <input type="text" class="form-control" id="cgi_summary" name="cgi_summary">
-                    </div>
-                </div>
-
-                <div class="col">
-                    <div class="mb-3">
-                        <label for="cgi_prediction" class="form-label"><b>CGI Prediction</b></label>
-                        <input type="text" class="form-control" id="cgi_prediction" name="cgi_prediction">
-                    </div>
-                </div>
-            </div>
-
-
-            <div class="row">
-
-                <div class="col">
-                    <div class="mb-3">
-                        <label for="cancerType" class="form-label"><b>Tipus de càncer</b></label>
-                        <input type="text" class="form-control" id="cancerType" name="cancer_type">
-                    </div>
-                </div>
-            </div>
-            <div class="row">
-                <div class="col">
-                    <div class="mb-3">
-                        <label for="oncokb" class="form-label"><b>OncoKB</b></label>
-                        <input type="text" class="form-control" id="oncokb" name="oncokb">
-                    </div>
-                </div>
-                <div class="col">
-                    <div class="mb-3">
-                        <label for="franklinGermline" class="form-label"><b>Franklin Germline</b></label>
-                        <input type="text" class="form-control" id="franklinGermline" name="franklin_germline">
-                    </div>
-                </div>
-            </div>
-            <div class="row">
-                <div class="col">
-                    <div class="mb-3">
-                        <label for="franklinSomatic" class="form-label"><b>Franklin Somatic</b></label>
-                        <input type="text" class="form-control" id="franklinSomatic" name="franklin_somatic">
-                    </div>
-                </div>
-                <div class="col">
-                    <div class="mb-3">
-                    <label for="mtbp" class="form-label"><b>MTBP</b></label>
-                    <input type="text" class="form-control" id="mtbp" name="mtbp">
-                    </div>
-                </div>
-            </div>
-            <div class="row">
-                <div class="col">
-                    <div class="mb-3">
-                    <label for="clinvarGermline" class="form-label"><b>ClinVar Germline</b></label>
-                    <input type="text" class="form-control" id="clinvarGermline" name="clinvar_germline">
-                    </div>
-                </div>
-                <div class="col">
-                    <div class="mb-3">
-                    <label for="clinvarSomatic" class="form-label"><b>ClinVar Somatic</b></label>
-                    <input type="text" class="form-control" id="clinvarSomatic" name="clinvar_somatic">
-                    </div>
-                </div>
-            </div>
-          </div>
-          <div class="modal-footer">
-            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Tanca</button>
-            <button type="submit" class="btn btn-primary">Desa canvis</button>
-          </div>
-        </form>
+  <div class="modal-dialog modal-xl modal-dialog-scrollable">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="addNewModalLabel">Afegir nova variant</h5>
+        <button type="button" class="close" data-dismiss="modal" aria-label="Tanca">
+          <span aria-hidden="true">&times;</span>
+        </button>
       </div>
-    </div>
-  </div>
-  
+      <form id="addNewForm" method="POST" enctype="multipart/form-data" novalidate>
+        <div class="modal-body">
+          <div class="row g-3">
+            <div class="col-md-3">
+              <label for="newGene" class="form-label">Gen</label>
+              <input type="text" class="form-control" id="newGene" name="gene" required>
+            </div>
+            <div class="col-md-3">
+              <label for="newHGVSG" class="form-label">HGVSg</label>
+              <input type="text" class="form-control" id="newHGVSG" name="hgvsg" required>
+            </div>
+            <div class="col-md-3">
+              <label for="newHGVSC" class="form-label">HGVSc</label>
+              <input type="text" class="form-control" id="newHGVSC" name="hgvsc" required>
+            </div>
+            <div class="col-md-3">
+              <label for="newHGVSP" class="form-label">HGVSp</label>
+              <input type="text" class="form-control" id="newHGVSP" name="hgvsp">
+            </div>
 
-  <div class="container-fluid rounded" style="background-color:white; width:25%;margin-top:30px;"> 
-    <div class="card card-body border-0 mt-3 mb-3 p-3" style="background-color:rgb(248, 248, 248);">
-        <h4> Actualització knowledgebase variants</h4>
-        <div class="input-group mb-3 mt-3" style="padding-bottom:20px;">
-            <form method="POST" action="{{ url_for('upload_xlsx_variants') }}" class="form-control" enctype="multipart/form-data">
-                <input id="inputXlsxButton" type="file" name="xlsx_file"  class="custom-file-input" accept=".xlsx">
-                <label class="custom-file-label" id="panel_label" for="inputXlsxButton">Selecciona <i class="fas fa-file-excel" style="color:green"></i></label>
-                <button class="btn btn-primary btn-sm float-right" type="submit">Carrega</button>
-            </form>
+            <div class="col-md-4">
+              <label for="newCancerType" class="form-label">Tipus de càncer</label>
+              <input type="text" class="form-control" id="newCancerType" name="cancer_type">
+            </div>
+            <div class="col-md-4">
+              <label for="cgi_summary" class="form-label">CGI Summary</label>
+              <input type="text" class="form-control" id="cgi_summary" name="cgi_summary">
+            </div>
+            <div class="col-md-4">
+              <label for="cgi_prediction" class="form-label">CGI Prediction</label>
+              <input type="text" class="form-control" id="cgi_prediction" name="cgi_prediction">
+            </div>
+
+            <div class="col-md-4">
+              <label for="newOncoKB" class="form-label">OncoKB</label>
+              <input type="text" class="form-control" id="newOncoKB" name="oncokb">
+            </div>
+            <div class="col-md-4">
+              <label for="newFranklinGermline" class="form-label">Franklin Germline</label>
+              <input type="text" class="form-control" id="newFranklinGermline" name="franklin_germline">
+            </div>
+            <div class="col-md-4">
+              <label for="newFranklinSomatic" class="form-label">Franklin Somatic</label>
+              <input type="text" class="form-control" id="newFranklinSomatic" name="franklin_somatic">
+            </div>
+
+            <div class="col-md-6">
+              <label for="newMTBP" class="form-label">MTBP</label>
+              <input type="text" class="form-control" id="newMTBP" name="mtbp">
+            </div>
+            <div class="col-md-6">
+              <label for="newClinVarGermline" class="form-label">ClinVar Germline</label>
+              <input type="text" class="form-control" id="newClinVarGermline" name="clinvar_germline">
+            </div>
+            <div class="col-md-6">
+              <label for="newClinVarSomatic" class="form-label">ClinVar Somatic</label>
+              <input type="text" class="form-control" id="newClinVarSomatic" name="clinvar_somatic">
+            </div>
+          </div>
         </div>
-    </div>
-  </div>
-
-  {% with messages = get_flashed_messages(with_categories=true) %}
-  {% if messages %}
-      {% for category,message in messages %}
-      <div class="alert alert-{{ category }} alert-dismissible fade show" style="width:23.5%;margin:0 auto"; role="alert">
-          <span>{{ message }}</span>
-          <button type="button" class="close" data-dismiss="alert" aria-label="Close">
-              <span aria-hidden="true">&times;</span>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-outline-secondary btn-sm" data-dismiss="modal" data-bs-dismiss="modal">
+            <i class="fas fa-times mr-1"></i>Tanca
           </button>
-          <br>
-      </div>
-      {% endfor %}
-  {% endif %}
-  {% endwith %}
-
-
-  <div class="container-fluid pt-1 rounded mb-3 mt-3" style="width:95%">
-    <div class="container-fluid " style="margin-left:0px;margin-bottom:10px;">
-        <button id="deleteAllButton" style="margin:0 px;" class="btn btn-sm btn-danger"><i class="fas fa-trash"></i>Eliminar Taula</button>
-        <!-- <button id="addNewVariantButton" class="btn  btn-sm btn-info" data-bs-toggle="modal" data-bs-target="#addNewModal">
-            Nova Variant
-        </button> -->
-
+          <button type="submit" class="btn btn-primary btn-sm">Afegeix variant</button>
+        </div>
+      </form>
     </div>
-
-
-
-    <table id="knowledge_variants" class="table table-sm table-striped table-bordered" style="background-color:white;width:100;font-size:16px;">
-      <thead>
-        <tr>
-          <th>Gen</th>
-          <th>HGVSp</th>
-          <th>HGVSc</th>
-          <th>HGVSg</th>
-          <th>Tipus de càncer</th>
-          <th>CGI Summary</th>
-          <th>CGI Prediction</th>
-          <th>OncoKB</th>
-          <th>Franklin Germline</th>
-          <th>Franklin Somatic</th>
-          <th>MTBP</th>
-          <th>ClinVar Germline</th>
-          <th>ClinVar Somatic</th>
-          <th>Data</th>
-          <th>Accions</th>
-
-        </tr>
-      </thead>
-      <tbody>
-        {% for var in vars_kb %}
-        <tr >
-          <td id="gene"><b><i>{{ var.gene }}</i></b></td>
-          <td id="hgvsp" style="min-width:150px;max-width:150px;word-wrap: break-word;">{{ var.hgvsp }}</td>
-          <td id="hgvsc">{{ var.hgvsc }}</td>
-          <td id="hgvsg" style="min-width:170px;max-width:170px;word-wrap: break-word;">
-            {{ var.hgvsg }}
-            <input id="variant_id" type="hidden" value="{{ var.id }}">
-          </td>
-          <td id="cancer_type">{{  var.kb['Càncer'] }}</td>
-          <td id="cgi_summary">{{ var.kb['Oncogenic summary']  }}</td>
-          <td id="cgi_prediction">{{ var.kb['Oncogenic prediction']  }}</td>
-          <td id="oncokb" style="min-width:150px;max-width:170px;">{{ var.kb['OncoKB'] }}</td>
-          <td id="franklin_germline" v>{{ var.kb['Franklin ACMG'] }}</td>
-          <td id="franklin_somatic" style="min-width:150px;">{{ var.kb['Franklin Oncogenicity']  }}</td>
-          <td id="mtbp" style="min-width:150px;max-width:170px;">{{ var.kb['MTBP'] }}</td>
-          <td id="clinvar_germline">{{ var.kb['ClinVar Germline'] }}</td>
-          <td id="clinvar_somatic">{{ var.kb['ClinVar Somatic'] }}</td>
-          <td id="last_update">{{var.kb['Data Classificació']}}</td>
-          <td>
-            <button class="btn btn-sm  edit-button btn-outline-info"
-            data-variant-id="{{ var.id|escape }}"
-            data-gene="{{ var.gene|escape }}"
-            data-hgvsg="{{ var.hgvsg|escape }}"
-            data-hgvsc="{{ var.hgvsc|escape }}"
-            data-hgvsp="{{ var.hgvsp|escape }}"
-            data-cancer-type="{{ var.kb['Càncer']|escape }}"
-            data-cgi-summary="{{ var.kb['Oncogenic summary']|escape  }}"
-            data-cgi-prediction="{{ var.kb['Oncogenic prediction']|escape  }}"
-            data-oncokb="{{ var.kb['OncoKB']|escape }}"
-            data-franklin-germline="{{ var.kb['Franklin ACMG']|escape }}"
-            data-franklin-somatic="{{ var.kb['Franklin Oncogenicity']|escape }}"
-            data-mtbp="{{ var.kb['MTBP']|escape }}"
-            data-clinvar-germline="{{ var.kb['ClinVar Germline']|escape }}"
-            data-clinvar-somatic="{{ var.kb['ClinVar Somatic']|escape }}">
-        Edita
-    </button>
-            <button class="btn btn-sm btn-outline-danger delete-button" data-variant-id="{{ var.id }}">Elimina</button>
-
-          </td>
-        </tr>
-       {% endfor %}
-      </tbody>
-    </table>
+  </div>
 </div>
 
+<!-- ========== Update Variant Modal ========== -->
+<div class="modal fade" id="updateModal" tabindex="-1" aria-labelledby="updateModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-lg modal-dialog-scrollable">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="updateModalLabel">Actualitza la variant</h5>
+        <button type="button" class="close" data-dismiss="modal" aria-label="Tanca">
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+      <form id="updateForm" method="POST" action="{{ url_for('update_variant') }}" novalidate>
+        <div class="modal-body">
+          <input type="hidden" name="variant_id" id="variantId">
+          <div class="row g-3">
+            <div class="col-12 modal-section-title">Identificació de la variant</div>
+            <div class="col-md-3">
+              <label for="gene" class="form-label">Gen</label>
+              <input type="text" class="form-control form-control-sm" id="gene" name="gene">
+            </div>
+            <div class="col-md-3">
+              <label for="hgvsg" class="form-label">HGVSg</label>
+              <input type="text" class="form-control form-control-sm" id="hgvsg" name="hgvsg">
+            </div>
+            <div class="col-md-3">
+              <label for="hgvsc" class="form-label">HGVSc</label>
+              <input type="text" class="form-control form-control-sm" id="hgvsc" name="hgvsc">
+            </div>
+            <div class="col-md-3">
+              <label for="hgvsp" class="form-label">HGVSp</label>
+              <input type="text" class="form-control form-control-sm" id="hgvsp" name="hgvsp">
+            </div>
 
+            <div class="col-12 modal-section-title">Classificació i context clínic</div>
+            <div class="col-md-4">
+              <label for="updateCgiSummary" class="form-label">CGI Summary</label>
+              <input type="text" class="form-control form-control-sm" id="updateCgiSummary" name="cgi_summary">
+            </div>
+            <div class="col-md-4">
+              <label for="updateCgiPrediction" class="form-label">CGI Prediction</label>
+              <input type="text" class="form-control form-control-sm" id="updateCgiPrediction" name="cgi_prediction">
+            </div>
+            <div class="col-md-4">
+              <label for="cancerType" class="form-label">Tipus de càncer</label>
+              <input type="text" class="form-control form-control-sm" id="cancerType" name="cancer_type">
+            </div>
+
+            <div class="col-12 modal-section-title">Fonts externes</div>
+            <div class="col-md-4">
+              <label for="oncokb" class="form-label">OncoKB</label>
+              <input type="text" class="form-control form-control-sm" id="oncokb" name="oncokb">
+            </div>
+            <div class="col-md-4">
+              <label for="franklinGermline" class="form-label">Franklin Germline</label>
+              <input type="text" class="form-control form-control-sm" id="franklinGermline" name="franklin_germline">
+            </div>
+            <div class="col-md-4">
+              <label for="franklinSomatic" class="form-label">Franklin Somatic</label>
+              <input type="text" class="form-control form-control-sm" id="franklinSomatic" name="franklin_somatic">
+            </div>
+
+            <div class="col-md-6">
+              <label for="mtbp" class="form-label">MTBP</label>
+              <input type="text" class="form-control form-control-sm" id="mtbp" name="mtbp">
+            </div>
+            <div class="col-md-6">
+              <label for="clinvarGermline" class="form-label">ClinVar Germline</label>
+              <input type="text" class="form-control form-control-sm" id="clinvarGermline" name="clinvar_germline">
+            </div>
+            <div class="col-md-6">
+              <label for="clinvarSomatic" class="form-label">ClinVar Somatic</label>
+              <input type="text" class="form-control form-control-sm" id="clinvarSomatic" name="clinvar_somatic">
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-outline-secondary btn-sm" data-dismiss="modal" data-bs-dismiss="modal">
+            <i class="fas fa-times mr-1"></i>Tanca
+          </button>
+          <button type="submit" class="btn btn-primary btn-sm">Desa canvis</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<!-- ========== Flash messages (server-side) ========== -->
+{% with messages = get_flashed_messages(with_categories=true) %}
+  {% if messages %}
+    <div class="container-xxl">
+      {% for category, message in messages %}
+        <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
+          <span>{{ message }}</span>
+          <button type="button" class="close" data-dismiss="alert" aria-label="Tanca">
+            <span aria-hidden="true">&times;</span>
+          </button>
+        </div>
+      {% endfor %}
+    </div>
+  {% endif %}
+{% endwith %}
+
+<!-- ========== Variants Table ========== -->
+<div class="container-fluid mt-3">
+  <div class="card results-card">
+    <div class="results-toolbar">
+      <div class="d-flex justify-content-between align-items-center flex-wrap">
+        <div class="mb-2 mb-sm-0">
+          <h5 class="mb-1">Classificació de variants oncològiques</h5>
+          <span class="badge badge-light mr-2">Totals: <span id="kbTotalCount">0</span></span>
+          <span class="badge badge-light">Filtrades: <span id="kbVisibleCount">0</span></span>
+        </div>
+
+        <div class="d-flex align-items-center">
+          <div class="dropdown mr-2">
+            <button class="btn btn-outline-secondary btn-sm dropdown-toggle" type="button" id="kbActionsDropdown" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+              Opcions taula
+            </button>
+            <div class="dropdown-menu dropdown-menu-right" aria-labelledby="kbActionsDropdown">
+              <button class="dropdown-item" type="button" id="kbActionUpload">
+                <i class="fas fa-upload mr-2"></i>Carrega Excel
+              </button>
+              <button class="dropdown-item" type="button" id="kbActionDownload">
+                <i class="fas fa-download mr-2"></i>Descarrega Excel
+              </button>
+              <div class="dropdown-divider"></div>
+              <button class="dropdown-item text-danger" type="button" id="kbActionDelete">
+                <i class="fas fa-trash mr-2"></i>Elimina taula
+              </button>
+            </div>
+          </div>
+          <button class="btn btn-outline-primary btn-sm mr-2 text-nowrap" data-toggle="modal" data-target="#addNewModal">
+            <i class="fas fa-plus mr-1"></i> Nova variant
+          </button>
+          <input id="kbTableSearch" type="search" class="form-control form-control-sm" placeholder="Cerca" style="min-width: 230px;">
+        </div>
+      </div>
+    </div>
+    <div id="uploadPanelRow" class="px-3 pt-3 d-none border-bottom">
+      <p class="upload-help mb-2">Importa fitxers `.xlsx` amb full <b>Variants</b>. Es farà merge automàtic evitant duplicats.</p>
+      <form method="POST" action="{{ url_for('upload_xlsx_variants') }}" enctype="multipart/form-data" class="row g-2 align-items-center pb-3">
+        <div class="col-sm-8 col-md-9">
+          <div class="upload-dropzone">
+            <div class="custom-file">
+              <input id="inputXlsxButton" class="custom-file-input" type="file" name="xlsx_file" accept=".xlsx" required>
+              <label id="xlsxFileLabel" class="custom-file-label" for="inputXlsxButton">Selecciona un fitxer Excel</label>
+            </div>
+          </div>
+        </div>
+        <div class="col-sm-4 col-md-3 text-end">
+          <button id="uploadXlsxSubmitBtn" class="btn btn-primary btn-sm" type="submit">
+            <i class="fas fa-upload mr-1"></i>Carrega fitxer
+          </button>
+        </div>
+      </form>
+    </div>
+
+    <div class="table-responsive w-100 pl-2 pr-2">
+      <table id="knowledge_variants" data-server-side="1" class="table table-sm table-bordered" style="background-color:white;width:100%;">
+        <thead class="table-light">
+          <tr>
+            <th scope="col">Gen</th>
+            <th scope="col">HGVSp</th>
+            <th scope="col">HGVSc</th>
+            <th scope="col">HGVSg</th>
+            <th scope="col">Tipus de càncer</th>
+            <th scope="col">CGI Summary</th>
+            <th scope="col">CGI Prediction</th>
+            <th scope="col">OncoKB</th>
+            <th scope="col">Franklin Germline</th>
+            <th scope="col">Franklin Somatic</th>
+            <th scope="col">MTBP</th>
+            <th scope="col">ClinVar Germline</th>
+            <th scope="col">ClinVar Somatic</th>
+            <th scope="col">Data</th>
+            <th scope="col" style="width:120px;">Accions</th>
+          </tr>
+        </thead>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- ========== Embed variants as JSON for D3 ========== -->
+<script id="variants-data" type="application/json">
+[
+{% for v in vars_kb -%}
+  {
+    "gene": {{ v.gene|tojson }},
+    "hgvsp": {{ v.hgvsp|default('', true)|tojson }},
+    "hgvsc": {{ v.hgvsc|default('', true)|tojson }},
+    "hgvsg": {{ v.hgvsg|default('', true)|tojson }},
+    "cancer": {{ v.kb['Càncer']|default('', true)|tojson }},
+    "oncogenic_prediction": {{ v.kb['Oncogenic prediction']|default('', true)|tojson }},
+    "franklin_oncogenicity": {{ v.kb['Franklin Oncogenicity']|default('', true)|tojson }},
+    "franklin_acmg": {{ v.kb['Franklin ACMG']|default('', true)|tojson }}
+  }{% if not loop.last %},{% endif %}
+{%- endfor %}
+]
+</script>
+
+<!-- ========== Toast container ========== -->
+<div class="position-fixed bottom-0 end-0 p-3" style="z-index: 1080">
+  <div id="toastContainer"></div>
+</div>
 
 {% block script %}
-    <script>
-    document.addEventListener("DOMContentLoaded", () => {
-        const deleteButtons = document.querySelectorAll(".delete-button");
+<script type="module">
+  /* ==================== D3 CHARTS ==================== */
+  import * as d3 from "https://cdn.jsdelivr.net/npm/d3@7/+esm";
 
-        deleteButtons.forEach(button => {
-            button.addEventListener("click", () => {
-                const variantId = button.getAttribute("data-variant-id");
+  // ---- Read embedded data ----
+  const raw = document.getElementById("variants-data")?.textContent || "[]";
+  const variants = JSON.parse(raw);
 
-                if (confirm("Segur que vols eliminar aquesta variant?")) {
-                    // Send a request to the server to delete the variant
-                    fetch(`/delete_variant/${variantId}`, {
-                        method: "DELETE",
-                        headers: {
-                            "Content-Type": "application/json",
-                        }
-                    })
-                    .then(response => response.json())
-                    .then(data => {
-                        if (data.success) {
-                            flash("variant eliminada correctament", "success");
-                            // Remove the row from the table
-                            button.closest("tr").remove();
-                        } else {
-                            flash("S'ha trobat un error durant l'eliminació de la variant", "error");
-                        }
-                    })
-                    .catch(error => {
-                        console.error("Error deleting variant:", error);
-                        flash("S'ha trobat un error durant l'eliminació de la variant", "error");
-                        alert("S'ha trobat un error");
-                    });
-                }
-            });
-        });
+  // Infer variant type from HGVS (quick heuristic)
+  function inferType(v) {
+    const s = (v.hgvsp || v.hgvsc || "").toLowerCase();
+    if (!s) return "other";
+    if (s.includes("fs")) return "frameshift";
+    if (s.includes("*") || s.includes("ter") || s.includes("stop")) return "stop-gain";
+    if (s.includes("delins")) return "delins";
+    if (s.includes("del")) return "deletion";
+    if (s.includes("ins")) return "insertion";
+    if (s.includes("dup")) return "duplication";
+    if (s.includes("splice") || /c\.\d+[+-]\d+/.test(s)) return "splicing";
+    if (s.includes("p.") && /p\.[A-Z][a-z]{2}\d+[A-Z][a-z]{2}/.test(s)) return "missense";
+    if (s.includes("=") || s.includes("syn")) return "synonymous";
+    return "other";
+  }
+
+  const rows = variants.map(v => ({
+    gene: v.gene || "NA",
+    type: inferType(v),
+    cancer: v.cancer || "NA",
+  }));
+
+  const countBy = (arr, key) => {
+    const m = new Map();
+    arr.forEach(d => m.set(d[key], (m.get(d[key]) || 0) + 1));
+    return Array.from(m, ([k, v]) => ({ key: k, value: v }));
+  };
+
+  function clearNode(sel) { d3.select(sel).selectAll("*").remove(); }
+
+
+  function drawTopGenes() {
+    const container = d3.select("#chart-top-genes");
+    if (!container.node()) return;
+    clearNode("#chart-top-genes");
+
+    const data = countBy(rows, "gene")
+      .sort((a, b) => d3.descending(a.value, b.value))
+      .slice(0, 12);
+
+    if (!data.length) { container.append("div").attr("class","text-muted").text("Sense dades"); return; }
+
+    const margin = { top: 8, right: 16, bottom: 28, left: 110 };
+    const width = (container.node().clientWidth || 520) - margin.left - margin.right;
+    const height = 28 * data.length;
+
+    const svg = container.append("svg")
+      .attr("width", "100%")
+      .attr("height", height + margin.top + margin.bottom);
+
+    const g = svg.append("g").attr("transform", `translate(${margin.left},${margin.top})`);
+
+    const x = d3.scaleLinear().domain([0, d3.max(data, d => d.value)]).nice().range([0, width]);
+    const y = d3.scaleBand().domain(data.map(d => d.key)).range([0, height]).padding(0.15);
+
+    g.append("g")
+      .selectAll("rect")
+      .data(data)
+      .join("rect")
+      .attr("x", 0)
+      .attr("y", d => y(d.key))
+      .attr("height", y.bandwidth())
+      .attr("width", d => x(d.value))
+      .attr("fill", (d, i) => d3.schemeTableau10[i % 10]);
+
+    g.append("g").call(d3.axisLeft(y));
+    g.append("g").attr("transform", `translate(0,${height})`).call(d3.axisBottom(x).ticks(5).tickFormat(d3.format("d")));
+
+    g.selectAll("text.value")
+      .data(data)
+      .join("text")
+      .attr("class", "value")
+      .attr("x", d => x(d.value) + 6)
+      .attr("y", d => y(d.key) + y.bandwidth() / 2)
+      .attr("dominant-baseline", "middle")
+      .attr("font-size", 12)
+      .text(d => d.value);
+  }
+
+  function renderCharts() {
+    if (typeof drawDonut === "function") drawDonut();
+    drawTopGenes();
+  }
+
+  // ---- Hide/Show persistence ----
+  const panelEl = document.getElementById("chartsPanel");
+  const toggleBtn = document.getElementById("chartsToggleBtn");
+  if (panelEl && toggleBtn) {
+    const collapsed = localStorage.getItem("chartsCollapsed") === "true";
+    if (collapsed) {
+      panelEl.classList.remove("show");
+      toggleBtn.setAttribute("aria-expanded", "false");
+      toggleBtn.textContent = "Mostra gràfics";
+    } else {
+      panelEl.classList.add("show");
+      toggleBtn.setAttribute("aria-expanded", "true");
+      toggleBtn.textContent = "Oculta gràfics";
+      renderCharts();
+    }
+
+    panelEl.addEventListener("shown.bs.collapse", () => {
+      localStorage.setItem("chartsCollapsed", "false");
+      toggleBtn.textContent = "Oculta gràfics";
+      renderCharts();
+    });
+    panelEl.addEventListener("hidden.bs.collapse", () => {
+      localStorage.setItem("chartsCollapsed", "true");
+      toggleBtn.textContent = "Mostra gràfics";
     });
 
-    // Wait for the DOM to load
-    document.addEventListener("DOMContentLoaded", () => {
-        // Select all buttons with the class 'edit-button'
-        const editButtons = document.querySelectorAll(".edit-button");
-  
-        // Add an event listener to each button
-        editButtons.forEach(button => {
-            button.addEventListener("click", () => {
-                // Extract data from the clicked button's data attributes
-                const variant_id = button.getAttribute("data-variant-id");
-                const gene = button.getAttribute("data-gene");
-                const hgvsg = button.getAttribute("data-hgvsg");
-                const hgvsc = button.getAttribute("data-hgvsc");
-                const hgvsp = button.getAttribute("data-hgvsp");
-                const cgiPrediction = button.getAttribute("data-cgi-prediction");
-
-                const cgiSummary = button.getAttribute("data-cgi-summary");
-
-                const cancerType = button.getAttribute("data-cancer-type");
-                const oncokb = button.getAttribute("data-oncokb");
-                const franklinGermline = button.getAttribute("data-franklin-germline");
-                const franklinSomatic = button.getAttribute("data-franklin-somatic");
-                const mtbp = button.getAttribute("data-mtbp");
-                const clinvarGermline = button.getAttribute("data-clinvar-germline");
-                const clinvarSomatic = button.getAttribute("data-clinvar-somatic");
-  
-                // Populate the modal fields
-                document.getElementById("variantId").value = variant_id || '';
-                document.getElementById("gene").value = gene || '';
-                document.getElementById("hgvsg").value = hgvsg || '';
-                document.getElementById("hgvsc").value = hgvsc || '';
-                document.getElementById("hgvsp").value = hgvsp || '';
-
-                document.getElementById("cgiPrediction").value = cgiPrediction || '';
-                document.getElementById("cgiSummary").value = cgiSummary || '';
-                document.getElementById("cancerType").value = cancerType || '';
-                document.getElementById("oncokb").value = oncokb || '';
-                document.getElementById("franklinGermline").value = franklinGermline || '';
-                document.getElementById("franklinSomatic").value = franklinSomatic || '';
-                document.getElementById("mtbp").value = mtbp || '';
-                document.getElementById("clinvarGermline").value = clinvarGermline || '';
-                document.getElementById("clinvarSomatic").value = clinvarSomatic || '';
-  
-                // Open the modal
-                const modal = new bootstrap.Modal(document.getElementById("updateModal"));
-                modal.show();
-            });
-        });
+    let resizeTimer;
+    window.addEventListener("resize", () => {
+      clearTimeout(resizeTimer);
+      resizeTimer = setTimeout(() => {
+        if (panelEl.classList.contains("show")) renderCharts();
+      }, 150);
     });
-    document.addEventListener("DOMContentLoaded", () => {
-        const deleteAllButton = document.getElementById("deleteAllButton");
+  }
 
-        deleteAllButton.addEventListener("click", () => {
-            if (confirm("Are you sure you want to delete all variants? This action cannot be undone.")) {
-                // Send a request to the server to delete all elements
-                fetch("{{ url_for('delete_all_variants') }}", {
-                    method: "POST",
-                    headers: {
-                        "Content-Type": "application/json",
-                    }
-                })
-                .then(response => response.json())
-                .then(data => {
-                    if (data.success) {
-                        alert("All variants deleted successfully!");
-                        // Optionally reload the table or the page
-                        location.reload();
-                    } else {
-                        alert("An error occurred while deleting variants.");
-                    }
-                })
-                .catch(error => {
-                    console.error("Error deleting variants:", error);
-                    alert("An error occurred. Please try again.");
-                });
-            }
-        });
+  /* ==================== CRUD & UI HELPERS ==================== */
+
+  async function apiFetch(url, options={}) {
+    const res = await fetch(url, options);
+    const ct = res.headers.get("content-type") || "";
+    const body = ct.includes("application/json") ? await res.json().catch(() => ({})) : await res.text();
+    if (!res.ok) {
+      const msg = (body && body.detail) || (body && body.message) || (typeof body === "string" ? body : "Error");
+      throw new Error(msg || `HTTP ${res.status}`);
+    }
+    return body;
+  }
+
+  function showToast(message, type="info") {
+    const id = `t${Date.now()}`;
+    const color = (type === "success") ? "bg-success" : (type === "danger" ? "bg-danger" : (type === "warning" ? "bg-warning text-dark" : "bg-primary"));
+    const html = `
+      <div id="${id}" class="toast align-items-center text-white ${color} border-0 mb-2" role="alert" aria-live="assertive" aria-atomic="true">
+        <div class="d-flex">
+          <div class="toast-body">${message}</div>
+          <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Tanca"></button>
+        </div>
+      </div>`;
+    const container = document.getElementById("toastContainer");
+    container.insertAdjacentHTML("beforeend", html);
+    const toastEl = document.getElementById(id);
+    if (window.bootstrap && typeof bootstrap.Toast === "function") {
+      new bootstrap.Toast(toastEl, { delay: 3500 }).show();
+    } else if (window.jQuery && typeof window.jQuery.fn.toast === "function") {
+      window.jQuery(toastEl).toast({ delay: 3500 }).toast("show");
+    } else {
+      alert(message);
+    }
+  }
+
+  // Table UX controls
+  function setupTableControls() {
+    const kbTable = $("#knowledge_variants").DataTable({
+      destroy: true,
+      processing: true,
+      serverSide: true,
+      scrollX: true,
+      scrollCollapse: true,
+      responsive: false,
+      searchDelay: 400,
+      deferRender: true,
+      pageLength: 5,
+      lengthChange: false,
+      info: false,
+      searching: true,
+      ordering: true,
+      autoWidth: true,
+      ajax: {
+        url: "{{ url_for('view_config_data') }}",
+        type: "POST",
+        error: function(xhr, status, err) {
+          console.error("Knowledge table AJAX error:", status, err, xhr.responseText);
+          alert("Error carregant variants de la base de coneixement.");
+        }
+      },
+      columnDefs: [
+        { targets: -1, orderable: false, searchable: false }
+      ],
+      language: {
+        zeroRecords: "No hi ha variants",
+        info: "Mostrant _START_ a _END_ de _TOTAL_ variants",
+        infoEmpty: "No hi ha entrades",
+        infoFiltered: "(filtrats de _MAX_ total records)",
+        sSearch: "Cerca:"
+      }
     });
+    window.knowledgeVariantsTable = kbTable;
 
+    if (!kbTable) return false;
 
-    document.addEventListener("DOMContentLoaded", () => {
-        const addNewForm = document.getElementById("addNewForm");
+    const searchInput = document.getElementById("kbTableSearch");
+    const totalCountEl = document.getElementById("kbTotalCount");
+    const visibleCountEl = document.getElementById("kbVisibleCount");
 
-        addNewForm.addEventListener("submit", event => {
-            event.preventDefault(); // Prevent default form submission
+    function updateVisibleCounts() {
+      if (!visibleCountEl || !totalCountEl) return;
+      const info = kbTable.page.info();
+      totalCountEl.textContent = info.recordsTotal;
+      visibleCountEl.textContent = info.recordsDisplay;
+    }
 
-            // Send the form data via Fetch API
-            fetch("/add_variant", {
-                method: "POST",
-                body: new FormData(addNewForm),
-            })
-            .then(response => response.json())
-            .then(data => {
-                if (data.success) {
-                    alert("New record added successfully!");
+    updateVisibleCounts();
+    kbTable.off("draw.kbCounts");
+    kbTable.on("draw.kbCounts", updateVisibleCounts);
 
-                    // Dynamically add the new record to the table
-                    const tableBody = document.querySelector("#knowledge_variants tbody");
-                    const newRow = document.createElement("tr");
-                    newRow.setAttribute("data-variant-id", data.variant.id);
-                    newRow.innerHTML = `
-                        <td><b><i>${data.variant.gene}</i></b></td>
-                        <td>${data.variant.hgvsg}</td>
-                        <td>${data.variant.hgvsc}</td>
-                        <td>${data.variant.hgvsp}</td>
-                        <td>${data.variant.cancer_type}</td>
-                        <td>${data.variant.cgi_summary}</td>
-                        <td>${data.variant.cgi_prediction}</td>
-                        <td>${data.variant.oncokb}</td>
-                        <td>${data.variant.franklin_germline}</td>
-                        <td>${data.variant.franklin_somatic}</td>
-                        <td>${data.variant.mtbp}</td>
-                        <td>${data.variant.clinvar_germline}</td>
-                        <td>${data.variant.clinvar_somatic}</td>
-                        <td>New Record</td>
-                        <td>
-                            <button class="btn btn-sm btn-info edit-button" data-variant-id="${data.variant.id}">Edit</button>
-                            <button class="btn btn-sm btn-danger delete-button" data-variant-id="${data.variant.id}">Delete</button>
-                        </td>
-                    `;
-                    tableBody.appendChild(newRow);
+    if (searchInput) {
+      searchInput.addEventListener("input", (e) => {
+        kbTable.search(e.target.value).draw();
+      });
+    }
 
-                    // Reinitialize event listeners for the new row's buttons if needed
+    return true;
+  }
 
-                    // Close the modal
-                    const addNewModal = bootstrap.Modal.getInstance(document.getElementById("addNewModal"));
-                    addNewModal.hide();
+  if (!setupTableControls()) {
+    let tries = 0;
+    const retry = setInterval(() => {
+      tries += 1;
+      if (setupTableControls() || tries > 20) clearInterval(retry);
+    }, 150);
+  }
 
-                    // Clear the form
-                    addNewForm.reset();
-                } else {
-                    alert("An error occurred while adding the record.");
-                }
-            })
-            .catch(error => {
-                console.error("Error adding record:", error);
-                alert("An error occurred. Please try again.");
-            });
-        });
+  const kbActionUpload = document.getElementById("kbActionUpload");
+  const kbActionDownload = document.getElementById("kbActionDownload");
+  const kbActionDelete = document.getElementById("kbActionDelete");
+  const uploadPanelRow = document.getElementById("uploadPanelRow");
+  if (uploadPanelRow && kbActionUpload && kbActionDownload && kbActionDelete) {
+    kbActionUpload.addEventListener("click", () => {
+      uploadPanelRow.classList.toggle("d-none");
     });
+    kbActionDownload.addEventListener("click", () => {
+      window.location.href = "{{ url_for('download_variants_xlsx') }}";
+    });
+    kbActionDelete.addEventListener("click", async () => {
+      await handleDeleteAllVariants();
+    });
+  }
 
+  const xlsxInput = document.getElementById("inputXlsxButton");
+  const xlsxFileLabel = document.getElementById("xlsxFileLabel");
+  const uploadBtn = document.getElementById("uploadXlsxSubmitBtn");
+  if (xlsxInput && xlsxFileLabel && uploadBtn) {
+    const setState = () => {
+      const file = xlsxInput.files && xlsxInput.files[0];
+      if (file) {
+        xlsxFileLabel.textContent = `${file.name} (${Math.max(1, Math.round(file.size / 1024))} KB)`;
+        uploadBtn.disabled = false;
+      } else {
+        xlsxFileLabel.textContent = "Selecciona un fitxer Excel";
+        uploadBtn.disabled = true;
+      }
+    };
+    setState();
+    xlsxInput.addEventListener("change", setState);
+  }
 
+  // Delete one
+  document.addEventListener("click", async (e) => {
+    const btn = e.target.closest(".delete-button");
+    if (!btn) return;
+    const variantId = btn.getAttribute("data-variant-id");
+    if (!variantId) return;
+    if (!confirm("Segur que vols eliminar aquesta variant?")) return;
+    try {
+      const data = await apiFetch(`/delete_variant/${variantId}`, {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+      });
+      if (data.success) {
+        const kbTable = window.knowledgeVariantsTable;
+        if (kbTable) {
+          kbTable.ajax.reload(null, false);
+        } else {
+          btn.closest("tr")?.remove();
+        }
+        showToast("Variant eliminada correctament", "success");
+      } else {
+        showToast("S'ha produït un error en eliminar la variant", "danger");
+      }
+    } catch (err) {
+      console.error(err);
+      showToast(err.message || "Error eliminant la variant", "danger");
+    }
+  });
 
-  </script>
-  
+  // Delete all
+  async function handleDeleteAllVariants() {
+    if (!confirm("Segur que vols eliminar totes les variants? Aquesta acció no es pot desfer.")) return;
+    try {
+      const data = await apiFetch(`{{ url_for('delete_all_variants') }}`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+      });
+      if (data.success) {
+        showToast("S'han eliminat totes les variants", "success");
+        location.reload();
+      } else {
+        showToast("Error en eliminar les variants", "danger");
+      }
+    } catch (err) {
+      console.error(err);
+      showToast(err.message || "Error en eliminar les variants", "danger");
+    }
+  }
 
-{% endblock %} 
+  // Open update modal
+  document.addEventListener("click", (e) => {
+    const btn = e.target.closest(".edit-button");
+    if (!btn) return;
+    const d = btn.dataset;
+    document.getElementById("variantId").value        = d.variantId ?? "";
+    document.getElementById("gene").value             = d.gene ?? "";
+    document.getElementById("hgvsg").value            = d.hgvsg ?? "";
+    document.getElementById("hgvsc").value            = d.hgvsc ?? "";
+    document.getElementById("hgvsp").value            = d.hgvsp ?? "";
+    document.getElementById("updateCgiSummary").value      = d.cgiSummary ?? "";
+    document.getElementById("updateCgiPrediction").value   = d.cgiPrediction ?? "";
+    document.getElementById("cancerType").value       = d.cancerType ?? "";
+    document.getElementById("oncokb").value           = d.oncokb ?? "";
+    document.getElementById("franklinGermline").value = d.franklinGermline ?? "";
+    document.getElementById("franklinSomatic").value  = d.franklinSomatic ?? "";
+    document.getElementById("mtbp").value             = d.mtbp ?? "";
+    document.getElementById("clinvarGermline").value  = d.clinvarGermline ?? "";
+    document.getElementById("clinvarSomatic").value   = d.clinvarSomatic ?? "";
+    if (window.bootstrap && typeof bootstrap.Modal === "function") {
+      new bootstrap.Modal(document.getElementById("updateModal")).show();
+    } else if (window.jQuery && typeof window.jQuery.fn.modal === "function") {
+      window.jQuery("#updateModal").modal("show");
+    }
+  });
 
+  // Add new (AJAX)
+  document.getElementById("addNewForm")?.addEventListener("submit", async (e) => {
+    e.preventDefault();
+    const fd = new FormData(e.currentTarget);
+    try {
+      const data = await apiFetch("/add_variant", { method: "POST", body: fd });
+      if (data.success) {
+        showToast("Variant afegida correctament", "success");
+        location.reload();
+      } else {
+        showToast("No s'ha pogut afegir la variant", "danger");
+      }
+    } catch (err) {
+      console.error(err);
+      showToast(err.message || "Error afegint la variant", "danger");
+    }
+  });
+
+  // Update (AJAX)
+  document.getElementById("updateForm")?.addEventListener("submit", async (e) => {
+    e.preventDefault();
+    const form = e.currentTarget;
+    const fd = new FormData(form);
+    try {
+      const data = await apiFetch(form.action, { method: "POST", body: fd });
+      if (data.success) {
+        showToast("Variant actualitzada", "success");
+        location.reload();
+      } else {
+        showToast("No s'ha pogut actualitzar la variant", "danger");
+      }
+    } catch (err) {
+      console.error(err);
+      showToast(err.message || "Error actualitzant la variant", "danger");
+    }
+  });
+</script>
+{% endblock %}
+
+</div>
 {% endblock body %}

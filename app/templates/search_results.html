@@ -1,250 +1,255 @@
 {% extends "base.html" %}
 
 {% block body %}
+<style>
+  body {
+    background: #f6f8fb;
+  }
+  .search-results-page {
+    width: 75%;
+    margin: 80px auto 0 auto;
+  }
+  .search-results-page .results-card {
+    border: 1px solid #e2e8f0;
+    border-radius: 0.6rem;
+    overflow: hidden;
+    background: #fff;
+  }
+  .search-results-page .results-toolbar {
+    background: #fff;
+    border-bottom: 1px solid #e2e8f0;
+    padding: 0.85rem 1rem;
+  }
+  .search-results-page .results-toolbar .badge {
+    font-size: 0.75rem;
+  }
+  .search-results-page .results-toolbar .form-control-sm,
+  .search-results-page .results-toolbar .btn-sm {
+    white-space: nowrap;
+    min-height: 34px;
+    font-size: 0.87rem;
+  }
+  .search-results-page .results-toolbar .form-control-sm {
+    padding-top: 0.12rem;
+    padding-bottom: 0.12rem;
+  }
+  .search-results-page .dataTables_wrapper .dataTables_filter {
+    display: none;
+  }
+  .search-results-page .dataTables_wrapper table.dataTable {
+    margin-bottom: 0;
+    font-size: 0.9rem;
+  }
+  .search-results-page .dataTables_wrapper table.dataTable th,
+  .search-results-page .dataTables_wrapper table.dataTable td {
+    padding: 0.4rem 0.38rem;
+    vertical-align: top;
+    box-sizing: border-box;
+  }
+  .search-results-page .dataTables_wrapper table.dataTable thead th {
+    background: #f1f4f8;
+    font-size: 0.88rem;
+    font-weight: 600;
+    line-height: 1.2;
+  }
+  .search-results-page .dataTables_wrapper table.dataTable tbody td { line-height: 1.25; }
+  .search-results-page .dataTables_wrapper .dataTables_scrollHead,
+  .search-results-page .dataTables_wrapper .dataTables_scrollBody {
+    border-color: #dee2e6;
+  }
+  .search-results-page .dataTables_wrapper .dataTables_scrollHead table.dataTable,
+  .search-results-page .dataTables_wrapper .dataTables_scrollBody table.dataTable {
+    margin: 0 !important;
+    border-collapse: separate;
+    border-spacing: 0;
+  }
+  .search-results-page .dataTables_wrapper .dataTables_scrollBody {
+    max-height: 72vh !important;
+  }
+</style>
 
-<div class="container-fluid rounded" style="margin-top:80px;background-color:white; width:75%">
-
-  <nav aria-label="breadcrumb mt-5">
-    <ol class="breadcrumb">
-      <li class="breadcrumb-item"><a href= "{{url_for('search_menu') }} "><i class="fas fa-arrow-left"></i> Cerca avançada</a></li>
+<div class="search-results-page">
+  <nav aria-label="breadcrumb">
+    <ol class="breadcrumb mb-2">
+      <li class="breadcrumb-item"><a href="{{ url_for('search_menu') }}"><i class="fas fa-arrow-left"></i> Cerca avançada</a></li>
     </ol>
   </nav>
 
- {% if  p_variants %}
- <div class = "row">
-   <div class = "col">
-     <!-- <h6>Localització Efecte</h6> -->
-     <br>
-     <div class="chart" id="pie">
-     <script>
-       var graphs = {{p_variants | safe}};
-       Plotly.plot('pie',graphs,{});
-     </script>
-     </div>
-   </div>
-   <div class = "col">
-     <h6>Top 10 Variants més comunes</h6>
-     <br>
-     <div class="chart" id="bar">
-     <script>
-       var graphs = {{m_plot | safe}};
-       Plotly.plot('bar',graphs,{});
-     </script>
-     </div>
-   </div>
-
-
-
-</div>
- {% endif %}
-
-  <!-- <div class="card card-body border-0 mt-3 p-3" style="background-color:rgb(248, 248, 248);">
-    <div class="row">
-      <div class="col-sm">
+  <div class="card results-card p-2">
+    <div class="">
+      <div class="d-flex justify-content-between align-items-center flex-wrap">
+        <div class="mb-2 mb-sm-0">
+          <h5 class="mb-1">Resultats de cerca</h5>
+          <span class="badge badge-light mr-2">Total: <span id="srTotal">0</span></span>
+          <span class="badge badge-light">Filtrats: <span id="srFiltered">0</span></span>
+        </div>
+        <div class="d-flex align-items-center">
+          <a href="{{ url_for('advanced_search_export_xlsx') }}" class="btn btn-outline-success btn-sm mr-2" title="Descarrega XLSX" aria-label="Descarrega XLSX">
+            <i class="fas fa-file-excel"></i>
+          </a>
+          <input id="searchResultsSearch" type="search" class="form-control form-control-sm" placeholder="Cerca" style="min-width: 230px;">
+        </div>
       </div>
     </div>
-    <div class="row">
-      <div class="col-sm">
-      </div>
-      <div class="col-sm">
-      </div>
-      <div class="col-sm">
-      </div>
-      <div class="col-sm">
-       </div>
-    </div>
-  </div> -->
-  {% if not variants %}
-  <div class="card card-body border-0 mt-1" style="background-color:rgb(248, 248, 248);">
-    <div class="container-fluid pt-1 rounded mb-1 mt-1" style="background-color:rgb(248, 248, 248); width:100%">
-      <div class="row">
-      </div>
-      <br>
-      <table id="search_table" class="table table-striped table-bordered dt-responsive nowrap" style="width:100%;background-color:white;">
-      <thead>
+
+    <div>
+      <table id="search_results_table" class="table table-bordered  p-2" style="width:100%;background-color:white;">
+        <thead>
+          {% if search_mode == "variants" %}
           <tr>
-              <th>Lab ID</th>
-              <th>Ext1 ID</th>
-              <th>Ext2 ID</th>
-              <th>Run ID</th>
-              <th>Panell</th>
-              <th>Sub panell</th>
-              <th>Fitxers</th>
+            <th>Lab ID</th>
+            <th>Ext1 ID</th>
+            <th>Ext2 ID</th>
+            <th>Tipus tumor</th>
+            <th>%Tumoral</th>
+            <th>Run ID</th>
+            <th>Gen</th>
+            <th>HGVS</th>
+            <th>Exó</th>
+            <th>Read.supp</th>
+            <th>Prof.</th>
+            <th>VAF</th>
+            <th>Tipus variant</th>
+            <th>Localització/Efecte</th>
+            <th>Classificació</th>
           </tr>
-      </thead>
-      <tbody>
-      {% for sample in samples %}
-        <tr>
-          <td><a href="{{ url_for('show_sample_details',run_id=sample.run_id, sample=sample.lab_id, sample_id=sample.id, active='General' ) }}"><b>{{ sample.lab_id }}</b></a></td>
-          <td>{{ sample.ext1_id }}</td>
-          <td>{{ sample.ext2_id }}</td>
-          <td>{{ sample.run_id }}</td>
-          <td>{{ sample.panel }}</td>
-          <td>{{ sample.subpanel }}</td>
-          <td><a href="{{ url_for('download_sample_bam', run_id=sample.run_id, sample=sample.lab_id) }}" class="btn btn-outline-secondary btn-sm m-1"><i class="fas fa-file-archive"></i> BAM</a>
-            <a href="{{ url_for('download_sample_bai', run_id=sample.run_id, sample=sample.lab_id) }}" class="btn btn-outline-secondary btn-sm m-1"><i class="fas fa-file-archive"></i> BAI</a>
-            <a href="{{ url_for('download_sample_vcf', run_id=sample.run_id, sample=sample.lab_id) }}" class="btn btn-outline-primary btn-sm m-1"><i class="fas fa-file-archive"></i> VCF</a>
-            <a href="{{ url_for('download_report', run_id=sample.run_id, sample=sample.lab_id) }}" class="btn btn-outline-danger btn-sm m-1"><i class="fas fa-file-pdf"></i> Report</a>
-          </td>
-        </tr>
-      {% endfor %}
-      </tbody>
+          {% else %}
+          <tr>
+            <th>Lab ID</th>
+            <th>Ext1 ID</th>
+            <th>Ext2 ID</th>
+            <th>Tipus tumor</th>
+            <th>% Tumoral</th>
+            <th>Run ID</th>
+            <th>Panell</th>
+            <th>Data anàlisi</th>
+            <th>Fitxers</th>
+          </tr>
+          {% endif %}
+        </thead>
       </table>
     </div>
   </div>
-  {% else %}
-  <div class="card card-body border-0 mt-1" style="background-color:rgb(248, 248, 248);">
-    <div class="container-fluid pt-1 rounded mb-1 mt-1" style="background-color:rgb(248, 248, 248); width:100%">
-      <div class="row">
-      </div>
-      <br>
-      <table id="search_table" class="table table-striped table-bordered dt-responsive nowrap" style="width:100%;background-color:white;">
-      <thead>
-          <tr>
-              <th>Codis Mostra</th>
-              <th>%Tumoral</th>
-              <th>Run ID</th>
-              <th>Gen</th>
-              <th>HGVS</th>
-              <th>Read.supp</th>
-              <th>Prof.</th>
-              <th>VAF</th>
-              <th>Altres</th>
-          </tr>
-      </thead>
-      <tbody>
-      {% for var in variants %}
-        <tr>
-          <td><a href="{{ url_for('show_sample_details',run_id=var.run_id, sample=var.lab_id, sample_id=var.sample_id, active='General' ) }}"><b>{{ var.lab_id }}</b></a>
-            <div class="row">
-              <div class="col">
-                {{ var.ext1_id }}<br>
-                {{ var.ext2_id }}<br>
-              </div>
-            </div>
-          </td>
-									 <td>{{ var.tumour_purity }}</td>
-          <td>{{ var.run_id }}</td>
-          <td>
-            <div class="row">
-              <div class="col">
-                <i><b>{{ var.gene }}</b></i>
-              </div>
-            </div>
-            <div class="row">
-              <div class="col">
-                <i>{{ var.isoform }}</i>
-              </div>
-            </div>
-          </td>
-          <td>
-            <div class="row">
-              <div class="col">
-                <b>{{ var.hgvsp }}</b><br>
-                {{ var.hgvsg }}<br>
-                {{ var.hgvsc }}
-              </div>
-            </div>
-           </td>
-	         <td>
-             <div class="row">
-              <div class="col">
-                {{ var.read_support | int }}
-              </div>
-            </div>
-	         </td>
-	         <td>
-             <div class="row">
-              <div class="col">
-                {{ var.depth | int }}
-              </div>
-            </div>
-	         </td>
-	         <td>
-             <div class="row">
-              <div class="col">
-                {{ var.allele_frequency | float }}
-              </div>
-            </div>
-	         </td>
-
-          <td>
-            <div class="row">
-              <div class="col">
-                <b> Tipus: </b> {{ var.vartype }}
-              </div>
-            </div>
-            <b> Localització/Efecte: </b> {{ var.consequence }}
-            <div class="row">
-              <div class="col">
-                {% if var.classification == "Therapeutic"%}
-                  <span class="badge badge-danger" data-toggle="tooltip" data-placement="right" title="Variant accionable">Tier I</span>
-                {% elif var.classification == "Other" %}
-                  <span class="badge badge-warning" data-toggle="tooltip" data-placement="right" title="Variant d'alt impacte">Tier II</span>
-                {% elif var.classification == "Rare" %}
-                  <span class="badge badge-dark" data-toggle="tooltip" data-placement="right" title="Variant de significat incert">Tier III</span>
-                {% endif %}
-              </div>
-            </div>
-          </td>
-        </tr>
-      {% endfor %}
-      </tbody>
-      </table>
-    </div>
-  </div>
-
-  {% endif %}
 </div>
 
 {% block script %}
- <script>
-    $(document).ready(function() {
-        $("#submit_analysis").click(function() {
-            // disable button
-            $(this).prop("disabled", true);
-            // add spinner to button
-            $(this).html(
-                `<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Uploading...`
-            );
-        });
-    });
-    $.ajax({
-  xhr: function() {
-    var xhr = new window.XMLHttpRequest();
+<script>
+  $(document).ready(function() {
+    $.fn.dataTable.ext.errMode = 'none';
 
-    xhr.upload.addEventListener("progress", function(evt) {
-      if (evt.lengthComputable) {
-        var percentComplete = evt.loaded / evt.total;
-        percentComplete = parseInt(percentComplete * 100);
-        console.log(percentComplete);
-
-        if (percentComplete === 100) {
-
+    function pickCell(row, idx, keys) {
+      if (Array.isArray(row)) {
+        return row[idx] !== undefined && row[idx] !== null ? row[idx] : "";
+      }
+      if (row && typeof row === "object") {
+        for (let i = 0; i < keys.length; i++) {
+          const k = keys[i];
+          if (row[k] !== undefined && row[k] !== null) return row[k];
         }
       }
-    }, false);
+      return "";
+    }
 
-    return xhr;
-  },
-  url: posturlfile,
-  type: "POST",
-  data: JSON.stringify(fileuploaddata),
-  contentType: "application/json",
-  dataType: "json",
-  success: function(result) {
-    console.log(result);
-  }
-});
+    function makeCol(idx, keys) {
+      return {
+        data: null,
+        defaultContent: "",
+        render: function(data, type, row) {
+          return pickCell(row, idx, keys);
+        }
+      };
+    }
 
-    //function input_filename() {
-    //    fil_input_label.innerHTML = input.files
-    //};
+    const isVariants = {{ 'true' if search_mode == 'variants' else 'false' }};
+    const dtColumns = isVariants
+      ? [
+          makeCol(0, ["lab_id", "Lab ID"]),
+          makeCol(1, ["ext1_id", "Ext1 ID"]),
+          makeCol(2, ["ext2_id", "Ext2 ID"]),
+          makeCol(3, ["tumor_origin", "Tipus tumor"]),
+          makeCol(4, ["tumour_purity", "% Tumoral"]),
+          makeCol(5, ["run_id", "Run ID"]),
+          makeCol(6, ["gene", "Gen"]),
+          makeCol(7, ["hgvs", "hgvsp", "HGVS"]),
+          makeCol(8, ["exon", "Exó"]),
+          makeCol(9, ["read_support", "Read.supp"]),
+          makeCol(10, ["depth", "Prof."]),
+          makeCol(11, ["allele_frequency", "VAF"]),
+          makeCol(12, ["vartype", "Tipus variant"]),
+          makeCol(13, ["consequence", "Localització/Efecte"]),
+          makeCol(14, ["classification", "Classificació"])
+        ]
+      : [
+          makeCol(0, ["lab_id", "Lab ID"]),
+          makeCol(1, ["ext1_id", "Ext1 ID"]),
+          makeCol(2, ["ext2_id", "Ext2 ID"]),
+          makeCol(3, ["tumor_origin", "Tipus tumor"]),
+          makeCol(4, ["tumour_purity", "% Tumoral"]),
+          makeCol(5, ["run_id", "Run ID"]),
+          makeCol(6, ["panel", "Panell"]),
+          makeCol(7, ["analysis_date", "Data anàlisi"]),
+          makeCol(8, ["files", "Fitxers"])
+        ];
 
-     function filesize(elem) {
-        document.coocke = `filesize=${elem.files[0].size}`;
-     };
- </script>
+    const table = $('#search_results_table').DataTable({
+      destroy: true,
+      processing: true,
+      serverSide: true,
+      scrollX: true,
+      scrollCollapse: true,
+      responsive: false,
+      searchDelay: 400,
+      deferRender: true,
+      pageLength: 5,
+      lengthChange: false,
+      info: false,
+      searching: true,
+      ordering: true,
+      autoWidth: true,
+      columns: dtColumns,
+      ajax: {
+        url: "{{ url_for('advanced_search_data') }}",
+        type: "POST",
+        error: function(xhr, status, err) {
+          console.error("Search table AJAX error:", status, err, xhr.responseText);
+          alert("Error carregant resultats de cerca. Revisa els filtres o torna-ho a provar.");
+        }
+      },
+      language: {
+        zeroRecords: "No hi ha resultats",
+        info: "Mostrant _START_ a _END_ de _TOTAL_ resultats",
+        infoEmpty: "No hi ha entrades",
+        infoFiltered: "(filtrats de _MAX_ total records)",
+        sSearch: "Cerca:"
+      },
+      drawCallback: function() {
+        const info = this.api().page.info();
+        $("#srTotal").text(info.recordsTotal || 0);
+        $("#srFiltered").text(info.recordsDisplay || 0);
+        this.api().columns.adjust();
+      },
+      initComplete: function() {
+        this.api().columns.adjust();
+      }
+    });
+
+    $('#search_results_table').on('error.dt', function(e, settings, techNote, message) {
+      console.error("DataTables error:", message);
+    });
+
+    table.columns.adjust();
+    table.on("xhr.dt", function() {
+      table.columns.adjust();
+    });
+    $(window).on("resize", function() {
+      table.columns.adjust();
+    });
+
+    $("#searchResultsSearch").on("input", function() {
+      table.search(this.value).draw();
+    });
+  });
+</script>
 {% endblock %}
 
 {% endblock body %}

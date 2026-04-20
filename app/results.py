@@ -1,9 +1,11 @@
 from app import app, db
+import glob
 import os
 import binascii
 import requests
 import io
 import re
+import sqlite3
 from rq import Queue, cancel_job
 from uuid import uuid4
 from functools import wraps
@@ -37,9 +39,11 @@ from sqlalchemy import (
     Text,
     desc,
     distinct,
+    func,
+    tuple_,
 )
 from sqlalchemy.ext.declarative import declarative_base, DeclarativeMeta
-from sqlalchemy.orm import sessionmaker
+from sqlalchemy.orm import sessionmaker, load_only
 from datetime import date, datetime
 from job_commands import launch_ngs_analysis
 import pandas as pd
@@ -66,7 +70,11 @@ from app.models import (
     GeneVariantSummary
 )
 from app.plots import var_location_pie, cnv_plot, basequal_plot, adapters_plot, snv_plot, vaf_plot
+from app.utils import convert_long_to_short
+from app.cgi_clinics import create_direct_analysis_from_vcf, build_analysis_url
+
 from config import api_gene_panels
+from app.gene_info import GENE_MECH
 
 class AllFusions(db.Model):
     __tablename__ = "ALL_FUSIONS"
@@ -138,6 +146,85 @@ def login_required(f):
         return f(*args, **kwargs)
     return decorated_function
 
+
+def _ensure_sample_cgi_columns():
+    db_path = app.config.get("DB")
+    if not db_path:
+        return
+
+    expected_columns = {
+        "CGI_SENT": "TEXT",
+        "CGI_SEND_COUNT": "INTEGER",
+        "CGI_ANALYSIS_UUID": "TEXT",
+        "CGI_ANALYSIS_URL": "TEXT",
+        "CGI_SENT_ON": "TEXT",
+    }
+
+    conn = sqlite3.connect(db_path)
+    try:
+        cur = conn.cursor()
+        cur.execute("PRAGMA table_info(SAMPLES)")
+        existing_columns = {row[1].upper() for row in cur.fetchall()}
+        altered = False
+        for column_name, column_type in expected_columns.items():
+            if column_name in existing_columns:
+                continue
+            cur.execute(f"ALTER TABLE SAMPLES ADD COLUMN {column_name} {column_type}")
+            altered = True
+        if altered:
+            conn.commit()
+    finally:
+        conn.close()
+
+
+def _normalize_sample_cgi_urls():
+    try:
+        samples = (
+            SampleTable.query
+            .filter(SampleTable.cgi_analysis_uuid.isnot(None))
+            .all()
+        )
+    except Exception:
+        return
+
+    has_changes = False
+    for sample in samples:
+        analysis_uuid = str(getattr(sample, "cgi_analysis_uuid", "") or "").strip()
+        if not analysis_uuid or analysis_uuid == ".":
+            continue
+        expected_url = build_analysis_url(None, analysis_uuid)
+        current_url = str(getattr(sample, "cgi_analysis_url", "") or "").strip()
+        if current_url == expected_url:
+            continue
+        sample.cgi_analysis_url = expected_url
+        has_changes = True
+
+    if has_changes:
+        db.session.commit()
+
+
+with app.app_context():
+    _ensure_sample_cgi_columns()
+    _normalize_sample_cgi_urls()
+
+
+def _current_cgi_send_count(sample_info):
+    raw_value = getattr(sample_info, "cgi_send_count", None)
+    try:
+        if raw_value is not None and str(raw_value).strip() != "":
+            return int(raw_value)
+    except Exception:
+        pass
+
+    cgi_sent = str(getattr(sample_info, "cgi_sent", "") or "").strip().lower()
+    if cgi_sent == "yes":
+        return 1
+    for attr_name in ("cgi_analysis_uuid", "cgi_analysis_url", "cgi_sent_on"):
+        attr_value = str(getattr(sample_info, attr_name, "") or "").strip()
+        if attr_value and attr_value not in {".", "None", "NULL"}:
+            return 1
+    return 0
+
 @app.route("/")
 @app.route("/main")
 @login_required
@@ -165,10 +252,46 @@ def show_run_details(run_id):
         run_dict["N_SAMPLES"] = len(run_samples)
         run_dict["ANALYSIS_DATE"] = run_samples[0].analysis_date
 
+    def _report_exists(path_value):
+        if not path_value:
+            return False
+        path_str = str(path_value).strip()
+        if not path_str:
+            return False
+        candidates = [path_str]
+        if not path_str.lower().endswith(".pdf"):
+            candidates.append(f"{path_str}.pdf")
+        for candidate in candidates:
+            if os.path.isfile(candidate):
+                return True
+        return False
+
+    def _clean_display_value(value):
+        text = str(value).strip() if value is not None else ""
+        return text if text and text != "." else ""
+
     for s in run_samples:
-        s.is_report_ready = True
-        if not os.path.isfile(s.latest_report_pdf):
-            s.is_report_ready = False
+        tumor_origin = _clean_display_value(getattr(s, "tumor_origin", ""))
+        if not tumor_origin:
+            petition = None
+            ext1_id = _clean_display_value(getattr(s, "ext1_id", ""))
+            if ext1_id:
+                petition = Petition.query.filter_by(AP_code=ext1_id).first()
+            if not petition:
+                petition = Petition.query.filter_by(AP_code=s.lab_id).first()
+            if not petition:
+                petition_id = _clean_display_value(getattr(s, "petition_id", ""))
+                if petition_id:
+                    petition = Petition.query.filter_by(Petition_id=petition_id).first()
+            if petition:
+                tumor_origin = _clean_display_value(getattr(petition, "Tumour_origin", ""))
+
+        s.display_tumor_origin = tumor_origin or "-"
+        s.is_report_ready = (
+            _report_exists(getattr(s, "latest_short_report_pdf", None))
+            or _report_exists(getattr(s, "latest_report_pdf", None))
+            or _report_exists(getattr(s, "report_pdf", None))
+        )
 
     return render_template(
         "show_run_details.html",
@@ -176,6 +299,117 @@ def show_run_details(run_id):
         run_samples=run_samples,
         run_dict=run_dict,
     )
+
+
+def _delete_sample_related_data(run_id, lab_id=None):
+    """
+    Delete stored DB rows for one sample or for all samples in a run.
+    When the run no longer has samples, also delete the related Job rows.
+    """
+    targets = [
+        ("therapeutic_variants", TherapeuticTable),
+        ("other_variants", OtherVariantsTable),
+        ("rare_variants", RareVariantsTable),
+        ("all_cnas", AllCnas),
+        ("lost_exons", LostExonsTable),
+        ("summary_qc", SummaryQcTable),
+        ("samples", SampleTable),
+    ]
+
+    query_kwargs = {"run_id": run_id}
+    if lab_id is not None:
+        query_kwargs["lab_id"] = lab_id
+
+    sample_q = SampleTable.query.filter_by(**query_kwargs)
+    target_samples = sample_q.count()
+    if target_samples == 0:
+        return None
+
+    deleted = {}
+    for label, model in targets:
+        q = model.query.filter_by(**query_kwargs)
+        n = q.count()
+        if n:
+            q.delete(synchronize_session=False)
+        deleted[label] = n
+
+    remaining = SampleTable.query.filter_by(run_id=run_id).count()
+    deleted_jobs = 0
+    if remaining == 0:
+        job_q = Job.query.filter_by(Analysis=run_id)
+        deleted_jobs = job_q.count()
+        if deleted_jobs:
+            job_q.delete(synchronize_session=False)
+
+    return {
+        "deleted": deleted,
+        "remaining_samples_in_run": remaining,
+        "deleted_jobs": deleted_jobs,
+        "target_samples": target_samples,
+    }
+
+
+@app.route("/remove_sample_data/<run_id>/<lab_id>", methods=["POST"])
+@login_required
+def remove_sample_data(run_id, lab_id):
+    """
+    Delete all DB records linked to a sample (run_id + lab_id).
+    If this was the last sample of the run, also delete the Job row(s) for that run.
+    Returns JSON with counts deleted per table + job cleanup info.
+    """
+
+    try:
+        deletion_result = _delete_sample_related_data(run_id, lab_id=lab_id)
+        if deletion_result is None:
+            return jsonify({"ok": False, "error": "sample_not_found", "run_id": run_id, "lab_id": lab_id}), 404
+
+        db.session.commit()
+
+        return jsonify({
+            "ok": True,
+            "run_id": run_id,
+            "lab_id": lab_id,
+            "deleted": deletion_result["deleted"],
+            "remaining_samples_in_run": deletion_result["remaining_samples_in_run"],
+            "deleted_jobs": deletion_result["deleted_jobs"],
+        }), 200
+
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({
+            "ok": False,
+            "run_id": run_id,
+            "lab_id": lab_id,
+            "error": str(e),
+        }), 500
+
+
+@app.route("/remove_run_data/<run_id>", methods=["POST"])
+@login_required
+def remove_run_data(run_id):
+    """Delete all stored DB rows for every sample in a run, then remove the Job."""
+    try:
+        deletion_result = _delete_sample_related_data(run_id)
+        if deletion_result is None:
+            return jsonify({"ok": False, "error": "run_not_found", "run_id": run_id}), 404
+
+        db.session.commit()
+
+        return jsonify({
+            "ok": True,
+            "run_id": run_id,
+            "deleted": deletion_result["deleted"],
+            "remaining_samples_in_run": deletion_result["remaining_samples_in_run"],
+            "deleted_jobs": deletion_result["deleted_jobs"],
+            "deleted_samples": deletion_result["target_samples"],
+        }), 200
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({
+            "ok": False,
+            "run_id": run_id,
+            "error": str(e),
+        }), 500
 
 
 @app.route('/update_patient_info', methods=["POST"])
@@ -227,6 +461,7 @@ def update_patient_info():
             Petition.query.filter_by(AP_code=old_lab_id).first()
         )
         if petition:
+            print("petition_found")
             petition.AP_code = lab_id
             petition.HC_code = ext2_id
             petition.CIP_code = ext3_id
@@ -371,25 +606,8 @@ def add_new_variant():
     return jsonify({"info": "S'ha enregistrat una nova variant!"}), 201
 
 
-# @app.route('/add_new_variant', methods=['POST'])
-# def add_new_variant():
-#     data = request.json
-    
-#     # Process tier_catsalut logic
-#     tier = data.get("tier_catsalut")
-#     if tier == "4":
-#         data["tier_catsalut"] = "None"  # Replace "4" with "None"
 
 
-
-
-
-#     # Create a new entry
-#     new_entry = TherapeuticTable(**data)
-#     db.session.add(new_entry)
-#     db.session.commit()
-    
-#     return jsonify({"info": "S'ha enregistrat una nova variant!"}), 201
 
 @app.route("/modify_tier", methods=["POST"])
 #@login_required
@@ -423,7 +641,7 @@ def modify_tier():
 #@login_required
 def download_summary_qc(run_id):
     base_path = os.path.join(app.config["STATIC_URL_PATH"], run_id)
-    sources = ["GenOncology-Dx", "GenOncology-Dx_1.5"]
+    sources = ["GenOncology-Dx", "GenOncology-Dx_1.5", "GenOncology-Dx_1.6", "GenOncology-Dx_2"]
     filenames = [f"GenOncology-Dx_qc.xlsx", f"{run_id}_qc.xlsx"]
 
     overall_data = []
@@ -503,10 +721,15 @@ def download_sample_bam(run_id, sample):
         uploads = os.path.join(
             app.config["STATIC_URL_PATH"], run_id, "GenOncology-Dx_1.5", sample, "BAM_FOLDER"
         )
+    if not os.path.isdir(uploads):
+        uploads = os.path.join(
+            app.config["STATIC_URL_PATH"], run_id, "GenOncology-Dx_1.6", sample, "BAM_FOLDER"
+        )
+
+
 
     expected_bam_path = os.path.join(uploads, bam_file)
     if not os.path.isfile(expected_bam_path):
-        print("here")
         uploads = os.path.join(
             app.config["STATIC_URL_PATH"], run_id, sample, "BAM_FOLDER"
         )
@@ -531,6 +754,10 @@ def download_sample_bai(run_id, sample):
         uploads = os.path.join(
             app.config["STATIC_URL_PATH"], run_id, "GenOncology-Dx_1.5", sample, "BAM_FOLDER"
         )
+    if not os.path.isdir(uploads):
+        uploads = os.path.join(
+            app.config["STATIC_URL_PATH"], run_id, "GenOncology-Dx_1.6", sample, "BAM_FOLDER"
+        )
 
 
     expected_bai_path = os.path.join(uploads, bai_file)
@@ -547,37 +774,413 @@ def download_sample_bai(run_id, sample):
 @app.route("/download_sample_vcf/<run_id>/<sample>")
 #@login_required
 def download_sample_vcf(run_id, sample):
-
-    uploads = os.path.join(
-        app.config["STATIC_URL_PATH"], run_id + "/" + sample + "/VCF_FOLDER/"
+    sample_info = (
+        SampleTable.query.filter_by(lab_id=sample).filter_by(run_id=run_id).first()
     )
-    vcf_file = sample + ".merged.variants.vcf"
-    lancet_vcf_file = f"{sample}.mutect2.lancet.vcf"
+    if not sample_info:
+        return make_response(f"No s'ha trobat la mostra {sample}", 404)
+
+    vcf_path = _resolve_sample_vcf_path(sample_info)
+    if not vcf_path:
+        return make_response(f"No s'ha trobat el VCF de la mostra {sample}", 404)
+
+    return send_file(vcf_path, as_attachment=True, download_name=os.path.basename(vcf_path))
+
+
+def _resolve_sample_vcf_path(sample_info):
+    if not sample_info:
+        return None
+
+    run_id = str(getattr(sample_info, "run_id", "") or "").strip()
+    sample = str(getattr(sample_info, "lab_id", "") or "").strip()
+    panel = str(getattr(sample_info, "panel", "") or "").strip()
+    static_root = app.config["STATIC_URL_PATH"]
+
+    candidates = []
+    seen = set()
+
+    def add_candidate(path_value):
+        if not path_value:
+            return
+        path_str = str(path_value).strip()
+        if not path_str or path_str in seen:
+            return
+        seen.add(path_str)
+        candidates.append(path_str)
+
+    def add_vcf_folder_candidates(folder_path):
+        if not folder_path:
+            return
+        add_candidate(os.path.join(folder_path, f"{sample}.mutect2.lancet.vcf"))
+        add_candidate(os.path.join(folder_path, f"{sample}.mutect2.lancet.vcf.gz"))
+        add_candidate(os.path.join(folder_path, f"{sample}.merged.variants.vcf"))
+        add_candidate(os.path.join(folder_path, f"{sample}.merged.variants.vcf.gz"))
+
+    if run_id and panel and sample:
+        add_vcf_folder_candidates(
+            os.path.join(static_root, run_id, panel, sample, "VCF_FOLDER")
+        )
+    if run_id and sample:
+        add_vcf_folder_candidates(os.path.join(static_root, run_id, sample, "VCF_FOLDER"))
+        for folder_path in glob.glob(os.path.join(static_root, run_id, "*", sample, "VCF_FOLDER")):
+            add_vcf_folder_candidates(folder_path)
+
+    sample_db_dir = str(getattr(sample_info, "sample_db_dir", "") or "").strip()
+    if sample_db_dir:
+        add_vcf_folder_candidates(sample_db_dir.replace("REPORT_FOLDER", "VCF_FOLDER"))
+
+    merged_vcf = str(getattr(sample_info, "merged_vcf", "") or "").strip()
+    if merged_vcf:
+        add_candidate(merged_vcf)
+        if merged_vcf.endswith(".gz"):
+            add_candidate(merged_vcf[:-3])
+        else:
+            add_candidate(f"{merged_vcf}.gz")
+        merged_dir = os.path.dirname(merged_vcf)
+        if merged_dir:
+            add_vcf_folder_candidates(merged_dir)
+
+    for path_str in candidates:
+        if os.path.isfile(path_str):
+            return path_str
+    return None
+
+
+def _get_cgi_sample_metadata(sample_info):
+    tumor_origin = getattr(sample_info, "tumor_origin", None)
+    diagnosis = getattr(sample_info, "diagnosis", None)
+    patient_age = getattr(sample_info, "Age", None)
+    patient_sex = getattr(sample_info, "Sex", None)
+
+    def _has_value(value):
+        text = str(value).strip() if value is not None else ""
+        return bool(text and text not in {".", "None", "NULL"})
+
+    petition = None
+    ext1_id = getattr(sample_info, "ext1_id", None)
+    if _has_value(ext1_id):
+        petition = Petition.query.filter_by(AP_code=str(ext1_id).strip()).first()
+    if not petition:
+        petition = Petition.query.filter_by(AP_code=sample_info.lab_id).first()
+    if not petition:
+        petition_id = getattr(sample_info, "petition_id", None)
+        if _has_value(petition_id):
+            petition = Petition.query.filter_by(Petition_id=str(petition_id).strip()).first()
+
+    if petition:
+        if not _has_value(tumor_origin):
+            tumor_origin = petition.Tumour_origin
+        if not _has_value(patient_age):
+            patient_age = petition.Age
+        if not _has_value(patient_sex):
+            patient_sex = petition.Sex
+
+    return tumor_origin, diagnosis, patient_age, patient_sex
+
+
+def _send_sample_to_cgi_internal(sample_info, run_id):
+    sample = str(getattr(sample_info, "lab_id", "") or "").strip()
+    if not run_id or not sample:
+        raise ValueError("Cal indicar run_id i mostra per enviar a CGI")
+
+    vcf_path = _resolve_sample_vcf_path(sample_info)
+    if not vcf_path:
+        raise FileNotFoundError(f"No s'ha trobat el VCF descarregable de la mostra {sample}")
+
+    tumor_origin, diagnosis, patient_age, patient_sex = _get_cgi_sample_metadata(sample_info)
+    next_send_count = _current_cgi_send_count(sample_info) + 1
+    cgi_result = create_direct_analysis_from_vcf(
+        final_vcf=vcf_path,
+        run_id=run_id,
+        lab_id=sample,
+        sequencing_type="GenOncology-Dx",
+        tumor_origin=tumor_origin,
+        diagnosis=diagnosis,
+        update_sample_metadata=True,
+        patient_age=patient_age,
+        patient_sex=patient_sex,
+        send_iteration=next_send_count,
+    )
+    used_send_count = int(cgi_result.get("_send_iteration") or next_send_count)
+
+    analysis_uuid = (
+        cgi_result.get("uuid")
+        or cgi_result.get("analysisUuid")
+        or cgi_result.get("analysis_uuid")
+        or "."
+    )
+    project_uuid = cgi_result.get("_project_uuid")
+    analysis_url = (
+        cgi_result.get("_analysis_url")
+        or build_analysis_url(project_uuid, analysis_uuid)
+    )
+    kept_records = cgi_result.get("_kept_records", 0)
+    tumor_type = cgi_result.get("_tumor_type", ".")
+    sent_on = datetime.now().strftime("%d/%m/%y %H:%M")
+
+    sample_info.cgi_sent = "yes"
+    sample_info.cgi_send_count = used_send_count
+    sample_info.cgi_analysis_uuid = analysis_uuid if analysis_uuid and analysis_uuid != "." else None
+    sample_info.cgi_analysis_url = analysis_url or None
+    sample_info.cgi_sent_on = sent_on
+
+    action_dict = {
+        "origin_table": None,
+        "origin_action": "cgi_direct_analysis",
+        "redo": False,
+        "target_table": "CGI Clinics",
+        "target_action": "create_direct_analysis",
+        "analysis_uuid": analysis_uuid,
+        "analysis_url": analysis_url,
+        "send_iteration": used_send_count,
+        "tumor_type": tumor_type,
+        "kept_records": kept_records,
+        "vcf_path": vcf_path,
+        "msg": f"Mostra enviada a CGI Clinics ({analysis_uuid})",
+    }
+    now = datetime.now()
+    vc = VersionControl(
+        User_id=7,
+        Action_id=generate_key(16),
+        Action_name=f"{sample}: enviada a CGI Clinics",
+        Action_json=json.dumps(action_dict),
+        Modified_on=now.strftime("%d/%m/%y-%H:%M:%S"),
+    )
+    db.session.add(vc)
+    db.session.commit()
+
+    return {
+        "sample": sample,
+        "analysis_uuid": analysis_uuid,
+        "analysis_url": analysis_url,
+        "send_iteration": used_send_count,
+        "kept_records": kept_records,
+        "tumor_type": tumor_type,
+        "cgi_sent_on": sent_on,
+    }
+
+
+@app.route("/send_sample_to_cgi", methods=["POST"])
+@login_required
+def send_sample_to_cgi():
+    run_id = (request.form.get("run_id") or "").strip()
+    sample = (request.form.get("sample") or "").strip()
+    if not run_id or not sample:
+        message_text = "Cal indicar run_id i mostra per enviar a CGI"
+        if request.headers.get("X-Requested-With") == "XMLHttpRequest":
+            return make_response(jsonify({"message_text": message_text}), 400)
+        flash(message_text, "danger")
+        return redirect(url_for("status"))
+
+    sample_info = (
+        SampleTable.query.filter_by(lab_id=sample).filter_by(run_id=run_id).first()
+    )
+    if not sample_info:
+        message_text = f"No s'ha trobat la mostra {sample}"
+        if request.headers.get("X-Requested-With") == "XMLHttpRequest":
+            return make_response(jsonify({"message_text": message_text}), 404)
+        flash(message_text, "danger")
+        return redirect(url_for("show_run_details", run_id=run_id))
+
+    try:
+        response_payload = _send_sample_to_cgi_internal(sample_info, run_id)
+        message_text = f"Mostra enviada correctament a CGI Clinics"
+        response_payload["message_text"] = message_text
+        if request.headers.get("X-Requested-With") == "XMLHttpRequest":
+            return make_response(jsonify(response_payload), 200)
+        flash(message_text, "success")
+        return redirect(
+            url_for(
+                "show_sample_details",
+                run_id=run_id,
+                sample=sample,
+                sample_id=sample_info.id,
+                active="Therapeutic",
+            )
+        )
+    except Exception as exc:
+        db.session.rollback()
+        message_text = f"No s'ha pogut enviar la mostra a CGI: {exc}"
+        status_code = 400
+        if isinstance(exc, requests.exceptions.HTTPError):
+            status_code = 502
+        if request.headers.get("X-Requested-With") == "XMLHttpRequest":
+            return make_response(jsonify({"message_text": message_text}), status_code)
+        flash(message_text, "danger")
+        return redirect(
+            url_for(
+                "show_sample_details",
+                run_id=run_id,
+                sample=sample,
+                sample_id=sample_info.id,
+                active="Therapeutic",
+            )
+        )
+
+
+@app.route("/send_run_to_cgi/<run_id>", methods=["POST"])
+@login_required
+def send_run_to_cgi(run_id):
+    run_id = (run_id or "").strip()
+    if not run_id:
+        flash("Cal indicar el run_id per enviar mostres a CGI", "danger")
+        return redirect(url_for("status"))
+
+    run_samples = (
+        SampleTable.query.filter_by(run_id=run_id)
+        .order_by(SampleTable.lab_id.asc())
+        .all()
+    )
+    if not run_samples:
+        flash(f"No s'han trobat mostres per al run {run_id}", "warning")
+        return redirect(url_for("show_run_details", run_id=run_id))
+
+    sent_samples = []
+    failed_samples = []
+
+    for sample_info in run_samples:
+        try:
+            payload = _send_sample_to_cgi_internal(sample_info, run_id)
+            sent_samples.append(payload["sample"])
+        except Exception as exc:
+            db.session.rollback()
+            failed_samples.append(f"{sample_info.lab_id}: {exc}")
+
+    if sent_samples and not failed_samples:
+        flash(
+            f"S'han enviat correctament {len(sent_samples)} mostres del run {run_id} a CGI",
+            "success",
+        )
+    elif sent_samples and failed_samples:
+        failed_preview = "; ".join(failed_samples[:4])
+        if len(failed_samples) > 4:
+            failed_preview += "; ..."
+        flash(
+            f"S'han enviat {len(sent_samples)} mostres a CGI, però {len(failed_samples)} han fallat: {failed_preview}",
+            "warning",
+        )
+    else:
+        failed_preview = "; ".join(failed_samples[:4]) or "Error desconegut"
+        if len(failed_samples) > 4:
+            failed_preview += "; ..."
+        flash(
+            f"No s'ha pogut enviar cap mostra del run {run_id} a CGI: {failed_preview}",
+            "danger",
+        )
+
+    return redirect(url_for("show_run_details", run_id=run_id))
+
+
+@app.route("/download_sample_vep_vcf/<run_id>/<sample>")
+#@login_required
+def download_sample_vep_vcf(run_id, sample):
+
+    sample_info = (
+        SampleTable.query.filter_by(lab_id=sample).filter_by(run_id=run_id).first()
+    )
+    panel = sample_info.panel
+
+    uploads = os.path.join(app.config["STATIC_URL_PATH"], run_id, panel, sample, "VCF_FOLDER")
+
+    vcf_file = f"{sample}.merged.variants.vcf"
     vcf_file_path = os.path.join(uploads, vcf_file)
-    if not os.path.isfile(vcf_file_path):
-        uploads = os.path.join(
-            app.config["STATIC_URL_PATH"],
-            run_id,
-            "GenOncology-Dx",
-            sample,
-            "VCF_FOLDER",
-        )
-    if not os.path.isfile(vcf_file_path):
-        uploads = os.path.join(
-            app.config["STATIC_URL_PATH"],
-            run_id,
-            "GenOncology-Dx_1.5",
-            sample,
-            "VCF_FOLDER",
-        )
-
-
-
-    lancet_vcf_path = os.path.join(uploads, lancet_vcf_file)
-    if os.path.isfile(lancet_vcf_path):
-        vcf_file = lancet_vcf_file
 
     return send_from_directory(directory=uploads, path=vcf_file, as_attachment=True)
+
+
+
+@app.route("/download_merged_vcf/<run_id>/<sample>")
+def download_merged_vcf(run_id, sample):
+
+    sample_info = (
+        SampleTable.query.filter_by(lab_id=sample).filter_by(run_id=run_id).first()
+    )
+    panel = sample_info.panel
+
+    uploads = os.path.join(app.config["STATIC_URL_PATH"], run_id, panel, sample, "VCF_FOLDER")
+
+    vcf_file = sample + ".merged.variants.vcf.gz"
+    # lancet_vcf_file = f"{sample}.mutect2.lancet.vcf.tbi"
+    vcf_file_path = os.path.join(uploads, vcf_file)
+
+    return send_from_directory(directory=uploads, path=vcf_file, as_attachment=True)
+
+
+@app.route("/download_merged_vcf_tbi/<run_id>/<sample>")
+def download_merged_vcf_tbi(run_id, sample):
+
+    sample_info = (
+        SampleTable.query.filter_by(lab_id=sample).filter_by(run_id=run_id).first()
+    )
+    panel = sample_info.panel
+
+    uploads = os.path.join(app.config["STATIC_URL_PATH"], run_id, panel, sample, "VCF_FOLDER")
+
+    vcf_file = sample + ".merged.variants.vcf.gz.tbi"
+    # lancet_vcf_file = f"{sample}.mutect2.lancet.vcf.tbi"
+    vcf_file_path = os.path.join(uploads, vcf_file)
+
+    return send_from_directory(directory=uploads, path=vcf_file, as_attachment=True)
+
+
+@app.route('/download_cnv_vcf/<run_id>/<sample>')
+def download_cnv_vcf(run_id, sample):
+
+    sample_info = (
+        SampleTable.query.filter_by(lab_id=sample).filter_by(run_id=run_id).first()
+    )
+    panel = sample_info.panel
+
+    uploads = os.path.join(app.config["STATIC_URL_PATH"], run_id, panel, sample, "VCF_FOLDER", "CNV_FOLDER")
+
+    vcf_file = sample + ".CNV.vcf.gz"
+    # lancet_vcf_file = f"{sample}.mutect2.lancet.vcf.tbi"
+    vcf_file_path = os.path.join(uploads, vcf_file)
+    return send_from_directory(directory=uploads, path=vcf_file, as_attachment=True)
+
+@app.route('/download_cnv_vcf_tbi/<run_id>/<sample>')
+def download_cnv_vcf_tbi(run_id, sample):
+    sample_info = (
+        SampleTable.query.filter_by(lab_id=sample).filter_by(run_id=run_id).first()
+    )
+    panel = sample_info.panel
+
+    uploads = os.path.join(app.config["STATIC_URL_PATH"], run_id, panel, sample, "VCF_FOLDER", "CNV_FOLDER")
+
+    vcf_file = sample + ".CNV.vcf.gz.tbi"
+    # lancet_vcf_file = f"{sample}.mutect2.lancet.vcf.tbi"
+    vcf_file_path = os.path.join(uploads, vcf_file)
+    return send_from_directory(directory=uploads, path=vcf_file, as_attachment=True)
+
+
+@app.route('/get_annotation_gff')
+def get_annotation_gff():
+
+    annotation_gff = app.config["MANE_TRANSCRIPTS"]
+    annotation_gff_name = os.path.basename(annotation_gff)
+    annotation_gff_dirname = os.path.dirname(annotation_gff)
+    return send_from_directory(
+        directory=annotation_gff_dirname,
+        path=annotation_gff_name,
+        as_attachment=False,
+    )
+
+
+@app.route('/download_cnv_seg/<run_id>/<sample>')
+def download_cnv_seg(run_id, sample):
+
+    sample_info = (
+        SampleTable.query.filter_by(lab_id=sample).filter_by(run_id=run_id).first()
+    )
+    panel = sample_info.panel
+
+    uploads = os.path.join(app.config["STATIC_URL_PATH"], run_id, panel, sample, "VCF_FOLDER", "CNV_FOLDER")
+
+    seg_file = sample + ".seg"
+    # lancet_vcf_file = f"{sample}.mutect2.lancet.vcf.tbi"
+    seg_file_path = os.path.join(uploads, seg_file)
+    return send_from_directory(directory=uploads, path=seg_file, as_attachment=True)
+
 
 
 @app.route("/download_all_reports/<run_id>")
@@ -668,26 +1271,111 @@ def show_sample_details(run_id, sample, sample_id, active):
         sample_info.tumor_origin = petition_info.Tumour_origin
         db.session.commit()
 
-
     summary_qc = (
         SummaryQcTable.query.filter_by(lab_id=sample).filter_by(run_id=run_id).first()
     )
     pipeline_details = PipelineDetails.query.filter_by(run_id=run_id).first()
     therapeutic_variants = (
-        TherapeuticTable.query.filter_by(lab_id=sample)
+        TherapeuticTable.query.options(
+            load_only(
+                TherapeuticTable.id,
+                TherapeuticTable.gene,
+                TherapeuticTable.enst_id,
+                TherapeuticTable.hgvsg,
+                TherapeuticTable.hgvsc,
+                TherapeuticTable.hgvsp,
+                TherapeuticTable.exon,
+                TherapeuticTable.intron,
+                TherapeuticTable.variant_type,
+                TherapeuticTable.consequence,
+                TherapeuticTable.depth,
+                TherapeuticTable.allele_frequency,
+                TherapeuticTable.read_support,
+                TherapeuticTable.max_af,
+                TherapeuticTable.max_af_pop,
+                TherapeuticTable.tier_catsalut,
+                TherapeuticTable.tumor_type,
+                TherapeuticTable.var_json,
+                TherapeuticTable.classification,
+                TherapeuticTable.blacklist,
+                TherapeuticTable.removal_reason,
+                TherapeuticTable.removed,
+                TherapeuticTable.db_detected_number,
+                TherapeuticTable.db_sample_count,
+                TherapeuticTable.db_detected_freq,
+            )
+        )
+        .filter_by(lab_id=sample)
         .filter_by(run_id=run_id)
         .distinct()
         .all()
     )
     other_variants = (
-        OtherVariantsTable.query.filter_by(lab_id=sample)
+        OtherVariantsTable.query.options(
+            load_only(
+                OtherVariantsTable.id,
+                OtherVariantsTable.gene,
+                OtherVariantsTable.enst_id,
+                OtherVariantsTable.hgvsg,
+                OtherVariantsTable.hgvsc,
+                OtherVariantsTable.hgvsp,
+                OtherVariantsTable.exon,
+                OtherVariantsTable.intron,
+                OtherVariantsTable.variant_type,
+                OtherVariantsTable.consequence,
+                OtherVariantsTable.depth,
+                OtherVariantsTable.allele_frequency,
+                OtherVariantsTable.read_support,
+                OtherVariantsTable.max_af,
+                OtherVariantsTable.max_af_pop,
+                OtherVariantsTable.tier_catsalut,
+                OtherVariantsTable.tumor_type,
+                OtherVariantsTable.var_json,
+                OtherVariantsTable.classification,
+                OtherVariantsTable.blacklist,
+                OtherVariantsTable.removal_reason,
+                OtherVariantsTable.removed,
+                OtherVariantsTable.db_detected_number,
+                OtherVariantsTable.db_sample_count,
+                OtherVariantsTable.db_detected_freq,
+            )
+        )
+        .filter_by(lab_id=sample)
         .filter_by(run_id=run_id)
         .distinct()
         .all()
     )
     rare_variants = (
-        RareVariantsTable.query.filter_by(lab_id=sample)
+        RareVariantsTable.query.options(
+            load_only(
+                RareVariantsTable.id,
+                RareVariantsTable.gene,
+                RareVariantsTable.enst_id,
+                RareVariantsTable.hgvsg,
+                RareVariantsTable.hgvsc,
+                RareVariantsTable.hgvsp,
+                RareVariantsTable.exon,
+                RareVariantsTable.intron,
+                RareVariantsTable.variant_type,
+                RareVariantsTable.consequence,
+                RareVariantsTable.depth,
+                RareVariantsTable.allele_frequency,
+                RareVariantsTable.read_support,
+                RareVariantsTable.max_af,
+                RareVariantsTable.max_af_pop,
+                RareVariantsTable.tier_catsalut,
+                RareVariantsTable.tumor_type,
+                RareVariantsTable.var_json,
+                RareVariantsTable.classification,
+                RareVariantsTable.blacklist,
+                RareVariantsTable.db_detected_number,
+                RareVariantsTable.db_sample_count,
+                RareVariantsTable.db_detected_freq,
+            )
+        )
+        .filter_by(lab_id=sample)
         .filter_by(run_id=run_id)
+        .filter(RareVariantsTable.hgvsg != ".")
         .distinct()
         .all()
     )
@@ -702,27 +1390,248 @@ def show_sample_details(run_id, sample, sample_id, active):
     tier_variants = {"tier_I": [], "tier_II": [], "tier_III": [], "no_tier": []}
     bad_qual_variants = []
 
-    tmp_samples = SampleTable.query.all()
-    unique_samples = set()
-    for s in tmp_samples:
-        if "test" in s.lab_id:
-            continue
-        if "Undetermined" in s.lab_id:
-            continue
-        unique_samples.add(s.lab_id)
-    n_samples = len(unique_samples)
+    n_samples = (
+        db.session.query(func.count(distinct(SampleTable.lab_id)))
+        .filter(~SampleTable.lab_id.contains("test"))
+        .filter(~SampleTable.lab_id.contains("Undetermined"))
+        .scalar()
+        or 0
+    )
+
+    def _load_variant_stats(model, variants):
+        count_keys = {(v.gene, v.hgvsg) for v in variants if v.gene and v.hgvsg}
+        summary_keys = {
+            (v.gene or "", v.hgvsg or "", v.hgvsc or "", v.hgvsp or "")
+            for v in variants
+            if v.gene and v.hgvsg
+        }
+        if not count_keys and not summary_keys:
+            return {}, {}
+
+        count_rows = (
+            db.session.query(model.gene, model.hgvsg, func.count(model.id))
+            .filter(tuple_(model.gene, model.hgvsg).in_(count_keys))
+            .group_by(model.gene, model.hgvsg)
+            .all()
+        )
+        counts = {(g, h): c for g, h, c in count_rows}
+
+        latest_ids = (
+            db.session.query(
+                func.coalesce(GeneVariantSummary.gene, "").label("gene"),
+                func.coalesce(GeneVariantSummary.hgvsg, "").label("hgvsg"),
+                func.coalesce(GeneVariantSummary.hgvsc, "").label("hgvsc"),
+                func.coalesce(GeneVariantSummary.hgvsp, "").label("hgvsp"),
+                func.max(GeneVariantSummary.id).label("max_id"),
+            )
+            .filter(
+                tuple_(
+                    func.coalesce(GeneVariantSummary.gene, ""),
+                    func.coalesce(GeneVariantSummary.hgvsg, ""),
+                    func.coalesce(GeneVariantSummary.hgvsc, ""),
+                    func.coalesce(GeneVariantSummary.hgvsp, ""),
+                ).in_(summary_keys)
+            )
+            .group_by(
+                func.coalesce(GeneVariantSummary.gene, ""),
+                func.coalesce(GeneVariantSummary.hgvsg, ""),
+                func.coalesce(GeneVariantSummary.hgvsc, ""),
+                func.coalesce(GeneVariantSummary.hgvsp, ""),
+            )
+            .subquery()
+        )
+        summary_rows = (
+            db.session.query(GeneVariantSummary)
+            .join(latest_ids, GeneVariantSummary.id == latest_ids.c.max_id)
+            .all()
+        )
+        summaries = {
+            (s.gene or "", s.hgvsg or "", s.hgvsc or "", s.hgvsp or ""): s
+            for s in summary_rows
+        }
+        return counts, summaries
+
+    t_counts, t_summaries = _load_variant_stats(TherapeuticTable, therapeutic_variants)
+    o_counts, o_summaries = _load_variant_stats(OtherVariantsTable, other_variants)
+    r_counts, r_summaries = _load_variant_stats(RareVariantsTable, rare_variants)
+
+    def _internal_classification_score(var):
+        kb = getattr(var, "kb", None) or {}
+        if not isinstance(kb, dict):
+            return 0
+        ranked_fields = (
+            "Oncogenic summary",
+            "Oncogenic prediction",
+            "ClinVar Germline",
+            "ClinVar Somatic",
+            "OncoKB",
+            "Franklin ACMG",
+            "Franklin Oncogenicity",
+            "MTBP",
+            "Càncer",
+            "Data Classificació",
+        )
+        return sum(1 for f in ranked_fields if str(kb.get(f, "")).strip())
+
+    def _variant_rank_key(var):
+        return (
+            -getattr(var, "_internal_classification_score", 0),
+            -int(getattr(var, "db_detected_number", 0) or 0),
+            (var.gene or ""),
+            (var.hgvsg or ""),
+        )
+
+    def _collect_numeric_values(value):
+        vals = []
+        if value is None:
+            return vals
+        if isinstance(value, (int, float)):
+            return [float(value)]
+        if isinstance(value, (list, tuple, set)):
+            for it in value:
+                vals.extend(_collect_numeric_values(it))
+            return vals
+        if isinstance(value, dict):
+            for it in value.values():
+                vals.extend(_collect_numeric_values(it))
+            return vals
+        if isinstance(value, str):
+            for tok in re.findall(r"-?\d+(?:\.\d+)?", value):
+                try:
+                    vals.append(float(tok))
+                except Exception:
+                    pass
+        return vals
+
+    def _extract_predictor_scores(variant_dict):
+        revel_score = None
+        spliceai_score = None
+        info = variant_dict.get("INFO", {}) if isinstance(variant_dict, dict) else {}
+        if not isinstance(info, dict):
+            return revel_score, spliceai_score
+        csq = info.get("CSQ", {})
+        csq_candidates = []
+        if isinstance(csq, dict):
+            csq_candidates.append(csq)
+        elif isinstance(csq, list):
+            for entry in csq:
+                if isinstance(entry, dict):
+                    csq_candidates.append(entry)
+
+        # REVEL: direct key first, fallback to any key containing revel.
+        revel_keys = ["REVEL", "REVEL_score", "REVEL_SCORE", "revel", "revel_score"]
+        revel_vals = []
+        for source in [info] + csq_candidates:
+            for key in revel_keys:
+                if key in source:
+                    revel_vals.extend(_collect_numeric_values(source.get(key)))
+        if not revel_vals:
+            for source in [info] + csq_candidates:
+                for key, val in source.items():
+                    if "revel" in str(key).lower():
+                        revel_vals.extend(_collect_numeric_values(val))
+        if revel_vals:
+            revel_score = max(revel_vals)
+
+        # SpliceAI: prefer DS_* keys (commonly under CSQ), fallback to any key containing spliceai.
+        splice_vals = []
+        ds_keys = [
+            "SpliceAI_DS_AG", "SpliceAI_DS_AL", "SpliceAI_DS_DG", "SpliceAI_DS_DL",
+            "SpliceAI_pred_DS_AG", "SpliceAI_pred_DS_AL", "SpliceAI_pred_DS_DG", "SpliceAI_pred_DS_DL",
+            "DS_AG", "DS_AL", "DS_DG", "DS_DL",
+        ]
+        for source in [info] + csq_candidates:
+            for key in ds_keys:
+                if key in source:
+                    splice_vals.extend(_collect_numeric_values(source.get(key)))
+        if not splice_vals:
+            for source in [info] + csq_candidates:
+                for key, val in source.items():
+                    if "spliceai" in str(key).lower():
+                        splice_vals.extend(_collect_numeric_values(val))
+        if splice_vals:
+            spliceai_score = max(splice_vals)
+
+        return revel_score, spliceai_score
+
+    def _extract_filter_tag(variant_dict):
+        if not isinstance(variant_dict, dict):
+            return None
+
+        info = variant_dict.get("INFO", {})
+        raw_filter = variant_dict.get("FILTER")
+        if raw_filter is None and isinstance(info, dict):
+            for key in ("FILTER", "filter", "FILTERS", "filters"):
+                if key in info:
+                    raw_filter = info.get(key)
+                    break
+
+        if raw_filter is None:
+            return None
+
+        if isinstance(raw_filter, (list, tuple, set)):
+            parts = [str(v).strip() for v in raw_filter if str(v).strip()]
+            return ";".join(parts) if parts else None
+
+        if isinstance(raw_filter, dict):
+            parts = []
+            for key, value in raw_filter.items():
+                if isinstance(value, bool):
+                    if value:
+                        parts.append(str(key))
+                elif value is None or str(value).strip() == "":
+                    parts.append(str(key))
+                else:
+                    parts.append(f"{key}:{value}")
+            return ";".join(parts) if parts else None
+
+        value = str(raw_filter).strip()
+        if value in ("", ".", "-", "None", "null"):
+            return None
+        return value
+
+    remove_filter_tags = [
+        "base_qual",
+        "orientation",
+        "strand_bias",
+        "weak_evidence",
+        "panel_of_normals",
+    ]
+    remove_filter_tags_set = set(remove_filter_tags)
+
+    def _has_removed_filter_tag(filter_tag_value):
+        if not filter_tag_value:
+            return False
+
+        raw_parts = re.split(r"[;,\|]", str(filter_tag_value))
+        for raw_part in raw_parts:
+            normalized = str(raw_part).strip().lower()
+            if not normalized:
+                continue
+            normalized = normalized.split(":", 1)[0].strip()
+            if normalized in remove_filter_tags_set:
+                return True
+        return False
 
     for var in therapeutic_variants:
+        var.kb = {}
+        var.revel_score = None
+        var.spliceai_score = None
+        var.filter_tag = None
         try:
             variant_dict = json.loads(var.var_json)
         except:
             var.refseq = var.enst_id
         else:
             var.refseq = variant_dict["INFO"]["REFSEQ_ANALYSIS_ISOFORM"]
+            var.revel_score, var.spliceai_score = _extract_predictor_scores(variant_dict)
+            var.filter_tag = _extract_filter_tag(variant_dict)
+        if _has_removed_filter_tag(var.filter_tag):
+            continue
 
  
-        n_var = TherapeuticTable.query.filter_by(gene=var.gene, hgvsg=var.hgvsg).count()
-        var_kb = GeneVariantSummary.query.filter_by(gene=var.gene, hgvsg=var.hgvsg).first()
+        n_var = t_counts.get((var.gene, var.hgvsg), 0)
+        var_kb = t_summaries.get((var.gene or "", var.hgvsg or "", var.hgvsc or "", var.hgvsp or ""))
         if var_kb:
             var_kb_str = var_kb.data_json
             # var.kb = json.loads(var_kb_str.encode('utf-8').decode('utf-8'))
@@ -731,6 +1640,7 @@ def show_sample_details(run_id, sample, sample_id, active):
 
             # Parse the JSON string into a Python dictionary
             var.kb = json.loads(var_kb_str)
+        var._internal_classification_score = _internal_classification_score(var)
 
         var.db_detected_number = n_var
         var.db_sample_count = n_samples
@@ -756,6 +1666,10 @@ def show_sample_details(run_id, sample, sample_id, active):
 
     for var in other_variants:
 
+        var.kb = {}
+        var.revel_score = None
+        var.spliceai_score = None
+        var.filter_tag = None
         variant_dict = json.loads(var.var_json)
         try: 
             variant_dict["INFO"]["REFSEQ_ANALYSIS_ISOFORM"]
@@ -763,9 +1677,13 @@ def show_sample_details(run_id, sample, sample_id, active):
             var.refseq = var.enst_id
         else:
             var.refseq = variant_dict["INFO"]["REFSEQ_ANALYSIS_ISOFORM"]
+        var.revel_score, var.spliceai_score = _extract_predictor_scores(variant_dict)
+        var.filter_tag = _extract_filter_tag(variant_dict)
+        if _has_removed_filter_tag(var.filter_tag):
+            continue
             
-        n_var = OtherVariantsTable.query.filter_by(gene=var.gene, hgvsg=var.hgvsg).count()
-        var_kb = GeneVariantSummary.query.filter_by(gene=var.gene, hgvsg=var.hgvsg).first()
+        n_var = o_counts.get((var.gene, var.hgvsg), 0)
+        var_kb = o_summaries.get((var.gene or "", var.hgvsg or "", var.hgvsc or "", var.hgvsp or ""))
 
         var.db_detected_number = n_var
         var.db_sample_count = n_samples
@@ -776,6 +1694,7 @@ def show_sample_details(run_id, sample, sample_id, active):
 
             # Parse the JSON string into a Python dictionary
             var.kb = json.loads(var_kb_str)
+        var._internal_classification_score = _internal_classification_score(var)
 
         if var.tier_catsalut != "None":
             if var.tier_catsalut == "1":
@@ -796,8 +1715,11 @@ def show_sample_details(run_id, sample, sample_id, active):
             else:
                 bad_qual_variants.append(var)
 
-    rare_variants2 = []
     for var in rare_variants:
+        var.kb = {}
+        var.revel_score = None
+        var.spliceai_score = None
+        var.filter_tag = None
         variant_dict = json.loads(var.var_json)
 
         try: 
@@ -806,12 +1728,28 @@ def show_sample_details(run_id, sample, sample_id, active):
             var.refseq = var.enst_id
         else:
             var.refseq = variant_dict["INFO"]["REFSEQ_ANALYSIS_ISOFORM"]
+        var.revel_score, var.spliceai_score = _extract_predictor_scores(variant_dict)
+        var.filter_tag = _extract_filter_tag(variant_dict)
+        if _has_removed_filter_tag(var.filter_tag):
+            continue
+
+        n_var = r_counts.get((var.gene, var.hgvsg), 0)
+        var.db_detected_number = n_var
+        var.db_sample_count = n_samples
+        var_kb = r_summaries.get((var.gene or "", var.hgvsg or "", var.hgvsc or "", var.hgvsp or ""))
+        if var_kb:
+            var_kb_str = var_kb.data_json
+            if isinstance(var_kb_str, bytes):
+                var_kb_str = var_kb_str.decode("utf-8")
+            var.kb = json.loads(var_kb_str)
+        var._internal_classification_score = _internal_classification_score(var)
 
         if var.hgvsg == ".":
             continue
-        else:
-            rare_variants2.append(var)
-    rare_variants = rare_variants2
+
+    for tier_name in ("tier_I", "tier_II", "tier_III", "no_tier"):
+        tier_variants[tier_name].sort(key=_variant_rank_key)
+    bad_qual_variants.sort(key=_variant_rank_key)
 
     tier_list = (
         tier_variants["tier_I"]
@@ -849,7 +1787,7 @@ def show_sample_details(run_id, sample, sample_id, active):
         instruction_dict["modified_on"] = c.Modified_on
         All_changes_dict[id]["action_data"] = instruction_dict
         All_changes_dict[id]["action_name"] = c.Action_name
-        if len(num_id_dict.keys()) == 10:
+        if len(num_id_dict.keys()) == 15:
             break
 
     merged_vcf = sample_info.merged_vcf
@@ -890,6 +1828,22 @@ def show_sample_details(run_id, sample, sample_id, active):
 
     summary_qc_dict = json.loads(summary_qc.summary_json)
     fastp_dict = json.loads(summary_qc.fastp_json)
+
+    lost_exons_100x = []
+    lost_exons_dict = summary_qc_dict.get("LOST_EXONS", {}).get("exons", {})
+    for roi_key, roi_dict in lost_exons_dict.items():
+        exon_number = str(roi_dict.get("EXON_NUMBER", "") or "").strip()
+        if exon_number in ("", ".", "None", "nan"):
+            continue
+
+        call_rate_100x = roi_dict.get("COV_THRESHOLD", {}).get("100X")
+        try:
+            call_rate_100x = float(str(call_rate_100x).replace("%", "").strip())
+        except (TypeError, ValueError):
+            continue
+
+        if call_rate_100x < 100:
+            lost_exons_100x.append((roi_key, roi_dict))
 
     read1_basequal_dict = fastp_dict["read1_before_filtering"]["quality_curves"]
     plot_read1 = basequal_plot(read1_basequal_dict)
@@ -972,10 +1926,14 @@ def show_sample_details(run_id, sample, sample_id, active):
     cons_counter = Counter()
     vartype_counter = Counter()
     for var in rare_variants:
+        normalized_consequences = set()
         for entry in re.split(r"[,&]", var.consequence or ""):
             entry = entry.strip()
             if entry:
-                cons_counter[entry] += 1
+                normalized_entry = "splicing_variant" if "splice" in entry.lower() else entry
+                normalized_consequences.add(normalized_entry)
+        for entry in normalized_consequences:
+            cons_counter[entry] += 1
         if var.variant_type:
             vartype_counter[var.variant_type] += 1
 
@@ -989,6 +1947,7 @@ def show_sample_details(run_id, sample, sample_id, active):
         sample_id=sample_id,
         sample_variants=sample_variants,
         summary_qc_dict=summary_qc_dict,
+        lost_exons_100x=lost_exons_100x,
         fastp_dict=fastp_dict,
         pipeline_details=pipeline_details,
         # therapeutic_variants=therapeutic_variants,
@@ -1004,16 +1963,12 @@ def show_sample_details(run_id, sample, sample_id, active):
         vaf_plot=plot_vaf,
         snv_plot=plot_snv,
         all_cnas=all_cnas,
-
-
-
+        gene_mech=GENE_MECH,
         snv_data=json.dumps(snv_dict),
         vaf_data=json.dumps(vaf_list),
         cons_data=json.dumps(cons_counter),
         vartype_data=json.dumps(vartype_counter),
         cnv_data=json.dumps(cnv_entries),
-
-
         all_fusions=all_fusions,
         vcf_folder=vcf_folder,
         All_jobs=All_jobs,
@@ -1034,7 +1989,7 @@ def update_therapeutic_variant(run_id, sample, sample_id, var_id, var_classifica
         variant = OtherVariantsTable.query.filter_by(id=var_id).first()
     if var_classification == "Rare":
         variant = RareVariantsTable.query.filter_by(id=var_id).first()
-    new_active = "Therapeutic"
+    new_active = "Rare" if var_classification == "Rare" else "Therapeutic"
     if request.method == "POST":
         therapies = ""
         diseases = ""
@@ -1043,26 +1998,24 @@ def update_therapeutic_variant(run_id, sample, sample_id, var_id, var_classifica
             therapies = request.form["therapies"]
         if request.form.get("diseases"):
             diseases = request.form["diseases"]
-        if request.form.get("blacklist_check"):
-            variant.blacklist = "yes"
-        else:
-            variant.blacklist = "no"
-        db.session.commit()
 
-        if variant.blacklist == "yes":
-            v = (
-                Variants.query.filter_by(hgvsg=variant.hgvsg)
-                .filter_by(hgvsc=variant.hgvsc)
-                .filter_by(hgvsp=variant.hgvsp)
-                .first()
-            )
-            if v:
-                v.blacklist = "yes"
-                db.session.commit()
+        blacklist_value = "yes" if request.form.get("blacklist_check") else "no"
+        variant.blacklist = blacklist_value
+
+        matched_variants = (
+            Variants.query.filter_by(hgvsg=variant.hgvsg)
+            .filter_by(hgvsc=variant.hgvsc)
+            .filter_by(hgvsp=variant.hgvsp)
+            .all()
+        )
+        for matched_variant in matched_variants:
+            matched_variant.blacklist = blacklist_value
+
+        db.session.commit()
 
         if request.form.get("variant_category"):
 
-            new_classification = request.form["variant_category"]
+            new_classification = request.form["variant_category"].strip()
             new_active = var_classification
 
             if new_classification != var_classification:
@@ -1341,17 +2294,21 @@ def redo_action(action_id, run_id, sample, sample_id, active):
         )
     )
 
-
 @app.route(
     "/remove_variant/<run_id>/<sample>/<sample_id>/<var_id>/<var_classification>",
     methods=["GET", "POST"],
 )
 def remove_variant(run_id, sample, sample_id, var_id, var_classification):
-    """Delete a variant. Return JSON if AJAX, else flash+redirect."""
-    # 1) Locate the variant in the appropriate table
+    """Soft-delete a variant (mark removed, capture reason)."""
+
+    # Pull reason from POST or JSON
+    reason = (request.form.get("reason")
+              or (request.get_json(silent=True) or {}).get("reason")
+              or "").strip()
+
+    # Locate the record
     origin_table = None
     variant = None
-
     if var_classification == "Therapeutic":
         origin_table = "TherapeuticTable"
         variant = TherapeuticTable.query.get(var_id)
@@ -1363,65 +2320,140 @@ def remove_variant(run_id, sample, sample_id, var_id, var_classification):
         variant = RareVariantsTable.query.get(var_id)
 
     msg = "No s'ha trobat la variant."
-    if variant:
-        hgvsg = variant.hgvsg or var_id
+    status = "error"
 
-        # --- your VersionControl bookkeeping ---
+    if variant:
+        hgvsg = getattr(variant, "hgvsg", None) or var_id
+
+        # Soft-delete fields (if present on the model)
+        if hasattr(variant, "removal_reason"):
+            variant.removal_reason = reason[:1000] if reason else None
+        if hasattr(variant, "removed"):
+            variant.removed = "yes"
+
+        # VersionControl bookkeeping
         action_dict = {
             "origin_table": origin_table,
-            "origin_action": "delete",
+            "origin_action": "soft_delete",
             "redo": True,
             "target_table": None,
             "target_action": None,
-            # serialize the deleted record
             "action_json": json.dumps(variant, cls=AlchemyEncoder),
-            "msg": f"Variant {hgvsg} eliminada"
+            "delete_reason": reason,
+            "msg": f"Variant {hgvsg} marcada com eliminada"
         }
         action_str = json.dumps(action_dict)
-        action_name = f"Mostra: {sample} variant {hgvsg} eliminada"
+        action_name = f"{sample}: {hgvsg} marcada com eliminada"
         dt = datetime.now().strftime("%d/%m/%y-%H:%M:%S")
         vc = VersionControl(
-            User_id=7,  # <-- you should pull the real current_user.id here
+            User_id=7,  # TODO: current_user.id
             Action_id=generate_key(16),
             Action_name=action_name,
             Action_json=action_str,
             Modified_on=dt
         )
         db.session.add(vc)
-        # --- end VersionControl ---
 
-        # now delete the variant itself
-        db.session.delete(variant)
         db.session.commit()
+        status = "ok"
+        msg = f"S'ha marcat com eliminada la variant {hgvsg} de la taula {origin_table}"
+        if not request.headers.get("X-Requested-With") == "XMLHttpRequest":
+            flash(msg, "success")
 
-        msg = f"S'ha eliminat correctament la variant {hgvsg}"
-        flash(msg, "success")
-
-    # 2) If this was an XHR (AJAX) request, return JSON directly
+    # AJAX → JSON
     if request.headers.get("X-Requested-With") == "XMLHttpRequest":
-        return jsonify({
-            "status": "ok" if variant else "error",
-            "message": msg,
-            "deleted_var_id": var_id
-        })
+        return jsonify({"status": status, "message": msg, "deleted_var_id": var_id, "reason": reason})
 
-    # 3) Otherwise, fall back to your original redirect+flash behavior
-    sample_info = SampleTable.query.filter_by(
-        lab_id=sample, run_id=run_id
-    ).first()
-    vcf_folder = sample_info.sample_db_dir.replace(
-        "REPORT_FOLDER", "VCF_FOLDER/IGV_SNAPSHOTS"
-    )
-    return redirect(
-        url_for(
-            "show_sample_details",
-            run_id=run_id,
-            sample=sample,
-            sample_id=sample_id,
-            vcf_folder=vcf_folder,
-            active="Therapeutic",
-        )
-    )
+    # Non-AJAX → redirect as before
+    sample_info = SampleTable.query.filter_by(lab_id=sample, run_id=run_id).first()
+    vcf_folder = sample_info.sample_db_dir.replace("REPORT_FOLDER","VCF_FOLDER/IGV_SNAPSHOTS")
+    return redirect(url_for(
+        "show_sample_details",
+        run_id=run_id, sample=sample, sample_id=sample_id,
+        vcf_folder=vcf_folder, active="Therapeutic",
+    ))
+
+
+# @app.route(
+#     "/remove_variant/<run_id>/<sample>/<sample_id>/<var_id>/<var_classification>",
+#     methods=["GET", "POST"],
+# )
+# def remove_variant(run_id, sample, sample_id, var_id, var_classification):
+#     """Delete a variant. Return JSON if AJAX, else flash+redirect."""
+#     # 1) Locate the variant in the appropriate table
+#     origin_table = None
+#     variant = None
+
+#     if var_classification == "Therapeutic":
+#         origin_table = "TherapeuticTable"
+#         variant = TherapeuticTable.query.get(var_id)
+#     elif var_classification == "Other":
+#         origin_table = "OtherVariantsTable"
+#         variant = OtherVariantsTable.query.get(var_id)
+#     elif var_classification == "Rare":
+#         origin_table = "RareVariantsTable"
+#         variant = RareVariantsTable.query.get(var_id)
+
+#     msg = "No s'ha trobat la variant."
+#     if variant:
+#         hgvsg = variant.hgvsg or var_id
+
+#         # --- your VersionControl bookkeeping ---
+#         action_dict = {
+#             "origin_table": origin_table,
+#             "origin_action": "delete",
+#             "redo": True,
+#             "target_table": None,
+#             "target_action": None,
+#             # serialize the deleted record
+#             "action_json": json.dumps(variant, cls=AlchemyEncoder),
+#             "msg": f"Variant {hgvsg} eliminada"
+#         }
+#         action_str = json.dumps(action_dict)
+#         action_name = f"Mostra: {sample} variant {hgvsg} eliminada"
+#         dt = datetime.now().strftime("%d/%m/%y-%H:%M:%S")
+#         vc = VersionControl(
+#             User_id=7,  # <-- you should pull the real current_user.id here
+#             Action_id=generate_key(16),
+#             Action_name=action_name,
+#             Action_json=action_str,
+#             Modified_on=dt
+#         )
+#         db.session.add(vc)
+#         # --- end VersionControl ---
+
+#         # now delete the variant itself
+#         db.session.delete(variant)
+#         db.session.commit()
+
+#         msg = f"S'ha eliminat correctament la variant {hgvsg}"
+#         flash(msg, "success")
+
+#     # 2) If this was an XHR (AJAX) request, return JSON directly
+#     if request.headers.get("X-Requested-With") == "XMLHttpRequest":
+#         return jsonify({
+#             "status": "ok" if variant else "error",
+#             "message": msg,
+#             "deleted_var_id": var_id
+#         })
+
+#     # 3) Otherwise, fall back to your original redirect+flash behavior
+#     sample_info = SampleTable.query.filter_by(
+#         lab_id=sample, run_id=run_id
+#     ).first()
+#     vcf_folder = sample_info.sample_db_dir.replace(
+#         "REPORT_FOLDER", "VCF_FOLDER/IGV_SNAPSHOTS"
+#     )
+#     return redirect(
+#         url_for(
+#             "show_sample_details",
+#             run_id=run_id,
+#             sample=sample,
+#             sample_id=sample_id,
+#             vcf_folder=vcf_folder,
+#             active="Therapeutic",
+#         )
+#     )
 
 
 # @app.route(
@@ -1622,22 +2654,39 @@ def get_subpanels_from_panel(panel):
         subpanels = response_json["subpanels"]
         return subpanels
 
-
 @app.route('/new_virtual_panel/<panel>')
 def new_virtual_panel(panel):
-    """ """
     panel_genes = get_genes_from_panel(panel)
     url_api_panel = f"{api_gene_panels}/api/gene_panels/{panel}/latest_version"
     response = requests.get(url_api_panel)
-    panel_version= "."
+    panel_version = "."
 
-    subpanels = get_subpanels_from_panel(panel)
+    subpanels = get_subpanels_from_panel(panel)  # <- list of existing virtual panels
+
     if response.status_code == 200:
         response_json = response.json()
         panel_version = int(response_json["panel_version"])
 
-    return render_template("virtual_panels.html", panel=panel, panel_genes=panel_genes, 
-        panel_version=panel_version, subpanels=subpanels, title="Nou panell virtual")
+    return render_template(
+        "virtual_panels.html",
+        panel=panel,
+        panel_genes=panel_genes,
+        panel_version=panel_version,
+        subpanels=subpanels,
+        title="Nou panell virtual"
+    )
+
+@app.route('/virtual_panels/<panel>')
+def list_virtual_panels(panel):
+    subpanels = get_subpanels_from_panel(panel)
+    return render_template(
+        "virtual_panels_list.html",
+        panel=panel,
+        subpanels=subpanels,
+        title=f"Panells virtuals - {panel}"
+    )
+
+
 
 @app.route('/save_virtual_panel', methods=['POST'])
 def save_virtual_panel():
@@ -1647,14 +2696,6 @@ def save_virtual_panel():
     panel_version = data["panel_version"]
     name = data["virtual_panel_name"]
     genes = data["genes"]
-
-
-            # body: JSON.stringify({
-            #     "virtual_panel_name": virtualPanelName,
-            #     "genes": genesList,
-            #     "parent_panel": parent_panel,
-            #     "panel_version": panel_version
-            # })
 
     old_virtual_panel_name = ""
     if "old_virtual_panel_name" in data:
@@ -1757,7 +2798,7 @@ def download_report(run_id, sample):
 
 def generate_new_report(
     sample: str, sample_id: str, run_id: str, tumor_origin:str, substitute_report: bool, lowqual_sample: bool,
-    no_enac: bool, comments: str, repeat_notes: str
+    no_enac: bool, comments: str, repeat_notes: str, genes, panel_version
 ):
     """ """
 
@@ -1767,6 +2808,89 @@ def generate_new_report(
     sample_info = (
         SampleTable.query.filter_by(lab_id=sample).filter_by(run_id=run_id).first()
     )
+
+    remove_filter_tags = [
+        "base_qual",
+        "orientation",
+        "strand_bias",
+        "weak_evidence",
+        "panel_of_normals",
+    ]
+    remove_filter_tags_set = set(remove_filter_tags)
+
+    def _extract_filter_tag(variant_dict):
+        if not isinstance(variant_dict, dict):
+            return None
+
+        info = variant_dict.get("INFO", {})
+        raw_filter = variant_dict.get("FILTER")
+        if raw_filter is None and isinstance(info, dict):
+            for key in ("FILTER", "filter", "FILTERS", "filters"):
+                if key in info:
+                    raw_filter = info.get(key)
+                    break
+
+        if raw_filter is None:
+            return None
+
+        if isinstance(raw_filter, (list, tuple, set)):
+            parts = [str(v).strip() for v in raw_filter if str(v).strip()]
+            return ";".join(parts) if parts else None
+
+        if isinstance(raw_filter, dict):
+            parts = []
+            for key, value in raw_filter.items():
+                if isinstance(value, bool):
+                    if value:
+                        parts.append(str(key))
+                elif value is None or str(value).strip() == "":
+                    parts.append(str(key))
+                else:
+                    parts.append(f"{key}:{value}")
+            return ";".join(parts) if parts else None
+
+        value = str(raw_filter).strip()
+        if value in ("", ".", "-", "None", "null"):
+            return None
+        return value
+
+    def _has_removed_filter_tag(filter_tag_value):
+        if not filter_tag_value:
+            return False
+
+        raw_parts = re.split(r"[;,\|]", str(filter_tag_value))
+        for raw_part in raw_parts:
+            normalized = str(raw_part).strip().lower()
+            if not normalized:
+                continue
+            normalized = normalized.split(":", 1)[0].strip()
+            if normalized in remove_filter_tags_set:
+                return True
+        return False
+
+    def _prepare_and_filter_report_variants(variants):
+        out = []
+        for variant in variants:
+            try:
+                variant_dict = json.loads(variant.var_json)
+            except:
+                variant.refseq = variant.enst_id
+                out.append(variant)
+                continue
+
+            try:
+                variant.refseq = variant_dict["INFO"]["REFSEQ_ANALYSIS_ISOFORM"]
+            except:
+                variant.refseq = variant.enst_id
+
+            filter_tag = _extract_filter_tag(variant_dict)
+            if _has_removed_filter_tag(filter_tag):
+                continue
+
+            out.append(variant)
+        return out
+
+    tumor_origin = sample_info.tumor_origin
     
     rare_variants = (
         RareVariantsTable.query.filter_by(lab_id=sample)
@@ -1789,34 +2913,9 @@ def generate_new_report(
         .distinct()
         .all()
     )
-
-    for variant in high_impact_variants:
-        variant_dict = json.loads(variant.var_json)
-        try: 
-            variant_dict["INFO"]["REFSEQ_ANALYSIS_ISOFORM"]
-        except:
-            variant.refseq = variant.enst_id
-        else:
-            variant.refseq = variant_dict["INFO"]["REFSEQ_ANALYSIS_ISOFORM"]
-
-    for variant in actionable_variants:
-        variant_dict = json.loads(variant.var_json)
-        try: 
-            variant_dict["INFO"]["REFSEQ_ANALYSIS_ISOFORM"]
-        except:
-            variant.refseq = variant.enst_id
-        else:
-            variant.refseq = variant_dict["INFO"]["REFSEQ_ANALYSIS_ISOFORM"]
-
-
-    for variant in rare_variants:
-        variant_dict = json.loads(variant.var_json)
-        try: 
-            variant_dict["INFO"]["REFSEQ_ANALYSIS_ISOFORM"]
-        except:
-            variant.refseq = variant.enst_id
-        else:
-            variant.refseq = variant_dict["INFO"]["REFSEQ_ANALYSIS_ISOFORM"]
+    high_impact_variants = _prepare_and_filter_report_variants(high_impact_variants)
+    actionable_variants = _prepare_and_filter_report_variants(actionable_variants)
+    rare_variants = _prepare_and_filter_report_variants(rare_variants)
 
     lost_exons = (
         LostExonsTable.query.filter_by(lab_id=sample).filter_by(run_id=run_id).all()
@@ -1825,7 +2924,21 @@ def generate_new_report(
     summary_qc = (
         SummaryQcTable.query.filter_by(lab_id=sample).filter_by(run_id=run_id).first()
     )
+    filtered_cnas = []
     cnas = AllCnas.query.filter_by(lab_id=sample).filter_by(run_id=run_id).all()
+    for cna in cnas:
+        tmp_cna_genes = cna.genes.split(",")
+        genes_list = []
+        for item in tmp_cna_genes:
+            tmp_item = item.split("_")
+            if len(tmp_item) > 1:
+                gene = tmp_item[0]
+            else:
+                gene = item
+            if gene not in genes_list:
+                genes_list.append(gene)
+        cna.genes = ','.join(genes_list)
+        filtered_cnas.append(cna)
 
     petition_dict = {
         "Petition_date" : "",
@@ -1870,10 +2983,14 @@ def generate_new_report(
     seen_vars = set()
     for var in actionable_variants:
         var_str = var.to_string()
-        # var.refseq = 
+
+        short_hgvsp =  convert_long_to_short(var.hgvsp)
+        var.short_hgvsp = short_hgvsp
         if var_str in seen_vars:
             continue
         seen_vars.add(var_str)
+        if var.removed == "yes":
+            continue
 
         if var.tier_catsalut != "None":
             if var.tier_catsalut == "1":
@@ -1887,6 +3004,13 @@ def generate_new_report(
 
     for var in high_impact_variants:
         var_str = var.to_string()
+        if var.hgvsp != ".":
+            short_hgvsp =  convert_long_to_short(var.hgvsp)
+            var.short_hgvsp = short_hgvsp
+
+        if var.removed == "yes":
+            continue
+
         if var_str in seen_vars:
             continue
         seen_vars.add(var_str)
@@ -1993,7 +3117,9 @@ def generate_new_report(
         low_concentration=low_concentration,
         no_enac=no_enac,
         comments=comments,
-        repeat_notes=repeat_notes
+        repeat_notes=repeat_notes,
+        genes=genes,
+        panel_version=panel_version
     )
 
     now = datetime.now()
@@ -2032,7 +3158,9 @@ def generate_new_report(
         low_concentration=low_concentration,
         no_enac=no_enac,
         comments=comments,
-        repeat_notes=repeat_notes
+        repeat_notes=repeat_notes,
+        genes=genes,
+        panel_version=panel_version
     )
 
     new_report_name_short = f"{sample}.genetic.{dt}.pdf"
@@ -2058,7 +3186,7 @@ def generate_new_report(
         "msg": " Report generat per la mostra  {} ".format(sample),
     }
     action_str = json.dumps(action_dict)
-    action_name = ("Mostra: {}. Nou informe genètic").format(sample)
+    action_name = ("{}: Nou informe genètic").format(sample)
     now = datetime.now()
     dt = now.strftime("%d/%m/%y-%H:%M:%S")
     vc = VersionControl(
@@ -2088,22 +3216,32 @@ def create_somatic_report():
         comments = request.form["comments"]
         repeat_notes = request.form["repeat_notes"]
         tumor_origin = request.form["tumor_origin"]
+        gene_panel = request.form["gene_panel"]
+        
         lowqual_sample = False
         if "lowqual_sample" in request.form:
             if request.form["lowqual_sample"]:
                 lowqual_sample = True
-
         no_enac = False
         if "no_enac" in request.form:
             if request.form["no_enac"]:
                 no_enac = True
-
         substitute_report = False
         if request.form.get("substitute_report"):
             substitute_report = True
 
+        genes_list = get_genes_from_panel(gene_panel)
+        genes = ','.join(genes_list)
+
+        panel_version = "1"
+        if gene_panel == "GenOncology-Dx_1.5":
+            panel_version = "1.5"
+        panel_version = "1"
+        if gene_panel == "GenOncology-Dx_1.6":
+            panel_version = "1.6"
+
         message = generate_new_report(sample, sample_id, run_id, tumor_origin,
-            substitute_report, lowqual_sample, no_enac, comments, repeat_notes)
+            substitute_report, lowqual_sample, no_enac, comments, repeat_notes, genes, panel_version)
 
         return make_response(jsonify(message), 200)
 
@@ -2114,7 +3252,6 @@ def create_all_somatic_reports():
     """ """
     if request.method == "POST":
         run_id = request.form["run_id"]
-        print(run_id)
         substitute_report = False
         lowqual_sample = False
         samples = SampleTable.query.filter_by(run_id=run_id).all()
@@ -2129,3 +3266,135 @@ def create_all_somatic_reports():
         "message_text": f"S'han generat correctament els informes",
     }
     return make_response(jsonify(message), 200)
+
+
+ALLOWED_FIELDS = {'chromosome', 'start', 'end', 'genes', 'svtype', 'ratio', 'qual', 'cn'}
+@app.post('/edit_cnas')
+def edit_cnas():
+    data = request.get_json(silent=True) or request.form.to_dict()
+    cna_id = data.get('id')
+    try:
+        cna_id = int(cna_id)
+    except (TypeError, ValueError):
+        abort(400, description='Invalid or missing id')
+
+    cna = AllCnas.query.get_or_404(cna_id)
+
+    # TODO: add authorization checks if needed (e.g., current_user.id == cna.user_id)
+
+    changed = False
+    for field in ALLOWED_FIELDS:
+        if field in data:
+            setattr(cna, field, str(data[field]).strip() if data[field] is not None else '')
+            changed = True
+
+    if not changed:
+        return jsonify({'message': 'No changes'}), 400
+
+    db.session.commit()
+    return jsonify({**{f: getattr(cna, f) for f in ALLOWED_FIELDS}, 'id': cna.id}), 200
+
+
+@app.post('/remove_cnas')
+def remove_cnas():
+    data = request.get_json(silent=True) or request.form.to_dict()
+    cna_id = data.get('id')
+    try:
+        cna_id = int(cna_id)
+    except (TypeError, ValueError):
+        abort(400, description='Invalid or missing id')
+
+    cna = AllCnas.query.get_or_404(cna_id)
+
+    # TODO: add authorization checks
+
+    db.session.delete(cna)
+    db.session.commit()
+    return jsonify({'deleted': True, 'id': cna_id}), 200
+
+
+@app.route('/get_all_analysis_samples', methods=['GET'])
+def get_all_analysis_samples():
+    samples = SampleTable.query.all()
+
+    def to_dict(s: SampleTable) -> dict:
+        return {
+            "id": s.id,
+            "user_id": s.user_id,
+            "lab_id": s.lab_id,
+            "ext1_id": s.ext1_id,
+            "ext2_id": s.ext2_id,
+            "ext3_id": s.ext3_id,
+            "run_id": s.run_id,
+            "petition_id": s.petition_id,
+            "extraction_date": s.extraction_date,
+            "date_original_biopsy": s.date_original_biopsy,
+            "concentration": s.concentration,
+            "analysis_date": s.analysis_date,
+            "tumour_purity": s.tumour_purity,
+            "sex": s.sex,
+            "diagnosis": s.diagnosis,
+            "physician_name": s.physician_name,
+            "medical_center": s.medical_center,
+            "medical_address": s.medical_address,
+            "sample_type": s.sample_type,
+            "panel": s.panel,
+            "subpanel": s.subpanel,
+            "roi_bed": s.roi_bed,
+            "software": s.software,
+            "software_version": s.software_version,
+            "bam": s.bam,
+            "merged_vcf": s.merged_vcf,
+            "report_pdf": s.report_pdf,
+            "latest_report_pdf": s.latest_report_pdf,
+            "last_report_emission_date": s.last_report_emission_date,
+            "report_db": s.report_db,
+            "sample_db_dir": s.sample_db_dir,
+            "cnv_json": s.cnv_json,
+            "latest_short_report_pdf": s.latest_short_report_pdf,
+            "last_short_report_emission_date": s.last_short_report_emission_date,
+            "petition_date": s.petition_date,
+            "tumor_origin": s.tumor_origin,
+            "service": s.service,
+            "sample_block": s.sample_block,
+            "Sex": s.Sex,
+            "Age": s.Age,
+            "modulab_id": s.modulab_id,
+            "report_changes": s.report_changes,
+            "virtual_panel": s.virtual_panel,
+        }
+
+    return jsonify([to_dict(s) for s in samples]), 200
+
+
+from sqlalchemy import or_
+
+def _is_missing(v) -> bool:
+    # treat None, "", "None", "null" as missing
+    if v is None:
+        return True
+    s = str(v).strip()
+    return s == "" or s.lower() in {"none", "null", "nan"}
+
+
+@app.route("/backfill_sample_tumor_origin_from_petitions")
+def backfill_sample_tumor_origin_from_petitions():
+    samples = SampleTable.query.all()
+    tumors = []
+    petitions_id = []
+
+    for sample in samples:
+        # if tumor_origin missing, try to fetch from Petition using petition_id
+        if not sample.tumor_origin and sample.petition_id:
+
+            petition = Petition.query.filter_by(AP_code=sample.lab_id).first()
+            if not petition:
+                continue
+            if petition and petition.Tumour_origin:
+                sample.tumor_origin = petition.Tumour_origin
+                db.session.add(sample)
+
+        tumors.append({sample.lab_id: sample.tumor_origin})
+
+    db.session.commit()
+    return jsonify(tumors), 200

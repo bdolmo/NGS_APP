@@ -24,7 +24,6 @@ class Pipeline(db.Model):
     configs = db.relationship('PipelineConfig', backref='pipeline', cascade="all, delete-orphan")
 
 
-
 class PipelineParam(db.Model):
     __tablename__ = 'PIPELINE_PARAMS'
     id           = db.Column(db.Integer, primary_key=True, autoincrement=True)
@@ -40,6 +39,8 @@ class PipelineParam(db.Model):
     choices_json = db.Column(db.Text)           # JSON list
     group_name   = db.Column(db.String(120))    # optional UI grouping
     group_format   = db.Column(db.String(120))    # optional UI grouping
+    is_set_default  = db.Column(db.Boolean, default=False)
+
 
 class PipelineConfig(db.Model):
     __tablename__ = 'PIPELINE_CONFIGS'
@@ -256,7 +257,6 @@ class Petition(db.Model):
         self.Sex = Sex
         self.Modulab_id = Modulab_id
 
-
 class Panel(db.Model):
     __tablename__  = 'PANELS'
     Id             = db.Column(db.Integer, primary_key=True, autoincrement=True)
@@ -395,6 +395,11 @@ class SampleTable(db.Model):
     modulab_id = db.Column(db.String(50))
     report_changes = db.Column(db.String(50))
     virtual_panel = db.Column(db.String(50))
+    cgi_sent = db.Column(db.String(20))
+    cgi_send_count = db.Column(db.Integer)
+    cgi_analysis_uuid = db.Column(db.String(120))
+    cgi_analysis_url = db.Column(db.String(500))
+    cgi_sent_on = db.Column(db.String(50))
 
     def __repr__(self):
         return '<Sample %r>' % self.lab_id
@@ -458,6 +463,8 @@ class TherapeuticTable(db.Model):
     db_sample_count    = db.Column(db.Integer())
     db_detected_freq = db.Column(db.Float())
     blacklist = db.Column(db.String(20))
+    removal_reason = db.Column(db.String(20))
+    removed = db.Column(db.String(20))
 
     def to_string(self):
         var_list = [self.hgvsg, self.hgvsc, self.hgvsp, self.variant_type]
@@ -501,6 +508,9 @@ class OtherVariantsTable(db.Model):
     db_sample_count    = db.Column(db.Integer())
     db_detected_freq   = db.Column(db.Float())
     blacklist = db.Column(db.String(20))
+    removal_reason = db.Column(db.String(20))
+    removed = db.Column(db.String(20))
+
     def to_string(self):
         var_list = [self.hgvsg, self.hgvsc, self.hgvsp, self.variant_type]
         return ','.join(var_list)

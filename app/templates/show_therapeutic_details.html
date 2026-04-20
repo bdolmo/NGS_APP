@@ -71,7 +71,20 @@
         </tr>
         <tr>
           <td style="padding-right:20px;">HGVSg:</td>
-          <td style="padding-right:20px;">{{variant_dict['INFO']['CSQ'][0]['HGVSg']}}</td>
+          {% set hgvsg_value = variant_dict['INFO']['CSQ'][0]['HGVSg'] %}
+          <td style="padding-right:20px;">
+            {{ hgvsg_value }}
+            {% if hgvsg_value and hgvsg_value != '.' %}
+              <a
+                href="https://www.oncokb.org/hgvsg/{{ hgvsg_value | replace('%', '%25') | replace('>', '%3E') | replace(' ', '%20') | replace('#', '%23') }}"
+                target="_blank"
+                rel="noopener noreferrer"
+                class="btn btn-outline-primary btn-sm ml-2"
+              >
+                <i class="fas fa-external-link-alt"></i> OncoKB
+              </a>
+            {% endif %}
+          </td>
         </tr>
       </table>
     </div>
@@ -625,29 +638,81 @@
     //         console.log("Created IGV browser");
     //     })
 
+    const locusParts = "{{ locus }}".split(":");
+    const locusChrom = locusParts[0];
+    const locusPos = parseInt((locusParts[1] || "").replace(/,/g, ""), 10);
+    const locusStart = Number.isFinite(locusPos) ? Math.max(locusPos - 80, 1) : null;
+    const locusEnd = Number.isFinite(locusPos) ? locusPos + 79 : null;
+    const igvLocus = Number.isFinite(locusPos)
+      ? `${locusChrom}:${locusStart}-${locusEnd}`
+      : "{{ locus }}";
 
     var options =
       {
-          locus: "{{ locus }}",
-          // genome: "hg19",
+          locus: igvLocus,
+          genome: "hg19",
           showCenterGuide: true,
-
-          reference: {
-                  id: "hg19",
-                  fastaURL: "https://s3.amazonaws.com/igv.broadinstitute.org/genomes/seq/hg19/hg19.fasta",
-                  indexURL: "https://s3.amazonaws.com/igv.broadinstitute.org/genomes/seq/hg19/hg19.fasta.fai",
-                  cytobandURL: "https://s3.amazonaws.com/igv.broadinstitute.org/genomes/seq/hg19/cytoBand.txt"
-              },
-
-
-
           tracks:[
-            {
-              type:'alignment',
-              format: 'bam',
-              url : "{{ url_for('download_sample_bam', run_id=sample_info.run_id, sample=sample_info.lab_id) }}" ,
-              indexURL: "{{ url_for('download_sample_bai', run_id=sample_info.run_id, sample=sample_info.lab_id) }}"
-            }
+             {
+                type: "variant",
+                format: "vcf",
+                name: "{{sample_info.lab_id}} VCF",
+                url : "{{ url_for('download_merged_vcf', run_id=sample_info.run_id, sample=sample_info.lab_id) }}",
+                indexURL: "{{ url_for('download_merged_vcf_tbi', run_id=sample_info.run_id, sample=sample_info.lab_id) }}",
+                squishedCallHeight: 1,
+                expandedCallHeight: 4,
+                displayMode: "collapsed",
+                visibilityWindow: -1,
+                color: function (variant) {
+                    const svtype = variant.info["SVTYPE"];
+                    switch (svtype) {
+                        case 'DEL':
+                            return "#ff2101";
+                        case 'INS':
+                            return "#001888";
+                        case 'DUP':
+                            return "#028401";
+                        case 'INV':
+                            return "#008688";
+                        case 'CNV':
+                            return "#8931ff";
+                        case 'BND':
+                            return "#891100";
+                        default:
+                            return "#002eff";
+                    }
+                },
+                height: 40,
+              },
+              {
+                type: "seg",
+                format: "seg",
+                name: "{{sample_info.lab_id}} CNV",
+                url : "{{ url_for('download_cnv_seg', run_id=sample_info.run_id, sample=sample_info.lab_id) }}",
+                indexURL: false,
+                isLog: true,
+                squishedCallHeight: 1,
+                expandedCallHeight: 4,
+                displayMode: "collapsed",
+                height: 40,
+              },
+              {
+                type:'alignment',
+                format: 'bam',
+                name: "{{ sample_info.lab_id }} BAM",
+                url : "{{ url_for('download_sample_bam', run_id=sample_info.run_id, sample=sample_info.lab_id) }}" ,
+                indexURL: "{{ url_for('download_sample_bai', run_id=sample_info.run_id, sample=sample_info.lab_id) }}",
+                height: 500,
+                showSoftClips: true,
+                showDeletionText: true,
+                showInsertionText: true,
+                sort: Number.isFinite(locusPos) ? {
+                  chr: locusChrom,
+                  position: locusPos.toString(),
+                  option: "BASE",
+                  direction: "ASC"
+                } : undefined
+              }
           ]
       };
       setTimeout(function(){

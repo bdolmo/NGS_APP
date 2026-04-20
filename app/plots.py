@@ -72,8 +72,7 @@ def snv_plot(snv_dict, ffpe_artifacts=None):
     Bar plot of SNV transitions/transversions.
     Highlights ffpe_artifacts in red.
     """
-    if ffpe_artifacts is None:
-        ffpe_artifacts = {"C>T", "G>A"}
+    ffpe_artifacts = {"C>T", "G>A", "G>T", "C>A"}
 
     # flatten dict of dicts into list of (label, count)
     items = [

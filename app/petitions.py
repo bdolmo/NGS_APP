@@ -3,24 +3,71 @@ import os
 import time
 import re
 from flask import Flask
-from flask import request, render_template, url_for, redirect, flash, send_from_directory, make_response, jsonify
+from flask import request, render_template, url_for, redirect, flash, send_from_directory, make_response, jsonify, send_file
 from flask_wtf import FlaskForm
 import sqlite3
 from flask_sqlalchemy import SQLAlchemy
 from flask_sslify import SSLify
 from collections import defaultdict
 import redis
-from datetime import date
+from datetime import date, datetime
 import pandas as pd
 import docx
 from app.models import Petition, SampleTable, GeneVariantSummary
-
 import hashlib
 import json
+import html
+from io import BytesIO
 from app import app, db
+from sqlalchemy import or_, cast, String
 
-# db = SQLAlchemy(app)
+def _normalize_date_ddmmyyyy(raw):
+    """Normalize many date input formats to DD/MM/YYYY."""
+    if raw is None:
+        return ""
+    try:
+        if pd.isna(raw):
+            return ""
+    except Exception:
+        pass
 
+    value = str(raw).strip()
+    if not value or value in {".", "nan", "NaT", "None"}:
+        return ""
+
+    # Strip time component if present.
+    value = value.split("T")[0].split(" ")[0].strip()
+    if not value:
+        return ""
+
+    # Common explicit formats first.
+    for fmt in (
+        "%d/%m/%Y", "%d-%m-%Y", "%d.%m.%Y",
+        "%Y-%m-%d", "%Y/%m/%d", "%Y.%m.%d",
+        "%m/%d/%Y", "%m-%d-%Y", "%m.%d.%Y",
+        "%d/%m/%y", "%d-%m-%y", "%Y%m%d",
+    ):
+        try:
+            dt = datetime.strptime(value, fmt)
+            return dt.strftime("%d/%m/%Y")
+        except Exception:
+            pass
+
+    # Fallbacks for less strict incoming formats.
+    try:
+        dt = pd.to_datetime(value, errors="coerce", dayfirst=True)
+        if pd.notna(dt):
+            return dt.strftime("%d/%m/%Y")
+    except Exception:
+        pass
+    try:
+        dt = pd.to_datetime(value, errors="coerce", dayfirst=False)
+        if pd.notna(dt):
+            return dt.strftime("%d/%m/%Y")
+    except Exception:
+        pass
+
+    return ""
 
 def create_table_if_not_exists():
     """Create the table dynamically if it doesn't exist."""
@@ -126,18 +173,237 @@ def upload_xlsx_variants():
 
 @app.route('/view_config')
 def view_config():
-    """ """
-    vars_kb = GeneVariantSummary.query.all()
-    for variant in vars_kb:
-        var_kb_str = variant.data_json
-        if isinstance(var_kb_str, bytes):
-            var_kb_str = var_kb_str.decode('utf-8')  # Decode bytes to string
-            # print("here")
-            # print(var_kb_str)
-        variant.kb = json.loads(var_kb_str)
+    """Render config page; variants table is loaded server-side via AJAX."""
+    return render_template("config.html", vars_kb=[], title="Base de dades de coneixement")
 
 
-    return render_template("config.html", vars_kb=vars_kb, title="Configuració")
+@app.route('/view_config_data', methods=['GET', 'POST'])
+def view_config_data():
+    payload = request.form if request.method == "POST" else request.args
+    draw = int(payload.get("draw", 1))
+    start = int(payload.get("start", 0))
+    length = int(payload.get("length", 10) or 10)
+    if length <= 0:
+        length = 10
+
+    search_value = (payload.get("search[value]") or "").strip()
+    order_idx = int(payload.get("order[0][column]", 0))
+    order_dir = payload.get("order[0][dir]", "asc")
+
+    q = GeneVariantSummary.query
+    records_total = q.count()
+
+    if search_value:
+        s = f"%{search_value}%"
+        q = q.filter(or_(
+            GeneVariantSummary.gene.ilike(s),
+            GeneVariantSummary.hgvsp.ilike(s),
+            GeneVariantSummary.hgvsc.ilike(s),
+            GeneVariantSummary.hgvsg.ilike(s),
+            cast(GeneVariantSummary.data_json, String).ilike(s),
+        ))
+
+    records_filtered = q.count()
+
+    order_map = {
+        0: GeneVariantSummary.gene,
+        1: GeneVariantSummary.hgvsp,
+        2: GeneVariantSummary.hgvsc,
+        3: GeneVariantSummary.hgvsg,
+    }
+    col = order_map.get(order_idx, GeneVariantSummary.id)
+    q = q.order_by(col.desc() if order_dir == "desc" else col.asc())
+
+    rows = q.offset(start).limit(length).all()
+    data = []
+    for var in rows:
+        kb_raw = var.data_json
+        if isinstance(kb_raw, bytes):
+            kb_raw = kb_raw.decode("utf-8", errors="ignore")
+        try:
+            kb = json.loads(kb_raw or "{}")
+        except Exception:
+            kb = {}
+
+        def kbv(key):
+            return kb.get(key, "") or ""
+
+        variant_id = var.id or ""
+        gene = var.gene or ""
+        hgvsp = var.hgvsp or ""
+        hgvsc = var.hgvsc or ""
+        hgvsg = var.hgvsg or ""
+        cancer = kbv("Càncer")
+        cgi_summary = kbv("Oncogenic summary")
+        cgi_prediction = kbv("Oncogenic prediction")
+        oncokb = kbv("OncoKB")
+        franklin_germline = kbv("Franklin ACMG")
+        franklin_somatic = kbv("Franklin Oncogenicity")
+        mtbp = kbv("MTBP")
+        clinvar_germline = kbv("ClinVar Germline")
+        clinvar_somatic = kbv("ClinVar Somatic")
+        classified_date = kbv("Data Classificació")
+
+        actions = (
+            f'<div class="btn-group btn-group-sm">'
+            f'<button class="btn btn-outline-primary edit-button" '
+            f'data-variant-id="{variant_id}" '
+            f'data-gene="{html.escape(str(gene), quote=True)}" '
+            f'data-hgvsg="{html.escape(str(hgvsg), quote=True)}" '
+            f'data-hgvsc="{html.escape(str(hgvsc), quote=True)}" '
+            f'data-hgvsp="{html.escape(str(hgvsp), quote=True)}" '
+            f'data-cancer-type="{html.escape(str(cancer), quote=True)}" '
+            f'data-cgi-summary="{html.escape(str(cgi_summary), quote=True)}" '
+            f'data-cgi-prediction="{html.escape(str(cgi_prediction), quote=True)}" '
+            f'data-oncokb="{html.escape(str(oncokb), quote=True)}" '
+            f'data-franklin-germline="{html.escape(str(franklin_germline), quote=True)}" '
+            f'data-franklin-somatic="{html.escape(str(franklin_somatic), quote=True)}" '
+            f'data-mtbp="{html.escape(str(mtbp), quote=True)}" '
+            f'data-clinvar-germline="{html.escape(str(clinvar_germline), quote=True)}" '
+            f'data-clinvar-somatic="{html.escape(str(clinvar_somatic), quote=True)}">'
+            f'Edita</button>'
+            f'<button class="btn btn-outline-danger delete-button" data-variant-id="{variant_id}">Elimina</button>'
+            f'</div>'
+        )
+
+        data.append([
+            f"<b><i>{gene}</i></b>",
+            hgvsp,
+            hgvsc,
+            hgvsg,
+            cancer,
+            cgi_summary,
+            cgi_prediction,
+            oncokb,
+            franklin_germline,
+            franklin_somatic,
+            mtbp,
+            clinvar_germline,
+            clinvar_somatic,
+            classified_date,
+            actions,
+        ])
+
+    return jsonify({
+        "draw": draw,
+        "recordsTotal": records_total,
+        "recordsFiltered": records_filtered,
+        "data": data,
+    })
+
+
+@app.route('/download_variants_xlsx')
+def download_variants_xlsx():
+    """Download KB variants as XLSX with two sheets:
+    - Classifications: unique variant-level classifications (no sample identifiers)
+    - Sample_classifications: sample-linked classifications (with identifiers)
+    """
+    variants = GeneVariantSummary.query.order_by(GeneVariantSummary.gene.asc()).all()
+
+    def _first_value(d, *keys):
+        for key in keys:
+            value = d.get(key)
+            if value not in (None, ""):
+                return value
+        return ""
+
+    def _clean_pct(v):
+        if v in (None, ""):
+            return ""
+        s = str(v).strip()
+        return s if s.endswith("%") else s
+
+    def _lookup_tumour_purity(lab_id, ext1_id, ext2_id, run_id):
+        sample = None
+        if run_id and lab_id:
+            sample = SampleTable.query.filter_by(run_id=run_id, lab_id=lab_id).first()
+        if not sample and run_id and ext1_id:
+            sample = SampleTable.query.filter_by(run_id=run_id, ext1_id=ext1_id).first()
+        if not sample and run_id and ext2_id:
+            sample = SampleTable.query.filter_by(run_id=run_id, ext2_id=ext2_id).first()
+        if not sample and lab_id:
+            sample = SampleTable.query.filter_by(lab_id=lab_id).first()
+        if not sample and ext1_id:
+            sample = SampleTable.query.filter_by(ext1_id=ext1_id).first()
+        if not sample and ext2_id:
+            sample = SampleTable.query.filter_by(ext2_id=ext2_id).first()
+        return sample.tumour_purity if sample else ""
+
+    sample_rows = []
+    for variant in variants:
+        raw = variant.data_json
+        if isinstance(raw, bytes):
+            raw = raw.decode("utf-8", errors="ignore")
+        try:
+            kb = json.loads(raw or "{}")
+        except Exception:
+            kb = {}
+
+        lab_id = _first_value(kb, "Lab ID", "lab_id", "Patient", "Sample", "AP code", "AP_code")
+        ext1_id = _first_value(kb, "Ext1 ID", "ext1_id", "AP code", "AP_code")
+        ext2_id = _first_value(kb, "Ext2 ID", "ext2_id", "HC code", "HC_code")
+        run_id = _first_value(kb, "RUN", "Run ID", "run_id")
+        tumour_pct = _first_value(kb, "% Tumoral", "Tumour_purity", "tumour_purity", "Tumoral_pct", "tumoral_pct")
+        if not tumour_pct:
+            tumour_pct = _lookup_tumour_purity(lab_id, ext1_id, ext2_id, run_id)
+        tumour_pct = _clean_pct(tumour_pct)
+
+        sample_rows.append({
+            "Lab ID": lab_id,
+            "Ext1 ID": ext1_id,
+            "Ext2 ID": ext2_id,
+            "Run ID": run_id,
+            "% Tumoral": tumour_pct,
+            "Gene": variant.gene or "",
+            "HGVSp": variant.hgvsp or "",
+            "HGVSc": variant.hgvsc or "",
+            "HGVSg": variant.hgvsg or "",
+            "Cancer Type": _first_value(kb, "Càncer", "Cancer Type"),
+            "CGI Summary": _first_value(kb, "Oncogenic summary", "CGI Summary"),
+            "CGI Prediction": _first_value(kb, "Oncogenic prediction", "CGI Prediction"),
+            "OncoKB": kb.get("OncoKB", ""),
+            "Franklin Germline": _first_value(kb, "Franklin ACMG", "Franklin Germline"),
+            "Franklin Somatic": _first_value(kb, "Franklin Oncogenicity", "Franklin Somatic"),
+            "MTBP": kb.get("MTBP", ""),
+            "ClinVar Germline": kb.get("ClinVar Germline", ""),
+            "ClinVar Somatic": kb.get("ClinVar Somatic", ""),
+            "Date": kb.get("Data Classificació", ""),
+        })
+
+    sample_df = pd.DataFrame(sample_rows)
+
+    classification_cols = [
+        "Gene",
+        "HGVSp",
+        "HGVSc",
+        "HGVSg",
+        "Cancer Type",
+        "CGI Summary",
+        "CGI Prediction",
+        "OncoKB",
+        "Franklin Germline",
+        "Franklin Somatic",
+        "MTBP",
+        "ClinVar Germline",
+        "ClinVar Somatic",
+        "Date",
+    ]
+    classifications_df = sample_df[classification_cols].copy() if not sample_df.empty else pd.DataFrame(columns=classification_cols)
+    classifications_df = classifications_df.drop_duplicates(subset=["Gene", "HGVSp", "HGVSc", "HGVSg"], keep="first")
+
+    output = BytesIO()
+    with pd.ExcelWriter(output, engine="openpyxl") as writer:
+        classifications_df.to_excel(writer, index=False, sheet_name="Classifications")
+        sample_df.to_excel(writer, index=False, sheet_name="Sample_classifications")
+    output.seek(0)
+
+    filename = f"knowledge_variants_{date.today().isoformat()}.xlsx"
+    return send_file(
+        output,
+        as_attachment=True,
+        download_name=filename,
+        mimetype="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+    )
 
 
 @app.route('/delete_all_variants', methods=['POST'])
@@ -153,23 +419,26 @@ def delete_all_variants():
 
 @app.route('/update_variant', methods=['POST'])
 def update_variant():
-    variant_id = request.form.get('variant_id')
-    gene = request.form.get('gene')
-    hgvsg = request.form.get('hgvsg')
-    hgvsc = request.form.get('hgvsc')
-    hgvsp = request.form.get('hgvsp')
-    cgi_summary = requst.form.get('cgi_summary')
-    cgi_prediction = request.form.get('cgi_prediction')
-    cancer_type = request.form.get('cancer_type')
-    oncokb = request.form.get('oncokb')
-    franklin_germline = request.form.get('franklin_germline')
-    franklin_somatic = request.form.get('franklin_somatic')
-    mtbp = request.form.get('mtbp')
-    clinvar_germline = request.form.get('clinvar_germline')
-    clinvar_somatic = request.form.get('clinvar_somatic')
+    try:
+        variant_id = request.form.get('variant_id')
+        gene = request.form.get('gene')
+        hgvsg = request.form.get('hgvsg')
+        hgvsc = request.form.get('hgvsc')
+        hgvsp = request.form.get('hgvsp')
+        cgi_summary = request.form.get('cgi_summary')
+        cgi_prediction = request.form.get('cgi_prediction')
+        cancer_type = request.form.get('cancer_type')
+        oncokb = request.form.get('oncokb')
+        franklin_germline = request.form.get('franklin_germline')
+        franklin_somatic = request.form.get('franklin_somatic')
+        mtbp = request.form.get('mtbp')
+        clinvar_germline = request.form.get('clinvar_germline')
+        clinvar_somatic = request.form.get('clinvar_somatic')
 
-    variant = GeneVariantSummary.query.filter_by(id=variant_id).first()
-    if variant:
+        variant = GeneVariantSummary.query.filter_by(id=variant_id).first()
+        if not variant:
+            return jsonify({"success": False, "message": "Variant no trobada"}), 404
+
         variant.gene = gene
         variant.hgvsg = hgvsg
         variant.hgvsc = hgvsc
@@ -184,12 +453,12 @@ def update_variant():
             "MTBP": mtbp,
             "ClinVar Germline": clinvar_germline,
             "ClinVar Somatic": clinvar_somatic,
-        })
+        }, ensure_ascii=False)
         db.session.commit()
-        flash("Variant actualitzada correctament!", "success")
-    else:
-        flash("Variant no trobada", "danger")
-    return redirect(url_for('view_config'))
+        return jsonify({"success": True, "message": "Variant actualitzada correctament"})
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({"success": False, "message": str(e)}), 500
 
 
 @app.route('/add_variant', methods=['POST'])
@@ -219,15 +488,15 @@ def add_variant():
             hgvsp=hgvsp,
             data_json=json.dumps({
                 "Càncer": cancer_type,
-                "CGI Summary": cgi_summary,
-                "CGI Prediction": cgi_prediction,
+                "Oncogenic summary": cgi_summary,
+                "Oncogenic prediction": cgi_prediction,
                 "OncoKB": oncokb,
-                "Franklin Germline": franklin_germline,
-                "Franklin Somatic": franklin_somatic,
+                "Franklin ACMG": franklin_germline,
+                "Franklin Oncogenicity": franklin_somatic,
                 "MTBP": mtbp,
                 "ClinVar Germline": clinvar_germline,
                 "ClinVar Somatic": clinvar_somatic
-            })
+            }, ensure_ascii=False)
         )
         db.session.add(new_variant)
         db.session.commit()
@@ -257,6 +526,124 @@ def add_variant():
         return jsonify({"success": False, "message": str(e)}), 500
 
 
+def _norm_gene(g):
+    return (g or '').upper().strip()
+
+
+def _norm_hgvs(s):
+    return re.sub(r'\s+', '', (s or '')).strip()
+
+
+def make_variant_hash(gene, hgvsg, hgvsc, hgvsp):
+    payload = {
+        "gene": _norm_gene(gene),
+        "hgvsg": _norm_hgvs(hgvsg),
+        "hgvsc": _norm_hgvs(hgvsc),
+        "hgvsp": _norm_hgvs(hgvsp),
+    }
+    msg = json.dumps(payload, sort_keys=True, separators=(',', ':'))
+    return hashlib.sha256(msg.encode('utf-8')).hexdigest()
+
+
+@app.route('/api/variant_summary', methods=['POST'])
+def create_or_update_variant_summary():
+    data = request.form if request.form else request.json
+
+    gene   = data.get('kb_gene')
+    hgvsg  = data.get('kb_hgvsg')
+    hgvsc  = data.get('kb_hgvsc')
+    hgvsp  = data.get('kb_hgvsp')
+
+    # NEW: tumor type (prefer modal field, fallback to existing hidden)
+    tumor_type = (data.get('modal_edit_tumor_origin')
+                  or data.get('tumor_origin')
+                  or "")
+
+    # Date: prefer incoming DD-MM-YYYY; else default to today (Europe/Madrid) in DD-MM-YYYY
+    date_in = (data.get('data_classificacio') or '').strip()
+    if not date_in:
+        today_es = datetime.now(ZoneInfo("Europe/Madrid"))
+        date_in = today_es.strftime("%d-%m-%Y")  # DD-MM-YYYY
+
+    if not gene: 
+        return jsonify({"status": "ERROR", "id": "missing gene info", "kb": f"{gene}"}), 400
+
+    if not hgvsg: 
+        return jsonify({"status": "ERROR", "id": "missing hgvsg info", "kb": f"{hgvsg}"}), 400
+
+    if not hgvsc: 
+        return jsonify({"status": "ERROR", "id": "missing hgvsc info", "kb": f"{hgvsc}"}), 400
+
+    if not hgvsp: 
+        return jsonify({"status": "ERROR", "id": "missing hgvsp info", "kb": f"{hgvsp}"}), 400
+
+    curated_fields = {
+        "Oncogenic summary":     data.get('oncogenic_summary') or "",
+        "Oncogenic prediction":  data.get('oncogenic_prediction') or "",
+        "ClinVar Germline":      data.get('clinvar_germline') or "",
+        "ClinVar Somatic":       data.get('clinvar_somatic') or "",
+        "OncoKB":                data.get('oncokb_class') or "",
+        "Franklin ACMG":         data.get('franklin_acmg') or "",
+        "Franklin Oncogenicity": data.get('franklin_oncogenicity') or "",
+        "MTBP":                  data.get('mtbp') or "",
+        "Comentaris":            data.get('comentaris') or "",
+        "Data Classificació":    date_in,          # keep DD-MM-YYYY
+        "Especialista":          data.get('especialista') or "",
+    }
+
+    run_id = data.get('run_id')
+    sample = data.get('sample')
+
+    data_json = {
+        "Patient": sample or "",
+        "Càncer": tumor_type,                     # <-- NEW
+        "RUN": run_id or "",
+        "Data RUN": data.get('data_run') or "",
+        "Gene": gene,
+        "Isoforma": data.get('isoform') or "",
+        "HGVSp": hgvsp,
+        "HGVSg": hgvsg,
+        "HGVSc": hgvsc,
+        "Effecte": data.get('effecte') or "",
+        **curated_fields
+    }
+    try:
+        vhash = make_variant_hash(gene, hgvsg, hgvsc, hgvsp)
+    except:
+        return jsonify({"status": "ERROR", "id": "make_variant_hash", "kb": curated_fields}), 400
+    else:
+        pass
+
+    existing = GeneVariantSummary.query.filter_by(hash=vhash).first()
+    if existing:
+        existing.gene = gene
+        existing.hgvsg = hgvsg
+        existing.hgvsc = hgvsc
+        existing.hgvsp = hgvsp
+        existing.data_json = json.dumps(data_json, ensure_ascii=False)
+        db.session.commit()
+        status, gvs_id = "updated", existing.id
+    else:
+        try:
+            new = GeneVariantSummary(
+                gene=gene, hgvsg=hgvsg, hgvsc=hgvsc, hgvsp=hgvsp,
+                data_json=json.dumps(data_json, ensure_ascii=False),
+                hash=vhash,
+            )
+            db.session.add(new)
+            db.session.commit()
+            status, gvs_id = "created", new.id
+        except:
+            return jsonify({"status": "Error while introducing a new variant", "id": "Error while introducing a new variant", "kb": curated_fields}), 400
+        else:
+            pass
+
+    response_kb = dict(curated_fields)
+    response_kb["Càncer"] = tumor_type
+    return jsonify({"status": status, "id": gvs_id, "kb": response_kb}), 200
+
+
+############# Petitions
 
 @app.route('/delete_variant/<int:variant_id>', methods=['DELETE'])
 def delete_variant(variant_id):
@@ -272,68 +659,157 @@ def delete_variant(variant_id):
         db.session.rollback()
         return jsonify({"success": False, "message": str(e)}), 500
 
-# @app.route('/upload_xlsx_variants', methods=['GET', 'POST'])
-# def upload_xlsx_variants():
-#     """Route to upload and process an XLSX file."""
-#     if request.method == 'POST':
-
-#         variants_xlsx_dir = app.config['PETITIONS_DIR'] + "/variants_xlsx"
-#         if not os.path.isdir(variants_xlsx_dir):
-#             os.mkdir(variants_xlsx_dir)
-
-#         if 'xlsx_file' not in request.files:
-#             flash('No file part in the request')
-#             return redirect(request.url)
-
-#         file = request.files['xlsx_file']
-
-#         if file.filename == '':
-#             flash('No file selected')
-#             return redirect(request.url)
-
-#         if not file.filename.endswith('.xlsx'):
-#             flash('File type not supported. Please upload an XLSX file.')
-#             return redirect(request.url)
-
-#         # Save the file temporarily or process it directly
-#         file_path = os.path.join(variants_xlsx_dir, file.filename)  # Ensure 'uploads' directory exists
-#         file.save(file_path)
-
-
-#         df = pd.read_excel(file_path, engine='openpyxl', sheet_name='Variants', header=2)
-#         df = df.fillna(method='ffill', axis=0)  # resolved updating the missing row entries
-#         # df.index = pd.Series(df.index).fillna(method='ffill')
-#         # Display the first few rows of the DataFrame
-#         # print(df.head())
-#         header_variables = df.columns.tolist()
-#         # print(header_variables)
-#         df = df.applymap(lambda x: x.replace('\xa0', ' ') if isinstance(x, str) else x)
-
-#         list_of_dicts = df.to_dict(orient='records')
-#         for item in list_of_dicts:
-#             if 'HGVSp' in item:
-#                 item['HGVSp'] = item['HGVSp'].replace(" No tier ", "")
-
-
-#         # Process the file (e.g., read with pandas)
-#         try:
-#             df = pd.read_excel(file_path)
-#             # Perform operations with the dataframe (e.g., save to database)
-#             flash(f'{file.filename} uploaded and processed successfully.')
-#         except Exception as e:
-#             flash(f'Error processing file: {str(e)}')
-#             return redirect('/view_config')
-#         return redirect('/view_config')
-#     return redirect('/view_config')
 
 @app.route('/petition_menu')
 def petition_menu():
     '''
     '''
-    All_petitions = Petition.query.all()
+    return render_template("create_petition.html", title="Nova petició")
 
-    return render_template("create_petition.html", title="Nova petició",
-        petitions=All_petitions)
+
+@app.route('/download_all_petitions_xlsx', methods=['GET'])
+def download_all_petitions_xlsx():
+    rows = Petition.query.order_by(Petition.Id.desc()).all()
+    data = [{
+        "ID": p.Id or "",
+        "Petition ID": p.Petition_id or "",
+        "Date": _normalize_date_ddmmyyyy(p.Date),
+        "Petition Date": _normalize_date_ddmmyyyy(p.Petition_date),
+        "Tumour Origin": p.Tumour_origin or "",
+        "AP Code": p.AP_code or "",
+        "HC Code": p.HC_code or "",
+        "CIP Code": p.CIP_code or "",
+        "Tumour %": p.Tumour_pct or "",
+        "Volume": p.Volume or "",
+        "Conc Nanodrop": p.Conc_nanodrop or "",
+        "Ratio Nanodrop": p.Ratio_nanodrop or "",
+        "Tape Postevaluation": p.Tape_postevaluation or "",
+        "Medical Doctor": p.Medical_doctor or "",
+        "Billing Unit": p.Billing_unit or "",
+        "Medical Indication": p.Medical_indication or "",
+        "Date Original Biopsy": _normalize_date_ddmmyyyy(p.Date_original_biopsy),
+        "Service": p.Service or "",
+        "Sample Block": p.Sample_block or "",
+        "Sex": p.Sex or "",
+        "Age": p.Age or "",
+        "Modulab ID": p.Modulab_id or "",
+    } for p in rows]
+
+    df = pd.DataFrame(data)
+    output = BytesIO()
+    with pd.ExcelWriter(output, engine="openpyxl") as writer:
+        df.to_excel(writer, index=False, sheet_name="Petitions")
+    output.seek(0)
+
+    filename = f"petitions_{date.today().isoformat()}.xlsx"
+    return send_file(
+        output,
+        as_attachment=True,
+        download_name=filename,
+        mimetype="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+    )
+
+
+@app.route('/petition_menu_data', methods=['GET', 'POST'])
+def petition_menu_data():
+    payload = request.form if request.method == "POST" else request.args
+    draw = int(payload.get("draw", 1))
+    start = int(payload.get("start", 0))
+    length = int(payload.get("length", 10) or 10)
+    if length <= 0:
+        length = 10
+
+    search_value = (payload.get("search[value]") or "").strip()
+    order_idx = int(payload.get("order[0][column]", 0))
+    order_dir = payload.get("order[0][dir]", "asc")
+
+    q = Petition.query
+    records_total = q.count()
+
+    if search_value:
+        s = f"%{search_value}%"
+        q = q.filter(or_(
+            cast(Petition.Id, String).ilike(s),
+            Petition.Tumour_origin.ilike(s),
+            Petition.CIP_code.ilike(s),
+            Petition.AP_code.ilike(s),
+            Petition.HC_code.ilike(s),
+            Petition.Date.ilike(s),
+            Petition.Date_original_biopsy.ilike(s),
+            Petition.Petition_date.ilike(s),
+            Petition.Tumour_pct.ilike(s),
+            Petition.Medical_doctor.ilike(s),
+            Petition.Billing_unit.ilike(s),
+        ))
+
+    records_filtered = q.count()
+
+    order_map = {
+        0: Petition.Id,
+        1: Petition.Tumour_origin,
+        2: Petition.CIP_code,
+        3: Petition.AP_code,
+        4: Petition.HC_code,
+        5: Petition.Date,
+        6: Petition.Date_original_biopsy,
+        7: Petition.Petition_date,
+        8: Petition.Tumour_pct,
+    }
+    col = order_map.get(order_idx, Petition.Id)
+    q = q.order_by(col.desc() if order_dir == "desc" else col.asc())
+
+    rows = q.offset(start).limit(length).all()
+    data = []
+    for p in rows:
+        p_id = p.Id or ""
+        tumour_origin = p.Tumour_origin or ""
+        cip_code = p.CIP_code or ""
+        ap_code = p.AP_code or ""
+        hc_code = p.HC_code or ""
+        extraction_date = _normalize_date_ddmmyyyy(p.Date)
+        petition_date = _normalize_date_ddmmyyyy(p.Petition_date)
+        biopsy_date = _normalize_date_ddmmyyyy(p.Date_original_biopsy)
+        tumour_pct = p.Tumour_pct or ""
+        medical_doctor = p.Medical_doctor or ""
+        billing_unit = p.Billing_unit or ""
+
+        actions = (
+            f'<a role="button" onclick="updatePetition(this);" '
+            f'data-petition-id="{p_id}" '
+            f'data-tumour-origin="{html.escape(str(tumour_origin), quote=True)}" '
+            f'data-cip-code="{html.escape(str(cip_code), quote=True)}" '
+            f'data-ap-code="{html.escape(str(ap_code), quote=True)}" '
+            f'data-hc-code="{html.escape(str(hc_code), quote=True)}" '
+            f'data-extraction-date="{html.escape(str(extraction_date), quote=True)}" '
+            f'data-petition-date="{html.escape(str(petition_date), quote=True)}" '
+            f'data-biopsy-date="{html.escape(str(biopsy_date), quote=True)}" '
+            f'data-tumour-pct="{html.escape(str(tumour_pct), quote=True)}" '
+            f'data-medical-doctor="{html.escape(str(medical_doctor), quote=True)}" '
+            f'data-billing-unit="{html.escape(str(billing_unit), quote=True)}">'
+            f'<i class="fas fa-edit fa-lg" style="color:rgb(109, 106, 106)"></i></a> '
+            f'<a role="button" onclick="removePetition(this);" data-petition-id="{p_id}">'
+            f'<i class="fas fa-trash fa-lg" style="color: rgba(209, 20, 20, 0.938)"></i></a>'
+        )
+
+        data.append([
+            p_id,
+            tumour_origin,
+            cip_code,
+            f"<b>{ap_code}</b>",
+            hc_code,
+            extraction_date,
+            biopsy_date,
+            petition_date,
+            tumour_pct,
+            actions,
+        ])
+
+    return jsonify({
+        "draw": draw,
+        "recordsTotal": records_total,
+        "recordsFiltered": records_filtered,
+        "data": data,
+    })
 
 @app.route('/download_petition_example')
 #@login_required
@@ -510,12 +986,12 @@ def upload_petition():
                         Petition_id = ("PID_{}").format(extraction_date.replace("/", ""))
 
                         petition = Petition( Petition_id=Petition_id, User_id=".",
-                        Date=extraction_date, Petition_date=Petition_date, Tumour_origin=tumour_type,
+                        Date=_normalize_date_ddmmyyyy(extraction_date), Petition_date=_normalize_date_ddmmyyyy(Petition_date), Tumour_origin=tumour_type,
                         AP_code=ap_code, HC_code=hc_code, CIP_code=CIP_code, Sample_block=ap_block,
                         Tumour_pct=tumour_pct, Volume=res_volume, Conc_nanodrop=nanodrop_conc,
                         Ratio_nanodrop=nanodrop_ratio,Tape_postevaluation=post_tape_eval,
                         Medical_doctor=physician_name,Billing_unit=billing_unit,
-                        Medical_indication=tumour_type, Date_original_biopsy=Date_original_biopsy,
+                        Medical_indication=tumour_type, Date_original_biopsy=_normalize_date_ddmmyyyy(Date_original_biopsy),
                         Age=age, Sex=sex, Service=Peticionari, Modulab_id=Modulab_petition)
 
                         # Check if petition is already available
@@ -617,12 +1093,12 @@ def upload_petition():
                         Petition_id = ("PID_{}").format(extraction_date.replace("/", ""))
 
                         petition = Petition( Petition_id=Petition_id, User_id=".",
-                        Date=extraction_date, Petition_date=Petition_date, Tumour_origin=tumour_type,
+                        Date=_normalize_date_ddmmyyyy(extraction_date), Petition_date=_normalize_date_ddmmyyyy(Petition_date), Tumour_origin=tumour_type,
                         AP_code=ap_code, HC_code=hc_code, CIP_code=CIP_code, Sample_block=ap_block,
                         Tumour_pct=tumour_pct, Volume=res_volume, Conc_nanodrop=nanodrop_conc,
                         Ratio_nanodrop=nanodrop_ratio,Tape_postevaluation=post_tape_eval,
                         Medical_doctor=physician_name,Billing_unit=billing_unit,
-                        Medical_indication=tumour_type, Date_original_biopsy=Date_original_biopsy, Age=age, Sex=sex, Service=Peticionari)
+                        Medical_indication=tumour_type, Date_original_biopsy=_normalize_date_ddmmyyyy(Date_original_biopsy), Age=age, Sex=sex, Service=Peticionari)
 
                         # Check if petition is already available
                         found = Petition.query.filter_by(AP_code=ap_code)\
@@ -696,7 +1172,7 @@ def upload_legacy_petition():
                             medical_doctor = sample_dict[sample]['Medical_doctor']
                             billing_unit   = sample_dict[sample]['Billing_unit']
 
-                            petition = Petition( Petition_id=Petition_id, User_id=".", Date=date,
+                            petition = Petition( Petition_id=Petition_id, User_id=".", Date=_normalize_date_ddmmyyyy(date),
                             AP_code=ap_code, HC_code=hc_code, Tumour_pct=tumoral_pct, Volume=residual_volume,
                             Conc_nanodrop=conc_nanodrop, Ratio_nanodrop=ratio_nanodrop,
                             Tape_postevaluation=tape_postevaluation,Medical_doctor=medical_doctor,
@@ -950,26 +1426,38 @@ def create_petition():
             flash("Es requereix el codi HC", "warning")
             is_ok = False
 
+        cip_code = ""
+        if request.form.get('CIP_code'):
+            cip_code = request.form['CIP_code']
+
+        tumour_origin = ""
+        if request.form.get('Tumour_origin'):
+            tumour_origin = request.form['Tumour_origin']
+
         date = ""
         if request.form.get('Date'):
-            date = request.form['Date']
-            tmp_date = date.split("-")
-            print(str(tmp_date))
-            if len(tmp_date) != 3:
-                flash("El format de la data és incorrecte. Hauria de seguir el format dd/mm/yyyy")
+            date = _normalize_date_ddmmyyyy(request.form['Date'])
+            if not date:
+                flash("El format de la data és incorrecte. Hauria de seguir el format dd/mm/yyyy", "warning")
                 is_ok = False
-            if len(tmp_date) == 3:
-                days   = int(tmp_date[2])
-                month  = int(tmp_date[1])
-                year   = int(tmp_date[0])
-                date = str(days) + "/" + str(month) + "/" + str(year)
-                if days > 31 or month > 12:
-                    flash("El format de la data és incorrecte. Hauria de seguir el format dd/mm/yyyy")
-                    is_ok = False
         else:
             errors.append("Es requereix la data d'extracció")
             flash("Es requereix la data d'extracció", "warning")
             is_ok = False
+
+        petition_date = ""
+        if request.form.get('Petition_date'):
+            petition_date = _normalize_date_ddmmyyyy(request.form['Petition_date'])
+            if request.form.get('Petition_date') and not petition_date:
+                flash("El format de la data de petició és incorrecte. Hauria de seguir el format dd/mm/yyyy", "warning")
+                is_ok = False
+
+        date_original_biopsy = ""
+        if request.form.get('Date_original_biopsy'):
+            date_original_biopsy = _normalize_date_ddmmyyyy(request.form['Date_original_biopsy'])
+            if request.form.get('Date_original_biopsy') and not date_original_biopsy:
+                flash("El format de la data origen biòpsia és incorrecte. Hauria de seguir el format dd/mm/yyyy", "warning")
+                is_ok = False
 
         tumoral_pct = ""
         if request.form.get('Tumoral_pct'):
@@ -1022,7 +1510,10 @@ def create_petition():
             Petition_id = "PID_"+ date.replace("/", "")
             petition = Petition( Petition_id= Petition_id, User_id=".", Date=date, AP_code=ap_code, HC_code=hc_code,
             Tumour_pct=tumoral_pct, Volume=residual_volume, Conc_nanodrop=conc_nanodrop, Ratio_nanodrop=ratio_nanodrop,
-            Medical_doctor=medical_doctor, Tape_postevaluation=tape_posteval, Billing_unit=billing_unit)
+            Medical_doctor=medical_doctor, Tape_postevaluation=tape_posteval, Billing_unit=billing_unit,
+            Petition_date=petition_date, Date_original_biopsy=date_original_biopsy,
+            Tumour_origin=tumour_origin, CIP_code=cip_code, Medical_indication=".",
+            Service=".", Sample_block=".", Sex=".", Age=".", Modulab_id=".")
 
             db.session.add(petition)
             db.session.commit()
@@ -1033,113 +1524,72 @@ def create_petition():
 
     return render_template("create_petition.html", title="Nova petició", petitions=All_petitions, errors=errors)
 
-
-
 @app.route('/update_petition', methods = ['GET', 'POST'])
 #@login_required
 def update_petition():
-    errors   = []
-    is_ok = True
+    errors = []
     if request.method == "POST":
-        ap_code = ""
-        if request.form.get('edit_ap_code'):
-            ap_code = request.form['edit_ap_code']
-        else:
-            errors.append("Es requereix el codi AP")
-            flash("Es requereix el codi AP", "warning")
-            # is_ok = False
+        petition_id = (request.form.get("edit_petition_id") or "").strip()
+        ap_code = (request.form.get("edit_ap_code") or "").strip()
+        hc_code = (request.form.get("edit_hc_code") or "").strip()
+        cip_code = (request.form.get("edit_cip_code") or "").strip()
+        tumour_pct = (request.form.get("edit_tumoral_pct") or "").strip()
+        tumour_origin = (request.form.get("edit_origin_tumor") or "").strip()
+        medical_doctor = (request.form.get("edit_medical_doctor") or "").strip()
+        billing_unit = (request.form.get("edit_billing_unit") or "").strip()
+        extraction_date = (request.form.get("edit_extraction_date") or "").strip()
+        petition_date = (request.form.get("edit_petition_date") or "").strip()
+        biopsy_date = (request.form.get("edit_biopsy_petition_date") or "").strip()
 
-        hc_code = ""
-        if request.form.get('edit_hc_code'):
-            hc_code = request.form['edit_hc_code']
-        else:
-            errors.append("Es requereix el codi HC")
-            flash("Es requereix el codi HC", "warning")
-            # is_ok = False
+        if not petition_id:
+            flash("No s'ha trobat l'identificador de la petició", "warning")
+            All_petitions = Petition.query.all()
+            return render_template("create_petition.html", title="Nova petició", petitions=All_petitions, errors=errors)
 
-        cip_code = ""
-        if request.form.get('edit_cip_code'):
-            cip_code = request.form['edit_cip_code']
-        else:
-            errors.append("Es requereix el codi CIP")
-            flash("Es requereix el codi CIP", "warning")
-            # is_ok = False
-        tumour_pct = ""
-        if request.form.get('edit_tumoral_pct'):
-            tumour_pct = request.form['edit_tumoral_pct']
-        else:
-            errors.append("Es requereix l'origen tumoral")
-            flash("Es requereix l'origen tumoral", "warning")
-            # is_ok = False
+        petition = Petition.query.filter_by(Id=petition_id).first()
+        if not petition:
+            flash("No s'ha trobat la petició a editar", "warning")
+            All_petitions = Petition.query.all()
+            return render_template("create_petition.html", title="Nova petició", petitions=All_petitions, errors=errors)
 
+        old_ap_code = petition.AP_code or ""
 
-        tumour_origin = ""
-        if request.form.get('edit_origin_tumor'):
-            tumour_origin = request.form['edit_origin_tumor']
-        else:
-            errors.append("Es requereix l'origen tumoral")
-            flash("Es requereix l'origen tumoral", "warning")
-            # is_ok = False
-        print(tumour_origin)
+        petition.AP_code = ap_code
+        petition.HC_code = hc_code
+        petition.CIP_code = cip_code
+        petition.Tumour_origin = tumour_origin
+        petition.Billing_unit = billing_unit
+        petition.Medical_doctor = medical_doctor
+        petition.Tumour_pct = tumour_pct
+        if extraction_date:
+            normalized_extraction_date = _normalize_date_ddmmyyyy(extraction_date)
+            if normalized_extraction_date:
+                petition.Date = normalized_extraction_date
+        if petition_date:
+            normalized_petition_date = _normalize_date_ddmmyyyy(petition_date)
+            if normalized_petition_date:
+                petition.Petition_date = normalized_petition_date
+        if biopsy_date:
+            normalized_biopsy_date = _normalize_date_ddmmyyyy(biopsy_date)
+            if normalized_biopsy_date:
+                petition.Date_original_biopsy = normalized_biopsy_date
 
-        residual_volume = ""
-        if request.form.get('Residual_volume'):
-            residual_volume = request.form['Residual_volume']
-
-        tape_posteval = ""
-        if request.form.get('tape_postevaluation'):
-            option = request.form['tape_postevaluation']
-            if option  == "1":
-                tape_posteval = "Sí"
-            elif option == "2":
-                tape_posteval = "No"
-
-        conc_nanodrop = ""
-        if request.form.get('Nanodrop_conc'):
-            conc_nanodrop = request.form['Nanodrop_conc']
-
-        ratio_nanodrop = ""
-        if request.form.get('Nanodrop_ratio'):
-            ratio_nanodrop = request.form['Nanodrop_ratio']
-
-        medical_doctor = ""
-        if request.form.get('edit_medical_doctor'):
-            medical_doctor = request.form['edit_medical_doctor']
-
-        billing_unit = ""
-        if request.form.get('edit_billing_doctor'):
-            billing_unit = request.form['edit_billing_doctor']
-
-        if is_ok == True:
-            petition = Petition.query.filter_by(AP_code=ap_code).first()
-            if petition:
-                print("here", ap_code)
-                petition.AP_code = ap_code
-                petition.HC_code = hc_code
-                petition.CIP_code = cip_code
-                petition.Tumour_origin = tumour_origin
-                petition.billing_unit = billing_unit
-                petition.medical_doctor = medical_doctor
-                petition.Tumour_pct = tumour_pct
-
-                # db.session.add(petition)
-                db.session.commit()
-
+        sample = SampleTable.query.filter_by(ext1_id=old_ap_code).first()
+        if not sample and ap_code:
             sample = SampleTable.query.filter_by(ext1_id=ap_code).first()
-            if sample:
-                sample.ext1_id = ap_code
-                sample.ext2_id = hc_code
-                sample.ext3_id = cip_code
-                sample.diagnosis = tumour_origin
-                sample.physician_name = medical_doctor
-                sample.medical_center = billing_unit
-                db.session.commit()
-            msg = "S'ha actualitzat correctament la petició "
-            flash(msg, "success")
+        if sample:
+            sample.ext1_id = ap_code
+            sample.ext2_id = hc_code
+            sample.ext3_id = cip_code
+            sample.diagnosis = tumour_origin
+            sample.physician_name = medical_doctor
+            sample.medical_center = billing_unit
+
+        db.session.commit()
+        flash("S'ha actualitzat correctament la petició", "success")
+
     All_petitions = Petition.query.all()
-
     return render_template("create_petition.html", title="Nova petició", petitions=All_petitions, errors=errors)
-
 
 @app.route('/remove_sample/<id>', methods=["POST"])
 #@login_required

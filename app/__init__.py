@@ -17,6 +17,6 @@ app.config.from_object("config.DevelopmentConfig")
 # mail = Mail(app)
 # CORS(app)
 
-db = SQLAlchemy(app)
+db = SQLAlchemy(app, session_options={"autoflush": False})
 
-from app import panel_analysis, petitions, user, results, management, search, gene_panels, pipelines
+from app import panel_analysis, petitions, user, results, management, search, gene_panels, pipelines, llm, api, utils

@@ -1,0 +1,38 @@
+The flag 'directory' used in rule all is only valid for outputs, not inputs.
+Building DAG of jobs...
+Using shell: /usr/bin/bash
+Provided cores: 4
+Rules claiming more threads will be scaled down.
+Job stats:
+job        count
+-------  -------
+all            1
+fastqc         2
+multiqc        1
+total          4
+
+Select jobs to execute...
+
+[Mon Sep  8 02:30:39 2025]
+rule fastqc:
+    input: /ngs-results/test_snakemake/24P979-MAX_S8_L001_R2_001.fastq.gz
+    output: /ngs-results/test_snakemake/24P979-MAX_S8_L001_R2_001_fastqc.html, /ngs-results/test_snakemake/24P979-MAX_S8_L001_R2_001_fastqc.zip
+    log: /ngs-results/test_snakemake/logs/24P979-MAX_S8_L001_R2_001.fastqc.log
+    jobid: 2
+    reason: Missing output files: /ngs-results/test_snakemake/24P979-MAX_S8_L001_R2_001_fastqc.html, /ngs-results/test_snakemake/24P979-MAX_S8_L001_R2_001_fastqc.zip
+    wildcards: sample=24P979-MAX_S8_L001_R2_001
+    threads: 2
+    resources: tmpdir=/tmp
+
+
+[Mon Sep  8 02:30:39 2025]
+rule fastqc:
+    input: /ngs-results/test_snakemake/24P979-MAX_S8_L001_R1_001.fastq.gz
+    output: /ngs-results/test_snakemake/24P979-MAX_S8_L001_R1_001_fastqc.html, /ngs-results/test_snakemake/24P979-MAX_S8_L001_R1_001_fastqc.zip
+    log: /ngs-results/test_snakemake/logs/24P979-MAX_S8_L001_R1_001.fastqc.log
+    jobid: 1
+    reason: Missing output files: /ngs-results/test_snakemake/24P979-MAX_S8_L001_R1_001_fastqc.html, /ngs-results/test_snakemake/24P979-MAX_S8_L001_R1_001_fastqc.zip
+    wildcards: sample=24P979-MAX_S8_L001_R1_001
+    threads: 2
+    resources: tmpdir=/tmp
+

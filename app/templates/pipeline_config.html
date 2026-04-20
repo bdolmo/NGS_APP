@@ -14,11 +14,16 @@
   </style>
 
   <div class="row">
-    <div class="col-12 mb-3 d-flex align-items-center justify-content-between">
+    <div class="col-6 mb-3 d-flex align-items-center justify-content-between">
       <h2 class="mb-0 ml-4">{{ pipeline_name }}</h2>
     </div>
-  </div>
+    <div class="col-6 mb-3 d-flex align-items-center justify-content-between" id="columnAlert">
+      <div id="savePipelineMsg"  class="alert alert-success alert-dismissible fade show" style="display:none;">
 
+      </div>
+    </div>
+
+  </div>
 
 
   <div class="tab-content border-bottom border-start border-end p-3 rounded-bottom" id="cfgTabsContent">
@@ -26,7 +31,9 @@
     <!-- PAS 1: Enganxa i analitza -->
     <div class="tab-pane fade show active" id="define" role="tabpanel" aria-labelledby="define-tab">
       <div class="row g-3">
+        
         <div class="col-lg-3">
+          
           <div class="card shadow-sm">
             <div class="card-body">
 
@@ -40,7 +47,7 @@ python3 /home/udmmp/GC_NGS_PIPELINE/gc_ngs_pipeline.py all -s targeted --panel /
 
               <div class="d-flex gap-2 mt-2">
                 <button id="btnParseCLI" class="btn btn-sm btn-outline-primary">Parseja paràmetres</button>
-                <button id="btnClearParams" class="ml-2 btn btn-sm btn-outline-danger">Elimina</button>
+                <button id="btnClearParams" class="ml-2 btn btn-sm btn-outline-danger">Reset</button>
               </div>
               <div id="parseMsg" class="small mt-2"></div>
               <hr>
@@ -59,13 +66,13 @@ python3 /home/udmmp/GC_NGS_PIPELINE/gc_ngs_pipeline.py all -s targeted --panel /
                 <input id="p_version" class="form-control" placeholder="p. ex., 1.0.0">
               </div>
               <div class="mb-2">
-                <label class="form-label">Intèrpret</label>
+                <label class="form-label">Intèrpret *</label>
                 <input id="p_interpreter" class="form-control" placeholder="python3, bash, snakemake...">
                 <div id="interpStatus" class="small mt-1"></div>
               </div>
               <div class="mb-2">
-                <label class="form-label">Punt d’entrada</label>
-                <input id="p_entrypoint" class="form-control" placeholder="/home/udmmp/GC_NGS_PIPELINE/script.py">
+                <label class="form-label">Entrypoint</label>
+                <input id="p_entrypoint" class="form-control" placeholder="/home/udmmp/GC_NGS_PIPELINE/gc_ngs_pipeline.py">
                 <small class="text-muted">Per a Snakemake, aquest fitxer es passarà com a <code>-s</code>.</small>
               </div>
               <div class="mb-2">
@@ -86,12 +93,13 @@ python3 /home/udmmp/GC_NGS_PIPELINE/gc_ngs_pipeline.py all -s targeted --panel /
               </div>
 
               <button id="btnSavePipeline" class="btn btn-primary">Desa canvis</button>
-              <div id="savePipelineMsg" class="small mt-2"></div>
+
             </div>
           </div>
         </div>
 
         <div class="col-lg-9">
+          
           <div class="card shadow-sm">
             <div class="card-body">
               <div class="inline-chip mb-2">
@@ -112,9 +120,10 @@ python3 /home/udmmp/GC_NGS_PIPELINE/gc_ngs_pipeline.py all -s targeted --panel /
                       <th style="width:4%">Nom curt</th>
                       <th style="width:7%">Tipus</th>
                       <th style="width:12%">Default</th>
-                      <th style="width:6%">Required</th>
-                      <th style="width:6%">Posicional</th>
-                      <th style="width:6%">Posició</th>
+                      <th style="width:5%">Lock default</th>
+                      <th style="width:5%">Required</th>
+                      <th style="width:5%">Posicional</th>
+                      <th style="width:6%">Seleccionable</th>
                       <th style="width:12%">Opcions (comes)</th>
                       <th>Descripció</th>
                       <th style="width:6%"></th>
@@ -133,6 +142,7 @@ python3 /home/udmmp/GC_NGS_PIPELINE/gc_ngs_pipeline.py all -s targeted --panel /
     <div class="tab-pane fade" id="instances" role="tabpanel" aria-labelledby="instances-tab">
       <div class="row g-3">
         <div class="col-lg-4">
+
           <div class="card shadow-sm">
             <div class="card-body">
               <h5 class="card-title mb-3">Selecciona pipeline</h5>
@@ -175,6 +185,9 @@ python3 /home/udmmp/GC_NGS_PIPELINE/gc_ngs_pipeline.py all -s targeted --panel /
 <!-- Safe JSON payloads -->
 <script id="seed-json" type="application/json">{{ (seed|default({}))|tojson }}</script>
 
+
+<!-- … keep your HTML/Jinja above as-is … -->
+
 <script>
   // ---- Backend routes (Jinja) ----
   var API_PARSE_CLI        = {{ url_for('api_parse_cli')        | tojson }};
@@ -187,137 +200,296 @@ python3 /home/udmmp/GC_NGS_PIPELINE/gc_ngs_pipeline.py all -s targeted --panel /
   var API_UPDATE_PIPELINE_TPL = {{ url_for('api_update_pipeline', pipeline_id=0).replace('/0','/__ID__') | tojson }};
 
   // ---- Page state (SAFE JSON) ----
-  var MODE        = {{ mode|default('create')|tojson }};                 // "create" | "edit" | "configure"
-  var PIPELINE_ID = {{ pipeline_id|default(None)|tojson }};              // null or int
+  var MODE        = {{ mode|default('create')|tojson }};
+  var PIPELINE_ID = {{ pipeline_id|default(None)|tojson }};
   var EDITING_ID  = PIPELINE_ID || null;
 
   // ---- Tiny helpers ----
   function tbody(){ return document.querySelector('#paramsTable tbody'); }
+
   function el(tag, attrs, html){
-    var e=document.createElement(tag||'div'); attrs=attrs||{};
-    Object.keys(attrs).forEach(function(k){ if(k==='class') e.className=attrs[k]; else e.setAttribute(k, attrs[k]); });
-    if(html!=null) e.innerHTML=html;
+    var e = document.createElement(tag || 'div');
+    attrs = attrs || {};
+    Object.keys(attrs).forEach(function(k){
+      if(k === 'class') e.className = attrs[k];
+      else e.setAttribute(k, attrs[k]);
+    });
+    if(html != null) e.innerHTML = html;
     return e;
   }
-  function esc(v){ return String(v==null?'':v).replace(/"/g,'&quot;'); }
-  function getVal(id){ var x=document.getElementById(id); return x?x.value:""; }
-  function tryJSON(s, fallback){ try{ return s?JSON.parse(s):fallback }catch(e){ return fallback } }
-  function get(url){ return fetch(url).then(function(r){ return r.json(); }); }
-  function post(url, body){ return fetch(url, {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(body||{})}).then(function(r){ return r.json(); }); }
-  function put(url, body){ return fetch(url, {method:'PUT', headers:{'Content-Type':'application/json'}, body: JSON.stringify(body||{})}).then(function(r){ return r.json(); }); }
+
+  function esc(v) {
+  if (v == null) {
+    return '';
+  }
+  return String(v).replace(/"/g, '&quot;');
+}
+
+function getVal(id) {
+  var x = document.getElementById(id);
+  if (x) {
+    return x.value;
+  }
+  return "";
+}
+
+function tryJSON(s, fallback) {
+  try {
+    if (s) {
+      return JSON.parse(s);
+    }
+    return fallback;
+  } catch (e) {
+    return fallback;
+  }
+}
+
+function get(url) {
+  return fetch(url).then(function (r) {
+    return r.json();
+  });
+}
+
+function post(url, body) {
+  return fetch(url, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body || {})
+  }).then(function (r) {
+    return r.json();
+  });
+}
+
+function put(url, body) {
+  return fetch(url, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body || {})
+  }).then(function (r) {
+    return r.json();
+  });
+}
+
+
 
 
   function handleChange(selectEl) {
-  const row = selectEl.closest("tr");
-  const formatSelect = row.querySelector(".group_format");
+    const row = selectEl.closest("tr");
+    const formatSelect = row.querySelector(".group_format");
 
-  if (selectEl.value === "Input") {
-    selectEl.style.backgroundColor = "lightgreen";
-    formatSelect.disabled = false;
+    if (selectEl.value === "Input") {
+      selectEl.style.backgroundColor = "lightgreen";
+      formatSelect.disabled = false;
+      formatSelect.innerHTML = `
+        <option value=""></option>
+        <option value="FASTQ">FASTQ</option>
+        <option value="BAM">BAM</option>
+        <option value="VCF">VCF</option>
+        <option value="BED">BED</option>
+        <option value="JSON">JSON</option>
+        <option value="YAML">YAML</option>
+      `;
+    } else if (selectEl.value === "Output") {
+      selectEl.style.backgroundColor = "#FFD580";
+      formatSelect.disabled = false;
+      formatSelect.innerHTML = `
+        <option value=""></option>
+        <option value="OUTPUT_DIR">OUTPUT_DIR</option>
+      `;
+    } else if (selectEl.value === "Param") {
+      selectEl.style.backgroundColor = "#d4f1f4";
+      formatSelect.disabled = true;
+      formatSelect.innerHTML = `<option value=""></option>`;
+    } else if (selectEl.value === "Panel") {
+    
+      selectEl.style.backgroundColor = "#fab1b3";
+      formatSelect.disabled = true;
+      formatSelect.innerHTML = `<option value="PANEL">PANEL</option>`;
+    
+    } else {
+      selectEl.style.backgroundColor = "";
+      formatSelect.disabled = false;
+      formatSelect.innerHTML = `<option value=""></option>`;
+    }
+  }
 
-    // set options for Input
-    formatSelect.innerHTML = `
-      <option value=""></option>
-      <option value="FASTQ">FASTQ</option>
-      <option value="BAM">BAM</option>
-      <option value="VCF">VCF</option>
-      <option value="BED">BED</option>
-      <option value="JSON">JSON</option>
-      <option value="YAML">YAML</option>
+  // ---- Params table ----
+  function rowTpl(p){
+    p = p || {};
+
+    var type = p.type || 'string';
+    var defv = (type === 'bool') ? '' : (p.default != null ? p.default : '');
+
+    var group_name   = p.group_name   || "";
+    var group_format = p.group_format || "";
+
+    // Select background color & disabled state based on group
+    var selectColor = "";
+    var disabledAttr = "";
+    if (group_name === "Input")   selectColor = "lightgreen";
+    if (group_name === "Output")  selectColor = "#FFD580";
+    if (group_name === "Param") { selectColor = "#d4f1f4"; disabledAttr = "disabled"; }
+    if (group_name === "Panel") { selectColor = "#fab1b3";}
+
+    // Group options
+    var groupOptions = ["Param", "Input", "Output", "Panel"];
+    var optionsHtml = groupOptions.map(function(opt){
+      var sel = (group_name === opt) ? "selected" : "";
+      return `<option value="${opt}" ${sel}>${opt}</option>`;
+    }).join('');
+
+    // Format options
+    var formatsHtml = `<option value=""></option>`;
+    if (group_name === "Input") {
+      var groupFormats = ["FASTQ","BAM","VCF","BED","YAML","JSON"];
+      formatsHtml = ['<option value=""></option>']
+        .concat(groupFormats.map(function(fmt){
+          var sel = (group_format === fmt) ? "selected" : "";
+          return `<option value="${fmt}" ${sel}>${fmt}</option>`;
+        }))
+        .join('');
+    } else if (group_name === "Output") {
+      var sel = (group_format === "OUTPUT_DIR") ? "selected" : "";
+      formatsHtml = `
+        <option value=""></option>
+        <option value="OUTPUT_DIR" ${sel}>OUTPUT_DIR</option>
+      `;
+    }
+
+    // Checkboxes initial state
+    var isParamRequired = p.required  ? 'checked' : '';
+    var isSetDefault = p.is_set_default  ? 'checked' : '';
+    var isPositional = p.is_positional ? 'checked' : '';
+    var isSelectable = (p.choices && p.choices.length) ? 'checked' : '';
+    var isChoiceDone = (p.choices && p.choices.length) ? '' : 'disabled';
+
+    // Unique random IDs per row
+    const randomId = Math.floor(Math.random() * 1_000_000);
+    const idSetDefault = `checkParamSetDefault_${randomId}`;
+    const idReq    = `checkParamRequired_${randomId}`;
+    const idPos    = `checkIsPositional_${randomId}`;
+    const idSel    = `checkIsSelectable_${randomId}`;
+
+    // Build row (multiline for clarity)
+    return `
+      <td>
+        <div class="form-group">
+          <select class="form-control group_name"
+                  style="background-color:${selectColor};"
+                  aria-label="Selecciona"
+                  onchange="handleChange(this)">
+            ${optionsHtml}
+          </select>
+        </div>
+      </td>
+
+      <td>
+        <div class="form-group">
+          <select class="form-control group_format" aria-label="Selecciona" ${disabledAttr}>
+            ${formatsHtml}
+          </select>
+        </div>
+      </td>
+      <td>
+        <input class="form-control form-control-sm name"
+               placeholder=""
+               value="${esc(p.name||'')}">
+      </td>
+      <td>
+        <input class="form-control form-control-sm short"
+               placeholder=""
+               value="${esc(p.short||'')}">
+      </td>
+      <td>
+        <select class="form-control type">
+          ${['string','int','float','bool','choice','file','dir'].map(function(t){
+            var sel = (type===t) ? 'selected' : '';
+            return `<option ${sel}>${t}</option>`;
+          }).join('')}
+        </select>
+      </td>
+
+      <td>
+        <input class="form-control form-control-sm defv" value="${esc(defv)}">
+      </td>
+      <td class="text-center">
+        <div class="custom-control custom-checkbox">
+          <input id="${idSetDefault}"
+                 type="checkbox"
+                 class="custom-control-input lockdefault"
+                 ${isSetDefault}>
+          <label class="custom-control-label" for="${idSetDefault}"></label>
+        </div>
+      </td>
+
+      <td class="text-center">
+        <div class="custom-control custom-checkbox">
+          <input id="${idReq}"
+                 type="checkbox"
+                 class="custom-control-input req"
+                 ${isParamRequired}>
+          <label class="custom-control-label" for="${idReq}"></label>
+        </div>
+      </td>
+      <td class="text-center">
+        <div class="custom-control custom-checkbox">
+          <input id="${idPos}"
+                 type="checkbox"
+                 class="custom-control-input pos"
+                 ${isPositional}>
+          <label class="custom-control-label" for="${idPos}"></label>
+        </div>
+      </td>
+      <td class="text-center">
+        <div class="custom-control custom-checkbox ">
+          <input id="${idSel}"
+                 class="custom-control-input opt"
+                 type="checkbox"
+                 ${isSelectable ? 'checked' : ''}>
+          <label class="custom-control-label" for="${idSel}"></label>
+        </div>
+      </td>
+      <td>
+        <input class="form-control form-control-sm choices " ${isChoiceDone}
+               placeholder="opció1,opció2"
+               value="${esc((p.choices||[]).join(','))}">
+      </td>
+      <td>
+        <input class="form-control form-control-sm desc" value="${esc(p.description||'')}">
+      </td>
+
+      <td class="text-center">
+        <button class="btn btn-sm btn-outline-danger del" type="button">
+          <i class="fas fa-trash"></i>
+        </button>
+      </td>
     `;
-  } 
-  else if (selectEl.value === "Output") {
-    selectEl.style.backgroundColor = "#FFD580"; // light orange
-    formatSelect.disabled = false;
+  }
 
-    // set options for Output
-    formatSelect.innerHTML = `
-      <option value=""></option>
-      <option value="OUTPUT_DIR">OUTPUT_DIR</option>
-    `;
+// Toggle 'Opcions (comes)' enabled/disabled when 'Opcional' changes
+document.getElementById('paramsTable').addEventListener('change', function (e) {
+  if (!e.target.matches('input.opt')) {
+    return;
   } 
-  else if (selectEl.value === "Param") {
-    selectEl.style.backgroundColor = "#d4f1f4"; // light cyan
-    formatSelect.disabled = true;  // disable the select
-    formatSelect.innerHTML = `<option value=""></option>`; // clear options
+  const tr = e.target.closest('tr');
+  const choices = tr && tr.querySelector('.choices');
+  if (!choices) {
+    return;
+  }
+  if (e.target.checked) {
+    choices.removeAttribute('disabled');
   } 
   else {
-    // reset if no valid selection
-    selectEl.style.backgroundColor = "";
-    formatSelect.disabled = false;
-    formatSelect.innerHTML = `<option value=""></option>`;
+    choices.setAttribute('disabled', '');
+    // Optional: clear value when disabling
+    // choices.value = '';
   }
-}
-
-   // ---- Params table ----
-  function rowTpl(p){
-  p = p || {};
-  var type = p.type || 'string';
-  var defv = (type === 'bool') ? '' : (p.default != null ? p.default : '');
+});
 
 
-  var group_name = p.group_name || "";
-  var group_format = p.group_format || "";
-
-  // define the options
-  var groupOptions = ["Param", "Input", "Output"];
-  let selectColor = "";
-  let disabled = "";
-
-  var optionsHtml = groupOptions.map(function(opt) {
-    if (group_name == "Input") {
-      selectColor = "lightgreen";
-    }
-    if (group_name == "Output") {
-      selectColor = "#FFD580";
-    }
-    if (group_name == "Param") {
-      selectColor = "#d4f1f4";
-      disabled = "disabled";
-    }
-    return `<option value="${opt}" ${group_name == opt ? "selected" : ""}>${opt}</option>`;
-  }).join('');
-
-  var groupFormats = [ "FASTQ", "BAM", "VCF", "BED", "YAML", "JSON"];
-  var formatsHtml = groupFormats.map(function(fmt) {
-    if(group_name == "Input") {
-      return `<option value="${fmt}" ${group_format == fmt ? "selected" : ""}>${fmt}</option>`;
-    } 
-  }).join('');
-  if(group_name == "Output") {
-    formatsHtml =  `<option value="OUTPUT_DIR" "selected" : ""}>OUTPUT_DIR</option>`;
+  function addRow(p){
+    tbody().appendChild(el('tr', {}, rowTpl(p)));
   }
-  
-  return ''+
-    '<td>'+
-      '<div class="form-group">'+
-      `<select class="form-control group_name" style="background-color:${selectColor};" aria-label="Selecciona" onchange="handleChange(this)" >`+
-        optionsHtml +
-      '</div>'+
-    '</td>'+
-    '<td>'+
-      '<div class="form-group">'+
-      `<select class="form-control group_format" aria-label="Selecciona" ${disabled}>`+
-        formatsHtml +
-      '</div>'+
-    '</td>'+
-    '<td><input class="form-control form-control-sm name" placeholder="--flag-llarg O nom posicional" value="'+esc(p.name||'')+'"></td>'+
-    '<td><input class="form-control form-control-sm short" placeholder="s" value="'+esc(p.short||'')+'"></td>'+
-    '<td>'+
-      '<select class="form-control type">'+
-        ['string','int','float','bool','choice','file','dir'].map(function(t){ return '<option '+(type===t?'selected':'')+'>'+t+'</option>'; }).join('')+
-      '</select>'+
-    '</td>'+
-    '<td><input class="form-control form-control-sm defv" value="'+esc(defv)+'"></td>'+
-    '<td class="text-center"><input type="checkbox" class="form-check-input req" '+(p.required?'checked':'')+'></td>'+
-    '<td class="text-center"><input type="checkbox" class="form-check-input pos" '+(p.is_positional?'checked':'')+'></td>'+
-    '<td><input class="form-control form-control-sm position" type="number" value="'+esc(p.position||'')+'" disabled></td>'+
-    '<td><input disabled class="form-control form-control-sm choices" placeholder="a,b,c" value="'+esc((p.choices||[]).join(','))+'"></td>'+
-    '<td><input class="form-control form-control-sm desc" value="'+esc(p.description||'')+'"></td>'+
-    '<td class="text-center"><button class="btn btn-sm btn-outline-danger del" type="button"><i class="fas fa-trash"></i></button></td>';
-}
-
-  function addRow(p){ tbody().appendChild(el('tr', {}, rowTpl(p))); }
 
   // ---- Interpreter check ----
   function checkInterpreter(name){
@@ -360,63 +532,73 @@ python3 /home/udmmp/GC_NGS_PIPELINE/gc_ngs_pipeline.py all -s targeted --panel /
     if(arr.length){
       tbody().innerHTML = '';
       arr.forEach(addRow);
-      document.getElementById('parseMsg').innerHTML = '<span class="text-success"> ✓  S’han trobat '+arr.length+' paràmetres (seed).</span>';
+      document.getElementById('parseMsg').innerHTML =
+        '<span class="text-success"> ✓  S’han trobat '+arr.length+' paràmetres (seed).</span>';
     }
   }
 
   // ---- DOM Ready ----
   document.addEventListener('DOMContentLoaded', function(){
-
-    // Load seed safely from JSON tag
     var seedText = document.getElementById('seed-json').textContent || '{}';
     var SEED = {};
     try { SEED = JSON.parse(seedText); } catch(e) { SEED = {}; }
 
-    // Buttons (left)
     var btnParse = document.getElementById('btnParseCLI');
     var btnClear = document.getElementById('btnClearParams');
     var btnSave  = document.getElementById('btnSavePipeline');
     var pInterp  = document.getElementById('p_interpreter');
 
-    // Buttons (right)
     var btnAdd   = document.getElementById('btnAddParam');
     var btnLoad  = document.getElementById('btnLoadParams');
     var btnRender= document.getElementById('btnRenderCmd');
     var btnCfgSv = document.getElementById('btnSaveConfig');
 
     // Add param
-    btnAdd.addEventListener('click', function(){ addRow({type:'string'}); });
+    btnAdd.addEventListener('click', function(){
+      addRow({type:'string'});
+    });
 
-    
     // Clear table
     btnClear.addEventListener('click', function(){
-      tbody().innerHTML=''; document.getElementById('parseMsg').textContent='';
+      tbody().innerHTML = '';
+      document.getElementById('parseMsg').textContent = '';
     });
 
     // Remove row (event delegation)
     document.getElementById('paramsTable').addEventListener('click', function(e){
-      var btn = e.target.closest('.del'); if(btn){ btn.closest('tr').remove(); }
+      var btn = e.target.closest('.del');
+      if(btn){ btn.closest('tr').remove(); }
     });
 
     // Interpreter blur -> check
-    pInterp.addEventListener('blur', function(){ checkInterpreter(getVal('p_interpreter')); });
+    pInterp.addEventListener('blur', function(){
+      checkInterpreter(getVal('p_interpreter'));
+    });
 
     // Parse CLI
     btnParse.addEventListener('click', function(){
       var cmd = getVal('cli_text').trim();
       var msg = document.getElementById('parseMsg');
-      if(!cmd){ msg.innerHTML = '<span class="text-danger">Si us plau, enganxa una comanda.</span>'; return; }
+      if(!cmd){
+        msg.innerHTML += '<span class="text-danger">Si us plau, enganxa una comanda.</span>';
+        return;
+      }
       msg.textContent = 'Analitzant…';
 
       post(API_PARSE_CLI, { command: cmd })
         .then(function(data){
-          if(!data.ok){ msg.innerHTML = '<span class="text-danger">Error: '+esc(data.error||'desconegut')+'</span>'; return; }
+          if(!data.ok){
+            msg.innerHTML = '<span class="text-danger">Error: '+esc(data.error||'desconegut')+'</span>';
+            return;
+          }
 
           var meta = data.pipeline || {};
           var suggestedName = meta.suggested_name || '';
-          if(!document.getElementById('p_name').value) document.getElementById('p_name').value = suggestedName;
+          if(!document.getElementById('p_name').value)
+            document.getElementById('p_name').value = suggestedName;
+
           document.getElementById('p_interpreter').value = meta.interpreter || '';
-          document.getElementById('p_entrypoint').value = meta.entrypoint || '';
+          document.getElementById('p_entrypoint').value  = meta.entrypoint  || '';
           checkInterpreter(meta.interpreter || '');
 
           tbody().innerHTML = '';
@@ -432,32 +614,64 @@ python3 /home/udmmp/GC_NGS_PIPELINE/gc_ngs_pipeline.py all -s targeted --panel /
     // Save (create/update)
     btnSave.addEventListener('click', function(){
       var base = {
-        name: getVal('p_name').trim(),
-        version: getVal('p_version').trim(),
+        name:        getVal('p_name').trim(),
+        version:     getVal('p_version').trim(),
         interpreter: getVal('p_interpreter').trim(),
-        entrypoint: getVal('p_entrypoint').trim(),
-        workdir: getVal('p_workdir').trim(),
-        env_vars: tryJSON(getVal('p_env'), {}),
-        meta: tryJSON(getVal('p_meta'), {})
+        entrypoint:  getVal('p_entrypoint').trim(),
+        workdir:     getVal('p_workdir').trim(),
+        env_vars:    tryJSON(getVal('p_env'), {}),
+        meta:        tryJSON(getVal('p_meta'), {})
       };
       var msg = document.getElementById('savePipelineMsg');
-      if(!base.name){ msg.innerHTML = '<span class="text-danger">El nom és obligatori.</span>'; return; }
+      if (!msg) {
+        console.log("here");
+
+        // find where to insert
+        let toinsert = document.getElementById("columnAlert");
+        toinsert.innerHTML = `
+          <div id="savePipelineMsg"
+              class="alert alert-success alert-dismissible fade show"
+              style="display:none;" role="alert">
+          </div>
+        `;
+
+        // re-query the element we just inserted
+        msg = document.getElementById('savePipelineMsg');
+      }
+
+      // fill the alert content
+      msg.innerHTML = `
+        <strong id="show_alert_title"></strong> <p style="padding:0; margin:0;" id="show_alert_text"></p>
+        <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+          <span aria-hidden="true">&times;</span>
+        </button>
+      `;
+
+      msg.style.display = "block";
+      if(!base.name){
+        msg.innerHTML += '<span class="text-danger">El nom és obligatori.</span>';
+        return;
+      }
 
       var params = [];
       tbody().querySelectorAll('tr').forEach(function(tr){
+        var posEl = tr.querySelector('.position'); // may not exist in this UI
         params.push({
-          name: tr.querySelector('.name').value.trim(),
-          short: tr.querySelector('.short').value.trim(),
-          type: tr.querySelector('.type').value.trim(),
-          default: tr.querySelector('.defv').value,
-          required: tr.querySelector('.req').checked,
+          name:          tr.querySelector('.name').value.trim(),
+          short:         tr.querySelector('.short').value.trim(),
+          type:          tr.querySelector('.type').value.trim(),
+          default:       tr.querySelector('.defv').value,
+          required:      tr.querySelector('.req').checked,
+          lockdefault:   tr.querySelector('.lockdefault').checked,
           is_positional: tr.querySelector('.pos').checked,
-          position: tr.querySelector('.position').value ? parseInt(tr.querySelector('.position').value,10) : null,
-          choices: (tr.querySelector('.choices').value || '').split(',').map(function(s){return s.trim();}).filter(Boolean),
-          description: tr.querySelector('.desc').value,
-          group_name: tr.querySelector('.group_name').value.trim(),
-          group_format: tr.querySelector('.group_format').value.trim(),
-
+          position:      (posEl && posEl.value) ? parseInt(posEl.value,10) : null,
+          choices:       (tr.querySelector('.choices').value || '')
+                           .split(',')
+                           .map(function(s){ return s.trim(); })
+                           .filter(Boolean),
+          description:   tr.querySelector('.desc').value,
+          group_name:    tr.querySelector('.group_name').value.trim(),
+          group_format:  tr.querySelector('.group_format').value.trim()
         });
       });
 
@@ -467,15 +681,22 @@ python3 /home/udmmp/GC_NGS_PIPELINE/gc_ngs_pipeline.py all -s targeted --panel /
 
       req.then(function(data){
           if(data.ok){
-            msg.innerHTML = '<span class="text-success">Desat. ID = '+data.pipeline_id+'</span>';
+
+            let textDiv = document.getElementById("show_alert_text");
+            textDiv.innerHTML =  '<i class="fa-solid fa-check"></i>' + " S'han realitzat els canvis correctament";
+            // msg.innerHTML += '<span class="">S"han realitzat els canvis correctament</span>';
             if(!EDITING_ID){ EDITING_ID = data.pipeline_id; }
             refreshPipelineList();
-          }else{
-            msg.innerHTML = '<span class="text-danger">Error: '+esc(data.error||'desconegut')+'</span>';
+          }
+          else{
+
+            let textDiv = document.getElementById("show_alert_text");
+            textDiv.innerHTML =  '<i class="fa-solid fa-xmark"></i>' + " S'han trobat errors";
+
           }
         })
         .catch(function(err){
-          msg.innerHTML = '<span class="text-danger">Error: '+esc(err && err.message || err)+'</span>';
+          msg.innerHTML += '<span class="text-danger">Error: '+esc(err && err.message || err)+'</span>';
         });
     });
 
@@ -484,33 +705,38 @@ python3 /home/udmmp/GC_NGS_PIPELINE/gc_ngs_pipeline.py all -s targeted --panel /
 
     // Load params for selected pipeline
     btnLoad.addEventListener('click', function(){
-      var pid = document.getElementById('selPipeline').value; if(!pid) return;
+      var pid = document.getElementById('selPipeline').value;
+      if(!pid) return;
+
       var url = API_GET_PIPELINE_TPL.replace('/__ID__','/'+pid);
       get(url).then(function(data){
-
-        console.log(data);
-
         var params = data.params || [];
-        var wrap = document.getElementById('paramInputs'); wrap.innerHTML = '';
+        var wrap = document.getElementById('paramInputs');
+        wrap.innerHTML = '';
 
         params.sort(function(a,b){
           if(a.is_positional && b.is_positional){ return (a.position||0)-(b.position||0); }
-          if(a.is_positional) return -1; if(b.is_positional) return 1;
+          if(a.is_positional) return -1;
+          if(b.is_positional) return 1;
           return (a.name||'').localeCompare(b.name||'');
         });
 
         params.forEach(function(p){
           var id = 'pval_'+p.name;
           var inputHTML = '';
+
           if(p.type === 'bool'){
             inputHTML = '<input type="checkbox" class="form-check-input" id="'+id+'" '+(p.default ? 'checked':'')+'>';
           }else if(p.type === 'choice' && (p.choices||[]).length){
             inputHTML = '<select id="'+id+'" class="form-select form-select-sm">'+
-              p.choices.map(function(c){ return '<option '+(String(p.default)===String(c)?'selected':'')+'>'+esc(c)+'</option>'; }).join('')+
-              '</select>';
+              p.choices.map(function(c){
+                return '<option '+(String(p.default)===String(c)?'selected':'')+'>'+esc(c)+'</option>';
+              }).join('')+
+            '</select>';
           }else{
             inputHTML = '<input id="'+id+'" class="form-control form-control-sm" value="'+esc(p.default||'')+'">';
           }
+
           var help = p.description ? '<div class="form-text">'+esc(p.description)+'</div>' : '';
           var col = el('div', {class:'col-md-6'}, ''+
             '<label class="form-label"><b>'+(p.is_positional ? '[pos] ':'')+esc(p.name)+'</b> <small class="text-muted">'+esc(p.type)+(p.required?' *':'')+'</small></label>'+
@@ -522,41 +748,57 @@ python3 /home/udmmp/GC_NGS_PIPELINE/gc_ngs_pipeline.py all -s targeted --panel /
 
     // Render command
     btnRender.addEventListener('click', function(){
-      var pid = document.getElementById('selPipeline').value; if(!pid) return;
+      var pid = document.getElementById('selPipeline').value;
+      if(!pid) return;
+
       var url = API_GET_PIPELINE_TPL.replace('/__ID__','/'+pid);
-      get(url).then(function(data){
-        var params = data.params || [];
-        var values = {};
-        params.forEach(function(p){
-          var id = 'pval_'+p.name; var elx = document.getElementById(id); if(!elx) return;
-          if(p.type==='bool'){ values[p.name] = elx.checked; } else { values[p.name] = elx.value; }
+      get(url)
+        .then(function(data){
+          var params = data.params || [];
+          var values = {};
+          params.forEach(function(p){
+            var id = 'pval_'+p.name;
+            var elx = document.getElementById(id);
+            if(!elx) return;
+            if(p.type==='bool') values[p.name] = elx.checked;
+            else values[p.name] = elx.value;
+          });
+          return post(API_RENDER, { pipeline_id: parseInt(pid,10), values: values });
+        })
+        .then(function(j){
+          document.getElementById('cmdPreview').textContent =
+            j && j.ok ? j.command : ('ERROR: '+(j && j.error));
         });
-        return post(API_RENDER, { pipeline_id: parseInt(pid,10), values: values });
-      }).then(function(j){
-        document.getElementById('cmdPreview').textContent = j && j.ok ? j.command : ('ERROR: '+(j && j.error));
-      });
     });
 
     // Save config
     btnCfgSv.addEventListener('click', function(){
-      var pid = document.getElementById('selPipeline').value; if(!pid) return;
-      var name = document.getElementById('cfgName').value || 'config';
+      var pid = document.getElementById('selPipeline').value;
+      if(!pid) return;
 
+      var name = document.getElementById('cfgName').value || 'config';
       var url = API_GET_PIPELINE_TPL.replace('/__ID__','/'+pid);
-      get(url).then(function(data){
-        var params = data.params || [];
-        var values = {};
-        params.forEach(function(p){
-          var id = 'pval_'+p.name; var elx = document.getElementById(id); if(!elx) return;
-          if(p.type==='bool'){ values[p.name] = elx.checked; } else { values[p.name] = elx.value; }
+
+      get(url)
+        .then(function(data){
+          var params = data.params || [];
+          var values = {};
+          params.forEach(function(p){
+            var id = 'pval_'+p.name;
+            var elx = document.getElementById(id);
+            if(!elx) return;
+            if(p.type==='bool') values[p.name] = elx.checked;
+            else values[p.name] = elx.value;
+          });
+          var saveUrl = API_SAVE_CONFIG_TPL.replace('/__ID__','/'+pid);
+          return post(saveUrl, { name: name, values: values });
+        })
+        .then(function(j){
+          document.getElementById('cfgMsg').innerHTML =
+            j && j.ok
+              ? '<span class="text-success">Configuració desada #'+j.config_id+' (hash '+j.hash+')</span>'
+              : '<span class="text-danger">Error: '+esc(j && j.error || 'desconegut')+'</span>';
         });
-        var saveUrl = API_SAVE_CONFIG_TPL.replace('/__ID__','/'+pid);
-        return post(saveUrl, { name: name, values: values });
-      }).then(function(j){
-        document.getElementById('cfgMsg').innerHTML =
-          j && j.ok ? '<span class="text-success">Configuració desada #'+j.config_id+' (hash '+j.hash+')</span>'
-                    : '<span class="text-danger">Error: '+esc(j && j.error || 'desconegut')+'</span>';
-      });
     });
 
     // Seed (create mode only)
@@ -568,7 +810,7 @@ python3 /home/udmmp/GC_NGS_PIPELINE/gc_ngs_pipeline.py all -s targeted --panel /
       get(url).then(function(data){
         var p = data.pipeline || {};
         var params = data.params || [];
-        // meta
+
         document.getElementById('p_name').value        = p.name || document.getElementById('p_name').value || '';
         document.getElementById('p_version').value     = p.version || '';
         document.getElementById('p_interpreter').value = p.interpreter || '';
@@ -577,11 +819,10 @@ python3 /home/udmmp/GC_NGS_PIPELINE/gc_ngs_pipeline.py all -s targeted --panel /
         document.getElementById('p_env').value         = JSON.stringify(p.env_vars || {}, null, 2);
         document.getElementById('p_meta').value        = JSON.stringify(p.meta || {}, null, 2);
         checkInterpreter(p.interpreter || '');
-        // params table
+
         tbody().innerHTML = '';
         params.forEach(addRow);
 
-        // configure mode -> switch tab and preselect
         if(MODE === 'configure'){
           var tabBtn = document.getElementById('instances-tab');
           try{
@@ -600,7 +841,8 @@ python3 /home/udmmp/GC_NGS_PIPELINE/gc_ngs_pipeline.py all -s targeted --panel /
         }
       });
     }
-
   }); // DOMContentLoaded
 </script>
+
+
 {% endblock body %}

@@ -21,7 +21,7 @@
     <div class="card-body"> -->
       <div class="row g-2 mb-4" style="margin:0 auto;width:90%;">
         <div class="col-md-2">
-          <input id="searchBox" class="form-control" placeholder="Cerca per nom o intèrpret…">
+          <input id="searchBox" class="form-control" placeholder="Cerca">
         </div>
       </div>
     <!-- </div>
@@ -107,7 +107,7 @@
     if (p.interpreter == "python3") {
        p.interpreter = `<span class="badge badge-primary">python3</span>`;
     }
-    if (p.interpreter == "snakemake") {
+    if (p.interpreter.toLowerCase().includes("snakemake")) {
       p.interpreter = `<span class="badge badge-success">snakemake</span>`;
     }
 

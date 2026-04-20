@@ -1,0 +1,24 @@
+Building DAG of jobs...
+Using shell: /usr/bin/bash
+Provided cores: 8
+Rules claiming more threads will be scaled down.
+Job stats:
+job                  count
+-----------------  -------
+all                      1
+create_pdf_report        1
+total                    2
+
+Select jobs to execute...
+
+[Mon Sep 22 10:01:27 2025]
+rule create_pdf_report:
+    input: /ngs-results/TEST_MICROBIOLOGY_QC/qc_summary.tsv
+    output: /ngs-results/TEST_MICROBIOLOGY_QC/qc_report.pdf
+    jobid: 17
+    reason: Missing output files: /ngs-results/TEST_MICROBIOLOGY_QC/qc_report.pdf
+    resources: tmpdir=/tmp
+
+Shutting down, this might take some time.
+Exiting because a job execution failed. Look above for error message
+Complete log: .snakemake/log/2025-09-22T100127.083187.snakemake.log

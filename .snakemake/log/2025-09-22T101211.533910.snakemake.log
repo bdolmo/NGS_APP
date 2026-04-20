@@ -1,0 +1,37 @@
+Building DAG of jobs...
+Using shell: /usr/bin/bash
+Provided cores: 8
+Rules claiming more threads will be scaled down.
+Job stats:
+job                  count
+-----------------  -------
+all                      1
+create_pdf_report        1
+total                    2
+
+Select jobs to execute...
+
+[Mon Sep 22 10:12:11 2025]
+rule create_pdf_report:
+    input: /ngs-results/TEST_MICROBIOLOGY_2/qc_summary.tsv
+    output: /ngs-results/TEST_MICROBIOLOGY_2/qc_report.pdf
+    jobid: 10
+    reason: Missing output files: /ngs-results/TEST_MICROBIOLOGY_2/qc_report.pdf
+    resources: tmpdir=/tmp
+
+[Mon Sep 22 10:12:12 2025]
+Finished job 10.
+1 of 2 steps (50%) done
+Select jobs to execute...
+
+[Mon Sep 22 10:12:12 2025]
+localrule all:
+    input: /ngs-results/TEST_MICROBIOLOGY_2/fastqc_raw/CTC7065DS_S57_R1_fastqc.html, /ngs-results/TEST_MICROBIOLOGY_2/fastqc_trimmed/CTC7065DS_S57_R1_fastqc.html, /ngs-results/TEST_MICROBIOLOGY_2/fastp/CTC7065DS_S57.fastp.html, /ngs-results/TEST_MICROBIOLOGY_2/seqkit/CTC7065DS_S57.raw.seqkit.txt, /ngs-results/TEST_MICROBIOLOGY_2/seqkit/CTC7065DS_S57.trimmed.seqkit.txt, /ngs-results/TEST_MICROBIOLOGY_2/kraken2/CTC7065DS_S57.kreport.txt, /ngs-results/TEST_MICROBIOLOGY_2/kraken2/CTC7065DS_S57.kraken.txt, /ngs-results/TEST_MICROBIOLOGY_2/qc_summary.tsv, /ngs-results/TEST_MICROBIOLOGY_2/multiqc_report.html, /ngs-results/TEST_MICROBIOLOGY_2/multiqc_data, /ngs-results/TEST_MICROBIOLOGY_2/qc_report.pdf
+    jobid: 0
+    reason: Input files updated by another job: /ngs-results/TEST_MICROBIOLOGY_2/qc_report.pdf
+    resources: tmpdir=/tmp
+
+[Mon Sep 22 10:12:12 2025]
+Finished job 0.
+2 of 2 steps (100%) done
+Complete log: .snakemake/log/2025-09-22T101211.533910.snakemake.log

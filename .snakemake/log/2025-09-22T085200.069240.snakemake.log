@@ -1,0 +1,164 @@
+Building DAG of jobs...
+Using shell: /usr/bin/bash
+Provided cores: 8
+Rules claiming more threads will be scaled down.
+Job stats:
+job                      count
+---------------------  -------
+all                          1
+create_pdf_report            1
+fastp                        1
+fastqc_trimmed               1
+kraken2                      2
+multiqc                      1
+qc_summary_merge             1
+qc_summary_per_sample        2
+seqkit_trimmed               1
+total                       11
+
+Select jobs to execute...
+
+[Mon Sep 22 08:52:00 2025]
+rule kraken2:
+    input: /ngs-results/TEST_MICROBIOLOGY_QC/trimmed/CTC7064DS_S56.R1.trimmed.fastq.gz, /ngs-results/TEST_MICROBIOLOGY_QC/trimmed/CTC7064DS_S56.R2.trimmed.fastq.gz
+    output: /ngs-results/TEST_MICROBIOLOGY_QC/kraken2/CTC7064DS_S56.kreport.txt, /ngs-results/TEST_MICROBIOLOGY_QC/kraken2/CTC7064DS_S56.kraken.txt
+    log: /ngs-results/TEST_MICROBIOLOGY_QC/logs/CTC7064DS_S56.kraken2.log
+    jobid: 11
+    reason: Missing output files: /ngs-results/TEST_MICROBIOLOGY_QC/kraken2/CTC7064DS_S56.kraken.txt, /ngs-results/TEST_MICROBIOLOGY_QC/kraken2/CTC7064DS_S56.kreport.txt
+    wildcards: sample=CTC7064DS_S56
+    threads: 8
+    resources: tmpdir=/tmp
+
+[Mon Sep 22 08:52:59 2025]
+Finished job 11.
+1 of 11 steps (9%) done
+Select jobs to execute...
+
+[Mon Sep 22 08:52:59 2025]
+rule fastp:
+    input: /ngs-results/TEST_MICROBIOLOGY_QC/CTC7065DS_S57_R1_001.fastq.gz, /ngs-results/TEST_MICROBIOLOGY_QC/CTC7065DS_S57_R2_001.fastq.gz
+    output: /ngs-results/TEST_MICROBIOLOGY_QC/trimmed/CTC7065DS_S57.R1.trimmed.fastq.gz, /ngs-results/TEST_MICROBIOLOGY_QC/trimmed/CTC7065DS_S57.R2.trimmed.fastq.gz, /ngs-results/TEST_MICROBIOLOGY_QC/fastp/CTC7065DS_S57.fastp.html, /ngs-results/TEST_MICROBIOLOGY_QC/fastp/CTC7065DS_S57.fastp.json
+    log: /ngs-results/TEST_MICROBIOLOGY_QC/logs/CTC7065DS_S57.fastp.log
+    jobid: 6
+    reason: Missing output files: /ngs-results/TEST_MICROBIOLOGY_QC/fastp/CTC7065DS_S57.fastp.json, /ngs-results/TEST_MICROBIOLOGY_QC/trimmed/CTC7065DS_S57.R2.trimmed.fastq.gz, /ngs-results/TEST_MICROBIOLOGY_QC/trimmed/CTC7065DS_S57.R1.trimmed.fastq.gz, /ngs-results/TEST_MICROBIOLOGY_QC/fastp/CTC7065DS_S57.fastp.html
+    wildcards: sample=CTC7065DS_S57
+    threads: 8
+    resources: tmpdir=/tmp
+
+[Mon Sep 22 08:54:01 2025]
+Finished job 6.
+2 of 11 steps (18%) done
+Select jobs to execute...
+
+[Mon Sep 22 08:54:01 2025]
+rule seqkit_trimmed:
+    input: /ngs-results/TEST_MICROBIOLOGY_QC/trimmed/CTC7065DS_S57.R1.trimmed.fastq.gz, /ngs-results/TEST_MICROBIOLOGY_QC/trimmed/CTC7065DS_S57.R2.trimmed.fastq.gz
+    output: /ngs-results/TEST_MICROBIOLOGY_QC/seqkit/CTC7065DS_S57.trimmed.seqkit.txt
+    jobid: 10
+    reason: Missing output files: /ngs-results/TEST_MICROBIOLOGY_QC/seqkit/CTC7065DS_S57.trimmed.seqkit.txt; Input files updated by another job: /ngs-results/TEST_MICROBIOLOGY_QC/trimmed/CTC7065DS_S57.R2.trimmed.fastq.gz, /ngs-results/TEST_MICROBIOLOGY_QC/trimmed/CTC7065DS_S57.R1.trimmed.fastq.gz
+    wildcards: sample=CTC7065DS_S57
+    resources: tmpdir=/tmp
+
+
+[Mon Sep 22 08:54:01 2025]
+rule fastqc_trimmed:
+    input: /ngs-results/TEST_MICROBIOLOGY_QC/trimmed/CTC7065DS_S57.R1.trimmed.fastq.gz, /ngs-results/TEST_MICROBIOLOGY_QC/trimmed/CTC7065DS_S57.R2.trimmed.fastq.gz
+    output: /ngs-results/TEST_MICROBIOLOGY_QC/fastqc_trimmed/CTC7065DS_S57_R1_fastqc.html, /ngs-results/TEST_MICROBIOLOGY_QC/fastqc_trimmed/CTC7065DS_S57_R2_fastqc.html
+    log: /ngs-results/TEST_MICROBIOLOGY_QC/logs/CTC7065DS_S57.fastqc_trimmed.log
+    jobid: 5
+    reason: Missing output files: /ngs-results/TEST_MICROBIOLOGY_QC/fastqc_trimmed/CTC7065DS_S57_R1_fastqc.html; Input files updated by another job: /ngs-results/TEST_MICROBIOLOGY_QC/trimmed/CTC7065DS_S57.R2.trimmed.fastq.gz, /ngs-results/TEST_MICROBIOLOGY_QC/trimmed/CTC7065DS_S57.R1.trimmed.fastq.gz
+    wildcards: sample=CTC7065DS_S57
+    threads: 4
+    resources: tmpdir=/tmp
+
+
+[Mon Sep 22 08:54:01 2025]
+rule qc_summary_per_sample:
+    input: /ngs-results/TEST_MICROBIOLOGY_QC/fastp/CTC7064DS_S56.fastp.json, /ngs-results/TEST_MICROBIOLOGY_QC/kraken2/CTC7064DS_S56.kreport.txt
+    output: /ngs-results/TEST_MICROBIOLOGY_QC/tmp/CTC7064DS_S56.qc.tsv
+    log: /ngs-results/TEST_MICROBIOLOGY_QC/logs/CTC7064DS_S56.qc_summary.log
+    jobid: 14
+    reason: Missing output files: /ngs-results/TEST_MICROBIOLOGY_QC/tmp/CTC7064DS_S56.qc.tsv; Input files updated by another job: /ngs-results/TEST_MICROBIOLOGY_QC/kraken2/CTC7064DS_S56.kreport.txt
+    wildcards: sample=CTC7064DS_S56
+    resources: tmpdir=/tmp
+
+[Mon Sep 22 08:54:01 2025]
+Finished job 14.
+3 of 11 steps (27%) done
+Select jobs to execute...
+[Mon Sep 22 08:54:08 2025]
+Finished job 10.
+4 of 11 steps (36%) done
+[Mon Sep 22 08:54:39 2025]
+Finished job 5.
+5 of 11 steps (45%) done
+
+[Mon Sep 22 08:54:39 2025]
+rule kraken2:
+    input: /ngs-results/TEST_MICROBIOLOGY_QC/trimmed/CTC7065DS_S57.R1.trimmed.fastq.gz, /ngs-results/TEST_MICROBIOLOGY_QC/trimmed/CTC7065DS_S57.R2.trimmed.fastq.gz
+    output: /ngs-results/TEST_MICROBIOLOGY_QC/kraken2/CTC7065DS_S57.kreport.txt, /ngs-results/TEST_MICROBIOLOGY_QC/kraken2/CTC7065DS_S57.kraken.txt
+    log: /ngs-results/TEST_MICROBIOLOGY_QC/logs/CTC7065DS_S57.kraken2.log
+    jobid: 12
+    reason: Missing output files: /ngs-results/TEST_MICROBIOLOGY_QC/kraken2/CTC7065DS_S57.kraken.txt, /ngs-results/TEST_MICROBIOLOGY_QC/kraken2/CTC7065DS_S57.kreport.txt; Input files updated by another job: /ngs-results/TEST_MICROBIOLOGY_QC/trimmed/CTC7065DS_S57.R2.trimmed.fastq.gz, /ngs-results/TEST_MICROBIOLOGY_QC/trimmed/CTC7065DS_S57.R1.trimmed.fastq.gz
+    wildcards: sample=CTC7065DS_S57
+    threads: 8
+    resources: tmpdir=/tmp
+
+[Mon Sep 22 08:55:23 2025]
+Finished job 12.
+6 of 11 steps (55%) done
+Select jobs to execute...
+
+[Mon Sep 22 08:55:23 2025]
+rule qc_summary_per_sample:
+    input: /ngs-results/TEST_MICROBIOLOGY_QC/fastp/CTC7065DS_S57.fastp.json, /ngs-results/TEST_MICROBIOLOGY_QC/kraken2/CTC7065DS_S57.kreport.txt
+    output: /ngs-results/TEST_MICROBIOLOGY_QC/tmp/CTC7065DS_S57.qc.tsv
+    log: /ngs-results/TEST_MICROBIOLOGY_QC/logs/CTC7065DS_S57.qc_summary.log
+    jobid: 15
+    reason: Missing output files: /ngs-results/TEST_MICROBIOLOGY_QC/tmp/CTC7065DS_S57.qc.tsv; Input files updated by another job: /ngs-results/TEST_MICROBIOLOGY_QC/kraken2/CTC7065DS_S57.kreport.txt, /ngs-results/TEST_MICROBIOLOGY_QC/fastp/CTC7065DS_S57.fastp.json
+    wildcards: sample=CTC7065DS_S57
+    resources: tmpdir=/tmp
+
+[Mon Sep 22 08:55:24 2025]
+Finished job 15.
+7 of 11 steps (64%) done
+Select jobs to execute...
+
+[Mon Sep 22 08:55:24 2025]
+rule qc_summary_merge:
+    input: /ngs-results/TEST_MICROBIOLOGY_QC/tmp/CTC7064DS_S56.qc.tsv, /ngs-results/TEST_MICROBIOLOGY_QC/tmp/CTC7065DS_S57.qc.tsv
+    output: /ngs-results/TEST_MICROBIOLOGY_QC/qc_summary.tsv
+    jobid: 13
+    reason: Missing output files: /ngs-results/TEST_MICROBIOLOGY_QC/qc_summary.tsv; Input files updated by another job: /ngs-results/TEST_MICROBIOLOGY_QC/tmp/CTC7064DS_S56.qc.tsv, /ngs-results/TEST_MICROBIOLOGY_QC/tmp/CTC7065DS_S57.qc.tsv
+    resources: tmpdir=/tmp
+
+[Mon Sep 22 08:55:24 2025]
+Finished job 13.
+8 of 11 steps (73%) done
+Removing temporary output /ngs-results/TEST_MICROBIOLOGY_QC/tmp/CTC7064DS_S56.qc.tsv.
+Removing temporary output /ngs-results/TEST_MICROBIOLOGY_QC/tmp/CTC7065DS_S57.qc.tsv.
+Select jobs to execute...
+
+[Mon Sep 22 08:55:24 2025]
+rule multiqc:
+    input: /ngs-results/TEST_MICROBIOLOGY_QC/fastqc_raw/CTC7064DS_S56_R1_fastqc.html, /ngs-results/TEST_MICROBIOLOGY_QC/fastqc_raw/CTC7065DS_S57_R1_fastqc.html, /ngs-results/TEST_MICROBIOLOGY_QC/fastp/CTC7064DS_S56.fastp.json, /ngs-results/TEST_MICROBIOLOGY_QC/fastp/CTC7065DS_S57.fastp.json, /ngs-results/TEST_MICROBIOLOGY_QC/kraken2/CTC7064DS_S56.kreport.txt, /ngs-results/TEST_MICROBIOLOGY_QC/kraken2/CTC7065DS_S57.kreport.txt, /ngs-results/TEST_MICROBIOLOGY_QC/qc_summary.tsv
+    output: /ngs-results/TEST_MICROBIOLOGY_QC/multiqc_report.html, /ngs-results/TEST_MICROBIOLOGY_QC/multiqc_data
+    jobid: 16
+    reason: Missing output files: /ngs-results/TEST_MICROBIOLOGY_QC/multiqc_report.html, /ngs-results/TEST_MICROBIOLOGY_QC/multiqc_data; Input files updated by another job: /ngs-results/TEST_MICROBIOLOGY_QC/qc_summary.tsv, /ngs-results/TEST_MICROBIOLOGY_QC/kraken2/CTC7064DS_S56.kreport.txt, /ngs-results/TEST_MICROBIOLOGY_QC/kraken2/CTC7065DS_S57.kreport.txt, /ngs-results/TEST_MICROBIOLOGY_QC/fastp/CTC7065DS_S57.fastp.json
+    resources: tmpdir=/tmp
+
+
+[Mon Sep 22 08:55:24 2025]
+rule create_pdf_report:
+    input: /ngs-results/TEST_MICROBIOLOGY_QC/qc_summary.tsv
+    output: /ngs-results/TEST_MICROBIOLOGY_QC/qc_report.pdf
+    jobid: 17
+    reason: Missing output files: /ngs-results/TEST_MICROBIOLOGY_QC/qc_report.pdf; Input files updated by another job: /ngs-results/TEST_MICROBIOLOGY_QC/qc_summary.tsv
+    resources: tmpdir=/tmp
+
+[Mon Sep 22 08:55:35 2025]
+Finished job 16.
+9 of 11 steps (82%) done
+Shutting down, this might take some time.
+Exiting because a job execution failed. Look above for error message
+Complete log: .snakemake/log/2025-09-22T085200.069240.snakemake.log

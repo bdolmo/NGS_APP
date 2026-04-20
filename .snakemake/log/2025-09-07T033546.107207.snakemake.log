@@ -1,0 +1,71 @@
+The flag 'directory' used in rule all is only valid for outputs, not inputs.
+Building DAG of jobs...
+Using shell: /usr/bin/bash
+Provided cores: 4
+Rules claiming more threads will be scaled down.
+Job stats:
+job        count
+-------  -------
+all            1
+fastqc         2
+multiqc        1
+total          4
+
+Select jobs to execute...
+
+[Sun Sep  7 03:35:46 2025]
+rule fastqc:
+    input: /ngs-results/TEST_SNAKEMAKE_5/24P979-MAX_S8_L001_R2_001.fastq.gz
+    output: /ngs-results/TEST_SNAKEMAKE_5/24P979-MAX_S8_L001_R2_001_fastqc.html, /ngs-results/TEST_SNAKEMAKE_5/24P979-MAX_S8_L001_R2_001_fastqc.zip
+    log: /ngs-results/TEST_SNAKEMAKE_5/logs/24P979-MAX_S8_L001_R2_001.fastqc.log
+    jobid: 2
+    reason: Missing output files: /ngs-results/TEST_SNAKEMAKE_5/24P979-MAX_S8_L001_R2_001_fastqc.html, /ngs-results/TEST_SNAKEMAKE_5/24P979-MAX_S8_L001_R2_001_fastqc.zip
+    wildcards: sample=24P979-MAX_S8_L001_R2_001
+    threads: 2
+    resources: tmpdir=/tmp
+
+
+[Sun Sep  7 03:35:46 2025]
+rule fastqc:
+    input: /ngs-results/TEST_SNAKEMAKE_5/24P979-MAX_S8_L001_R1_001.fastq.gz
+    output: /ngs-results/TEST_SNAKEMAKE_5/24P979-MAX_S8_L001_R1_001_fastqc.html, /ngs-results/TEST_SNAKEMAKE_5/24P979-MAX_S8_L001_R1_001_fastqc.zip
+    log: /ngs-results/TEST_SNAKEMAKE_5/logs/24P979-MAX_S8_L001_R1_001.fastqc.log
+    jobid: 1
+    reason: Missing output files: /ngs-results/TEST_SNAKEMAKE_5/24P979-MAX_S8_L001_R1_001_fastqc.html, /ngs-results/TEST_SNAKEMAKE_5/24P979-MAX_S8_L001_R1_001_fastqc.zip
+    wildcards: sample=24P979-MAX_S8_L001_R1_001
+    threads: 2
+    resources: tmpdir=/tmp
+
+[Sun Sep  7 03:35:54 2025]
+Finished job 1.
+1 of 4 steps (25%) done
+[Sun Sep  7 03:35:55 2025]
+Finished job 2.
+2 of 4 steps (50%) done
+Select jobs to execute...
+
+[Sun Sep  7 03:35:55 2025]
+rule multiqc:
+    input: /ngs-results/TEST_SNAKEMAKE_5/24P979-MAX_S8_L001_R1_001_fastqc.html, /ngs-results/TEST_SNAKEMAKE_5/24P979-MAX_S8_L001_R2_001_fastqc.html, /ngs-results/TEST_SNAKEMAKE_5/24P979-MAX_S8_L001_R1_001_fastqc.zip, /ngs-results/TEST_SNAKEMAKE_5/24P979-MAX_S8_L001_R2_001_fastqc.zip
+    output: /ngs-results/TEST_SNAKEMAKE_5/multiqc_report.html, /ngs-results/TEST_SNAKEMAKE_5/multiqc_data
+    log: /ngs-results/TEST_SNAKEMAKE_5/logs/multiqc.log
+    jobid: 3
+    reason: Missing output files: /ngs-results/TEST_SNAKEMAKE_5/multiqc_data, /ngs-results/TEST_SNAKEMAKE_5/multiqc_report.html; Input files updated by another job: /ngs-results/TEST_SNAKEMAKE_5/24P979-MAX_S8_L001_R1_001_fastqc.html, /ngs-results/TEST_SNAKEMAKE_5/24P979-MAX_S8_L001_R2_001_fastqc.html, /ngs-results/TEST_SNAKEMAKE_5/24P979-MAX_S8_L001_R1_001_fastqc.zip, /ngs-results/TEST_SNAKEMAKE_5/24P979-MAX_S8_L001_R2_001_fastqc.zip
+    resources: tmpdir=/tmp
+
+[Sun Sep  7 03:35:57 2025]
+Finished job 3.
+3 of 4 steps (75%) done
+Select jobs to execute...
+
+[Sun Sep  7 03:35:57 2025]
+localrule all:
+    input: /ngs-results/TEST_SNAKEMAKE_5/24P979-MAX_S8_L001_R1_001_fastqc.html, /ngs-results/TEST_SNAKEMAKE_5/24P979-MAX_S8_L001_R2_001_fastqc.html, /ngs-results/TEST_SNAKEMAKE_5/24P979-MAX_S8_L001_R1_001_fastqc.zip, /ngs-results/TEST_SNAKEMAKE_5/24P979-MAX_S8_L001_R2_001_fastqc.zip, /ngs-results/TEST_SNAKEMAKE_5/multiqc_report.html, /ngs-results/TEST_SNAKEMAKE_5/multiqc_data
+    jobid: 0
+    reason: Input files updated by another job: /ngs-results/TEST_SNAKEMAKE_5/24P979-MAX_S8_L001_R2_001_fastqc.zip, /ngs-results/TEST_SNAKEMAKE_5/multiqc_report.html, /ngs-results/TEST_SNAKEMAKE_5/24P979-MAX_S8_L001_R1_001_fastqc.html, /ngs-results/TEST_SNAKEMAKE_5/multiqc_data, /ngs-results/TEST_SNAKEMAKE_5/24P979-MAX_S8_L001_R2_001_fastqc.html, /ngs-results/TEST_SNAKEMAKE_5/24P979-MAX_S8_L001_R1_001_fastqc.zip
+    resources: tmpdir=/tmp
+
+[Sun Sep  7 03:35:57 2025]
+Finished job 0.
+4 of 4 steps (100%) done
+Complete log: .snakemake/log/2025-09-07T033546.107207.snakemake.log

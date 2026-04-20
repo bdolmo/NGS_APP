@@ -159,6 +159,7 @@
   const DOWNLOAD_LOG_URL  = "{{ url_for('download_log', job_id='__RUN__') }}";
   const IS_ADMIN          = {{ 'true' if session.get('user') == 'admin' else 'false' }};
   const API_STOP_JOB      = "{{ url_for('api_stop_job', queue_id='__Q__') }}";
+  const API_RERUN_JOB     = "{{ url_for('api_rerun_job', queue_id='__Q__') }}";
 
 </script>
 
@@ -242,6 +243,12 @@ function renderCard(job) {
       <i class="fas fa-edit"></i> Canvia status
     </button>` : ``;
 
+  const outputFolder = `
+    <a class="btn btn-sm btn-outline-warning" style="text-decoration:none;color:inherit; "href="/workflows/tree_view?job_id=${job.Job_id}&panel=${job.Panel}">
+      <i class=" fas fa-folder" style="color:#F8D775"></i> 
+    </a>
+  `;
+
   const logBtns = job.HasLog ? `
     <button class="btn btn-sm btn-outline-secondary">
       <a href="${dlHref}" style="text-decoration:none;color:inherit;">
@@ -265,6 +272,14 @@ function renderCard(job) {
             data-job-id="${job.Job_id}">
       <i class="fas fa-stop-circle text-primary"></i>
     </button>` : ``;
+  const rerunnable = !['started','running','queued','deferred','scheduled'].includes((job.Status||'').toLowerCase());
+  const rerunBtn = (rerunnable && job.Queue_id) ? `
+    <button class="btn btn-link p-0 rerun-job-btn"
+            title="Reanalitza job"
+            data-queue-id="${job.Queue_id}"
+            data-job-id="${job.Job_id}">
+      <i class="fas fa-redo-alt text-primary"></i>
+    </button>` : ``;
 
   return `
   <div class="col-md-4 job-card-container">
@@ -284,15 +299,17 @@ function renderCard(job) {
             <p style="margin:1px;" class="card-text"><b>Date:</b> ${job.Date || ''}</p>
             <p style="margin:1px;" class="card-text"><b>Panel:</b> ${job.Panel || ''}</p>
             <p style="margin:1px;" class="card-text"><b>N Samples:</b> ${job.Samples ?? ''}</p>
+            ${outputFolder}
             ${logBtns}
             ${cfgBtnHTML(job)}
           </div>
           <div class="col-2">
+            ${rerunBtn}
+            ${stopBtn}
             <a href="${removeHref}" role="button"
                onclick="return confirm('Segur que vols eliminar aquest RUN?');">
               <i class="fas fa-trash text-danger"></i>
             </a>
-            ${stopBtn}
             ${adminBtn}
           </div>
         </div>
@@ -303,7 +320,7 @@ function renderCard(job) {
 
 function cfgBtnHTML(job){
   return job.HasConfig ? `
-    <button class="btn btn-sm btn-outline-primary view-config-btn" data-job-id="${job.Job_id}">
+    <button class="btn btn-sm btn-outline-primary view-config-btn" data-job-id="${job.Job_id}" data-queue-id="${job.Queue_id || ''}">
       <i class="fas fa-cogs"></i> Conf. Anàlisi
     </button>` : ``;
 }
@@ -331,6 +348,30 @@ document.addEventListener('click', async (e) => {
     fetchJobs(false);
   } catch (err) {
     alert('Error de xarxa al parar el job: ' + err.message);
+  }
+});
+
+document.addEventListener('click', async (e) => {
+  const btn = e.target.closest('.rerun-job-btn');
+  if (!btn) return;
+
+  const queueId = btn.getAttribute('data-queue-id');
+  const jobId   = btn.getAttribute('data-job-id') || '';
+  if (!queueId) return;
+
+  if (!confirm(`Vols reanalitzar el job ${jobId || queueId}?`)) return;
+
+  try {
+    const url = API_RERUN_JOB.replace('__Q__', encodeURIComponent(queueId));
+    const r = await fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' } });
+    const j = await r.json();
+    if (!j.ok) {
+      alert('No s’ha pogut reanalitzar: ' + (j.error || 'Error desconegut'));
+      return;
+    }
+    fetchJobs(false);
+  } catch (err) {
+    alert('Error de xarxa al reanalitzar el job: ' + err.message);
   }
 });
 
@@ -499,12 +540,14 @@ document.addEventListener('click', async (e) => {
   const btn = e.target.closest('.view-config-btn');
   if (!btn) return;
   const jobId = btn.getAttribute('data-job-id');
+  const queueId = btn.getAttribute('data-queue-id') || '';
   const modalEl   = document.getElementById('configModal');
   const modalBody = modalEl.querySelector('.modal-body');
   const bsModal   = new bootstrap.Modal(modalEl);
 
   try {
-    const r = await fetch(`/api/job/${encodeURIComponent(jobId)}/config`);
+    const query = queueId ? `?queue_id=${encodeURIComponent(queueId)}` : '';
+    const r = await fetch(`/api/job/${encodeURIComponent(jobId)}/config${query}`);
     const j = await r.json();
     const cfgs  = j.config || {};
     let cmd_str = (j.cmd || '').replace(/yaml$/i, '').trim();

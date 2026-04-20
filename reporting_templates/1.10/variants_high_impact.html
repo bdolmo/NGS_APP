@@ -83,7 +83,8 @@
                 {% set hgvsp = hgvsp + ")" %}
               {% endif %}
               {% if hgvsp != "." %}
-                <p style="margin:0px;font-size:11px"><b>{{ hgvsp | replace("%3D", "=") }}</b></p>
+                <p style="display:inline-block;margin:0px;font-size:11px"><b>{{ hgvsp | replace("%3D", "=") }}</b>
+                  <p style="display:inline-block;margin:0px;font-size:12px;margin-left:5px;"> <b> [{{ var.short_hgvsp }}]</b></p> </p>
               {% endif %}
               {% if hgvsc != "." %}
                 <p style="margin:0px;font-size:11px">{{ var.hgvsc }}</p>
@@ -98,10 +99,7 @@
                 {% else %}
                   <p style="margin:0px;font-size:11px">Tipus: {{ var.variant_type }}<b>*</b></p>
                 {% endif %}
-
-
               {% else %}
-
                 <p style="margin:0px;font-size:11px">Tipus: {{ var.variant_type }}</p>
               {% endif %}
 
@@ -141,9 +139,7 @@
 
               <p style="margin:0px;">AD/DP: {{ var_read_support }}/{{ var_depth }}</p>
             </div>
-            <div class="col" style="width:45%;font-size:11px">
-              <p style="margin:0px;">Max AF: {{ var.max_af }}</p>
-            </div>
+
           </div>
           <div class="row" style="margin-bottom:0px;">
             <div class="col" style="width:45%;font-size:11px">
@@ -158,9 +154,7 @@
               {% endif %}
               <p style="margin:0px;">VAF (%): {{ var_vaf }}</p>
             </div>
-            <div class="col" style="width:45%;font-size:11px">
-              <p style="margin:0px;">Població: {{ var.max_af_pop }}</p>
-            </div>
+ 
           </div>
           <div class="row" style="margin-bottom:0px;">
             <div class="col" style="width:100%;font-size:11px">
@@ -177,11 +171,9 @@
   </table>
   <br>
     <p style="margin-top:15px;font-size:10px;"><small>
-      <b>AD:</b> número de reads suportant el canvi;
+      <b>AD:</b> número de lectures suportant el canvi;
       <b>DP:</b> profunditat assolida a la posició del canvi;
       <b>VAF:</b> freqüència al·lèlica de la variant;
-      <b>Max AF:</b> freqüencia de l'al·lel més alta a la població;
-      <b>Població:</b> població a la qual s'ha trobat la Max AF<br>
     </small>
     </p>
 </div>

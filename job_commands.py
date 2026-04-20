@@ -7,6 +7,27 @@ import subprocess
 import glob
 from config import data_dir
 import shutil
+import os
+import re
+from pathlib import Path
+from typing import Any, Dict, List, Optional
+
+
+def launch_workflow_job(cmd:str):
+    """ """
+
+    p1 = subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True)
+    output = p1.stdout.decode("UTF-8").rstrip('\n')
+    error = p1.stderr.decode("UTF-8").rstrip('\n')
+
+    if p1.returncode != 0:
+        for err in error.split('\n'):
+            print(f'FOUND error: {err}')
+        raise Exception(f"{cmd}\n{error}")
+
+    print('Task complete')
+    if output:
+        return output
 
 
 def launch_ngs_analysis(params):

@@ -2,253 +2,317 @@
 
 {% block body %}
 
+<div class="container-fluid py-3">
+    <div class="row justify-content-center">
+        <div class="col-12 col-xl-10">
 
+            <!-- Breadcrumb -->
+            <nav aria-label="breadcrumb" class="mb-3">
+                <ol class="breadcrumb py-2">
+                    <li class="breadcrumb-item"><a href="#">{{panel}}</a></li>
+                    <li class="breadcrumb-item active" aria-current="page">
+                        Nou Panell Virtual
+                    </li>
+                </ol>
+            </nav>
 
+            <!-- 1) EXISTING VIRTUAL PANELS (TOP, with DataTables) -->
+            <section class="mb-4">
+                <div class="d-flex justify-content-between align-items-center mb-2">
+                </div>
+            </section>
+            <section class="mb-3 border rounded p-3">
+                    <div class="table-responsive">
+                        <h5 class="mb-0"><b>Panells virtuals existents per {{ panel }}</b></h5><br>
+                        <table id="subpanelsTable "
+                            class="table table-sm table-striped table-hover w-70">
+                            <thead class="">
+                                <tr>
 
-<div style="margin:0 auto;width:80%;">
-    <div class="container-fluid pt-3 rounded mb-3" style="background-color:white; width:100%">
-        <nav aria-label="breadcrumb " style="margin:auto;width:100%;padding-top:20px;">
-            <ol class="breadcrumb" style="padding:3px;">
-              <li class="breadcrumb-item"><a href= "#">Somatic</a></li>
-              <li class="breadcrumb-item active"  aria-current="page"><h5>Nou Panell Virtual</h5></li>
-            </ol>
-        </nav>
+                                    <th style="white-space: nowrap;">Panell virtual</th>
+                                    <th style="white-space: nowrap;">Gens totals</th>
+                                    <th>Gens</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for subpanel in subpanels %}
+                                    <tr>
+                                        <td>
+                                            {{ subpanel.Subpanel_id }}
+                                        </td>
+                                        <td style="max-width:300px;"
+                                            title="">
+                                            {{ subpanel.Genes|length }}
+                                        </td>
 
-        <div class="card-body">
-            <div style="margin-bottom:1px;" class="row">
-
-                <div class="input-group ml-3">             
+                                        <td style="max-width:300px;"
+                                            title="{{ subpanel.Genes}}">
+                                            {{ subpanel.Genes|join(", ") }}
+                                        </td>
+                                    </tr>
+                                {% else %}
+                                    <tr>
+                                        <td colspan="3" class="text-muted text-center py-3">
+                                            Encara no hi ha panells virtuals per aquest panell.
+                                        </td>
+                                    </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+            </section>
+            <!-- 2) PANEL META INFO (Dades del panell virtual) -->
+            <section class="mb-3 border rounded p-3">
+                <h5 class="mb-3"><b>Nou del panell virtual</b></h5>
 
                 <div class="row">
-                    <div class="col-6">
-                        <div class="form-group">
-                            <label style="margin-bottom:1px;" for=""><b>Nom</b></label>
-                            <input type="text" id="virtual_panel_name" class="form-control"  aria-describedby="virtual_panel_name" placeholder="Nom panell virtual" required>
-                        </div>
-                        <div id="alertMessage" class="alert" style="display:none;"></div>
-
+                    <div class="col-md-6 mb-3">
+                        <label for="virtual_panel_name" class="mb-1"><strong>Nom</strong></label>
+                        <input type="text"
+                               id="virtual_panel_name"
+                               class="form-control"
+                               aria-describedby="virtual_panel_name"
+                               placeholder="Nom panell virtual"
+                               required>
+                        <div id="alertMessage" class="alert mt-2" style="display:none;"></div>
                     </div>
-                    <div class="col-4" style="display:inline-block;">
-                        <div class="form-group" >
-                            <label style="margin-bottom:1px;" for=""><b>Panell </b></label>
-                            <input readonly type="text" value={{panel}} id="parent_panel" class="form-control"  aria-describedby="parent_panel" placeholder="parent_panell">
-                        </div>
-                    </div>
-                    <div class="col-2" style="display:inline-block;">
-                        <div class="form-group" >
-                            <label style="margin-bottom:1px;display:inline-block" for=""><b>Versió </b></label>
-                            <input readonly type="text" value={{panel_version}} id="panel_version" class="form-control" aria-describedby="panel_version" placeholder="panel_version">
-                        </div>
-                    </div>            
-                </div>
-                </div>
-            </div>
 
-            <!-- <div style="margin-bottom:1px;margin-top:20px;" class="row">
-                <div class="col-5">
-                    <div class="input-group">             
-                        <div class="input-group-prepend">
-                            <span class="input-group-text" id="inputGroup-sizing-default"> Fenotip</span>
-                        </div>
-                        <input id="hpo_input" style="width:250px" type="text" class="form-control" aria-label="Default" aria-describedby="inputGroup-sizing-default">
-                        <div id="searchResults" style="margin-top: 10px;"></div>
+                    <div class="col-md-4 mb-3">
+                        <label for="parent_panel" class="mb-1"><strong>Panell</strong></label>
+                        <input readonly
+                               type="text"
+                               value="{{ panel }}"
+                               id="parent_panel"
+                               class="form-control"
+                               aria-describedby="parent_panel">
+                    </div>
+
+                    <div class="col-md-2 mb-3">
+                        <label for="panel_version" class="mb-1"><strong>Versió</strong></label>
+                        <input readonly
+                               type="text"
+                               value="{{ panel_version }}"
+                               id="panel_version"
+                               class="form-control"
+                               aria-describedby="panel_version">
                     </div>
                 </div>
-            </div> -->
-            <div style="margin-bottom:1px;margin-top:0px;" class="row">
-                <div class="col">
-                    <div id="hpo_results"></div>
-                </div>
-            </div>
 
-            <input type="text" class="form-control" id="searchInput" placeholder="Cerca..." style="font-size:12px;margin-top: 10px;margin-bottom: 1px; width: 100px; box-sizing: border-box;"/>
-            <div style="overflow: auto; display: flex; justify-content: left; align-items: left;">
-                <div class="form-group" style="display: flex; flex-direction: column; justify-content: center;">
-                    <select class="form-control" style="height: 300px; width: 250px; box-sizing: border-box;" id="leftValues" size="5" multiple>
-                        {% for gene in panel_genes %}
-                        <option>{{ gene }}</option>
-                        {% endfor %}
-                    </select>
-                    <div style="font-size:12px;color:grey;margin-left:4px;" id="leftCount">Gens disponibles: 0</div>
-
+                <div class="row">
+                    <div class="col">
+                        <div id="hpo_results"></div>
+                    </div>
                 </div>
-                <div class="form-group ml-1 mr-1" style="display: flex; flex-direction: column; justify-content: center; align-items: center;">
-                    <button class="btn btn-sm" type="input" id="btnRight"><i class="fa-solid fa-chevron-right"></i></button>
-                    <button class="btn btn-sm" type="input" id="btnLeft" ><i class="fa-solid fa-chevron-left"></i></button>
-                </div>
-                <div class="form-group" style="display: flex; flex-direction: column; justify-content: center;">
-                    <select class="form-control" style="height: 300px; width: 250px; box-sizing: border-box;" id="rightValues" size="4" multiple>
-                    </select>
-                    <div style="font-size:12px;color:grey;margin-left:4px;" id="rightCount">Gens seleccionats: 0</div>
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <small class="text-muted">
+                        Mou els gens disponibles cap al panell virtual.
+                    </small>
                 </div>
 
-
-                <div id="display_selected_hpo_div" class="form-group" style="flex-direction: column; justify-content: center;">
-                    <div style="display:inline-block;margin-left:25px;"></i>Panells virtuals</div>
-                    <table>
-                        <th>Subpanell</th>
-                        <th>Gens</th>
-                        
-                    {% for subpanel in subpanels %}
-                        <td>{{ subpanel.Subpanel_id }}</td>
-                        <td>{{ subpanel.Genes }}</td>
-
-                    {% endfor %}
-                    </table>
-
-                    <!-- <div class="form-control ml-4" id="display_selected_hpo" style="height: 150px; width: 400px; box-sizing: border-box;"></div> -->
+                <!-- Search only affects left list -->
+                <div class="row mb-2">
+                    <div class="col-md-4">
+                        <input type="text"
+                               class="form-control form-control-sm"
+                               id="searchInput"
+                               placeholder="Cerca gens disponibles...">
+                    </div>
                 </div>
 
+                <div class="row align-items-center">
+                    <!-- Available genes -->
+                    <div class="col-md-5 mb-3">
+                        <label class="small text-muted mb-1">Gens disponibles</label>
+                        <select class="form-control"
+                                id="leftValues"
+                                size="12"
+                                multiple>
+                            {% for gene in panel_genes %}
+                                <option>{{ gene }}</option>
+                            {% endfor %}
+                        </select>
+                        <div class="small text-muted mt-1" id="leftCount">
+                            Gens disponibles: 0
+                        </div>
+                    </div>
 
-                <!-- <div id="display_selected_hpo_div" class="form-group" style="display: none; flex-direction: column; justify-content: center;">
-                    <div style="display:inline-block"><i class="fas fa-shopping-cart ml-4"></i> Termes HPO seleccionats</div>
-                    <div class="form-control ml-4" id="display_selected_hpo" style="height: 150px; width: 400px; box-sizing: border-box;"></div>
-                </div> -->
-            </div>
-            <button type="submit" id="updateVirtualPanelBtn" onclick="saveVirtualPanel();" class="btn btn-primary btn-sm">Desa canvis</button>
+                    <!-- Move buttons -->
+                    <div class="col-md-2 d-flex flex-column align-items-center mb-3">
+                        <button class="btn btn-outline-secondary btn-sm mb-2"
+                                type="button"
+                                id="btnRight"
+                                title="Afegir al panell virtual">
+                            <i class="fa-solid fa-chevron-right"></i>
+                        </button>
+                        <button class="btn btn-outline-secondary btn-sm"
+                                type="button"
+                                id="btnLeft"
+                                title="Treure del panell virtual">
+                            <i class="fa-solid fa-chevron-left"></i>
+                        </button>
+                    </div>
 
+                    <!-- Selected genes -->
+                    <div class="col-md-5 mb-3">
+                        <label class="small text-muted mb-1">Gens seleccionats</label>
+                        <select class="form-control"
+                                id="rightValues"
+                                size="12"
+                                multiple>
+                        </select>
+                        <div class="small text-muted mt-1" id="rightCount">
+                            Gens seleccionats: 0
+                        </div>
+                    </div>
+                </div>
+
+                <div class="text-right mt-3">
+                    <button type="button"
+                            id="updateVirtualPanelBtn"
+                            onclick="saveVirtualPanel();"
+                            class="btn btn-primary btn-sm">
+                        Desa canvis
+                    </button>
+                </div>
+            </section>
         </div>
     </div>
 </div>
 
-
 {% block script %}
-<script>
-    updateCounts();
-    var panelGenes = {{ panel_genes | tojson }};
+    {# DataTables CSS/JS (if not already in base.html) #}
 
-    // Function to update counts
-    function updateCounts() {
+    <script>
+    document.addEventListener('DOMContentLoaded', function() {
+        var panelGenes = {{ panel_genes | tojson }};
         var leftSelect = document.getElementById('leftValues');
         var rightSelect = document.getElementById('rightValues');
-        var leftCount = leftSelect.options.length;
-        var rightCount = rightSelect.options.length;
 
-        // Update the count display
-        document.getElementById('leftCount').textContent = 'Gens disponibles: ' + leftCount;
-        document.getElementById('rightCount').textContent = 'Gens seleccionats: ' + rightCount;
-    }
+        // ---- DATATABLES INIT ----
+        $('#subpanelsTable').DataTable({
+            paging: true,
+            pageLength: 5,
+            lengthChange: false,
+            searching: true,
+            ordering:  1,
+            order: [[0, 'asc']],
+            info: false,
+            language: {
+                search: "Cerca:",
+                paginate: {
+                    first:    "Primer",
+                    last:     "Últim",
+                    next:     "Següent",
+                    previous: "Anterior"
+                },
+                emptyTable:     "No hi ha dades disponibles",
+                zeroRecords:    "Cap resultat trobat"
+            }
+        });
 
-    function saveVirtualPanel() {
-        let virtualPanelName = document.getElementById("virtual_panel_name").value;
-       // Check if virtualPanelName is empty or not set
-        if (!virtualPanelName) {
-            let alertDiv = document.getElementById("alertMessage");
-            alertDiv.textContent = "Es requereix un Nom";
-            alertDiv.className = "alert alert-warning";
-            alertDiv.style = "margin-left:0px;display:block;width:160px;padding:1px;"
-            return;
+        // ---- GENE LIST LOGIC ----
+        function updateCounts() {
+            var leftCount = leftSelect.options.length;
+            var rightCount = rightSelect.options.length;
+            document.getElementById('leftCount').textContent =
+                'Gens disponibles: ' + leftCount;
+            document.getElementById('rightCount').textContent =
+                'Gens seleccionats: ' + rightCount;
         }
 
-        let parent_panel = document.getElementById("parent_panel").value;
-        let panel_version = document.getElementById("panel_version").value;
-        var rightSelect = document.getElementById('rightValues');
-        var selectedOptions = rightSelect.options;
-        var genesList = Array.from(selectedOptions).map(option => option.value);
+        function sortSelect(elem) {
+            let options = Array.from(elem.options);
+            options.sort((a, b) => a.text.localeCompare(b.text));
+            while (elem.firstChild) {
+                elem.removeChild(elem.firstChild);
+            }
+            options.forEach(option => elem.add(option));
+        }
 
-        fetch('/save_virtual_panel', {
-            method: "POST",
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-                "virtual_panel_name": virtualPanelName,
-                "genes": genesList,
-                "parent_panel": parent_panel,
-                "panel_version": panel_version
+        function saveVirtualPanel() {
+            let virtualPanelName = document.getElementById("virtual_panel_name").value;
+
+            if (!virtualPanelName) {
+                let alertDiv = document.getElementById("alertMessage");
+                alertDiv.textContent = "Es requereix un Nom";
+                alertDiv.className = "alert alert-warning py-1 px-2";
+                alertDiv.style.display = "block";
+                return;
+            }
+
+            let parent_panel = document.getElementById("parent_panel").value;
+            let panel_version = document.getElementById("panel_version").value;
+            var selectedOptions = rightSelect.options;
+            var genesList = Array.from(selectedOptions).map(option => option.value);
+
+            fetch('/save_virtual_panel', {
+                method: "POST",
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    "virtual_panel_name": virtualPanelName,
+                    "genes": genesList,
+                    "parent_panel": parent_panel,
+                    "panel_version": panel_version
+                })
             })
-        })
-        .then(response => response.json())
-        .then(data => {
-           
-            let alertDiv = document.getElementById("alertMessage");
-            alertDiv.textContent = "S'ha actualitzat correctament el panell virtual " + virtualPanelName;
-            alertDiv.className = "alert alert-success";
-            alertDiv.style = "margin-left:10px;display:block;width:450px;"
-            return;
-
-        })
-        .catch((error) => {
-            console.error('Error:', error);
-        });
-    }
-
-    document.getElementById('searchInput').addEventListener('input', function() {
-        var searchQuery = this.value.toLowerCase();
-        var selectElement = document.getElementById('leftValues');
-        var options = selectElement.options;
-        for (var i = 0; i < options.length; i++) {
-            var optionText = options[i].text.toLowerCase();
-            var isVisible = optionText.indexOf(searchQuery) > -1;
-            options[i].style.display = isVisible ? '' : 'none';
-        }
-    });
-
-
-    document.getElementById('btnLeft').addEventListener('click', function() {
-        var leftSelect = document.getElementById('leftValues');
-        var rightSelect = document.getElementById('rightValues');
-
-        // Create an array from the selected options in rightValues
-        var selectedOptions = Array.from(rightSelect.selectedOptions);
-
-        // Move each selected option to leftValues
-        selectedOptions.forEach(function(option) {
-            leftSelect.appendChild(option);
-        });
-        // Sort both lists after moving
-        sortSelect(leftSelect);
-        sortSelect(rightSelect);
-        // Update counts
-        updateCounts();
-    });
-
-
-    document.getElementById('btnRight').addEventListener('click', function() {
-        var rightSelect = document.getElementById('rightValues');
-        var leftSelect = document.getElementById('leftValues');
-
-        // Create an array from the selected options in rightValues
-        var selectedOptions = Array.from(leftSelect.selectedOptions);
-
-        // Move each selected option to leftValues
-        selectedOptions.forEach(function(option) {
-            rightSelect.appendChild(option);
-        });
-        // Sort both lists after moving
-        sortSelect(leftSelect);
-        sortSelect(rightSelect);
-        // Update counts
-        updateCounts();
-    });
-
-    document.getElementById('rightValues').addEventListener('change', function () {
-        var selectedItem = document.querySelector('#rightValues option:checked');
-        if (selectedItem) {
-            document.getElementById('txtRight').value = selectedItem.text;
-        }
-        updateCounts();
-    });
-
-    function sortSelect(elem) {
-        // Get the list of options as an array
-        let options = Array.from(elem.options);
-
-        // Sort the options by text content
-        options.sort((a, b) => a.text.localeCompare(b.text));
-
-        // Remove all current options
-        while (elem.firstChild) {
-            elem.removeChild(elem.firstChild);
+            .then(response => response.json())
+            .then(data => {
+                let alertDiv = document.getElementById("alertMessage");
+                alertDiv.textContent =
+                    "S'ha actualitzat correctament el panell virtual " + virtualPanelName;
+                alertDiv.className = "alert alert-success py-1 px-2";
+                alertDiv.style.display = "block";
+            })
+            .catch((error) => {
+                console.error('Error:', error);
+            });
         }
 
-        // Add back the sorted options
-        options.forEach(option => elem.add(option));
-    }
+        // Expose function for the inline onclick
+        window.saveVirtualPanel = saveVirtualPanel;
 
+        // Search filter on left list (available genes)
+        document.getElementById('searchInput').addEventListener('input', function() {
+            var searchQuery = this.value.toLowerCase();
+            var options = leftSelect.options;
 
+            for (var i = 0; i < options.length; i++) {
+                var optionText = options[i].text.toLowerCase();
+                var isVisible = optionText.indexOf(searchQuery) > -1;
+                options[i].style.display = isVisible ? '' : 'none';
+            }
+        });
 
-</script>
+        // Move from right -> left
+        document.getElementById('btnLeft').addEventListener('click', function() {
+            var selectedOptions = Array.from(rightSelect.selectedOptions);
+            selectedOptions.forEach(function(option) {
+                leftSelect.appendChild(option);
+            });
+            sortSelect(leftSelect);
+            sortSelect(rightSelect);
+            updateCounts();
+        });
+
+        // Move from left -> right
+        document.getElementById('btnRight').addEventListener('click', function() {
+            var selectedOptions = Array.from(leftSelect.selectedOptions);
+            selectedOptions.forEach(function(option) {
+                rightSelect.appendChild(option);
+            });
+            sortSelect(leftSelect);
+            sortSelect(rightSelect);
+            updateCounts();
+        });
+
+        rightSelect.addEventListener('change', function () {
+            updateCounts();
+        });
+
+        // Initial counts
+        updateCounts();
+    });
+    </script>
 {% endblock %}
 
 {% endblock body %}

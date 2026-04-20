@@ -1,0 +1,456 @@
+{% extends "base.html" %}
+
+{% block body %}
+<div class="container-fluid py-4" style="width:70%;">
+
+
+    <nav aria-label="breadcrumb ">
+        <ol class="breadcrumb mt-3 p-3">
+          <li class="breadcrumb-item"><a href="{{ url_for('status') }}">Resultats</a></li>
+          <li class="breadcrumb-item"><a id=""><b>{{ job_id }}</b></a></li>
+        </ol>
+      </nav>
+
+    <style>
+        /* Layout */
+        .card { border-radius: .75rem; }
+        .tree { font-size: .95rem; }
+        
+        /* Connectors */
+        .tree ul { list-style: none; margin: 0; padding-left: 15px; position: relative; }
+        .tree .root { padding-left: 15px; }
+        .tree ul:not(.root)::before {
+          content: ""; position: absolute; top: .9rem; bottom: .6rem; left: .45rem;
+          border-left: 1px dashed #d6dbe1;
+        }
+        .tree li { position: relative; }
+        .tree li::before {
+          content: ""; position: absolute; personally: relative; top: 1.25rem; left: .35rem; width: .8rem;
+          border-top: 1px dashed #d6dbe1;
+        }
+        .tree li .dir { padding-left:0px }
+        .tree li .file { padding-left:0px }
+
+        /* Row visuals */
+        .row-line {
+          display: flex; align-items: center; gap: .5rem;
+          padding: .32rem 20px; border-radius: .5rem;
+        }
+        .row-line:hover { background: #edeff2; }
+        details summary { cursor: pointer; list-style: none; font-size: 1.05em; }
+        details summary::-webkit-details-marker { display: none; }
+        details { border-radius: 8px; }
+        
+        /* Icons & labels */
+        .chev-spacer { width: 1.1rem; }
+        .icon { width: 1.25rem; text-align: center; }
+        .name { font-weight: 500; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 60vw; }
+        .meta { margin-left: auto; display: inline-flex; gap: .4rem; align-items: center; }
+        .count { font-size: .85em; }
+        
+        /* Chips */
+        .chip { border-radius: .4rem; padding: 0 .45rem; font-size: .8rem; border: 1px solid transparent; }
+        .chip-soft { background: #f1f3f5; color: #495057; border-color: #dee2e6; }
+        .mono { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; }
+        
+        /* Format colors */
+        .tag-fastq  { background:#fff3cd; color:#a07900; border-color:#ffe8a1; }
+        .tag-bam    { background:#eaf7ea; color:#2f9e44; border-color:#d5efda; }
+        .tag-vcf    { background:#e9f5ff; color:#0b5ed7; border-color:#cfe3ff; }
+        .tag-config { background:#f7e9fe; color:#a584b0; border-color:#dee2e6; }
+        .tag-pdf { background:#f8dada; color:#f68e83; border-color:#f8b6b6; }
+        .tag-html {background:rgb(188, 225, 247);color:#5e6b7f }
+
+
+        .file-context-menu {
+            position: fixed;            /* stay relative to viewport */
+            z-index: 2000;              /* above cards */
+            display: none;
+            opacity: 0;
+            transform: translateY(-4px) scale(0.98);
+            transition: opacity .12s ease, transform .12s ease;
+        }
+        .file-context-menu.show {
+            display: block;
+            opacity: 1;
+            transform: translateY(0) scale(1);
+        }
+        .file-context-menu-inner {
+            background: #fff;
+            border: 1px solid #e2e7ee;
+            border-radius: .6rem;
+            box-shadow: 0 12px 28px rgba(16,24,40,.14), 0 2px 6px rgba(16,24,40,.08);
+            min-width: 220px;
+            backdrop-filter: saturate(1.1) blur(6px);
+        }
+        .file-context-menu::before {
+            content: "";
+            position: absolute;
+            width: 12px; height: 12px;
+            background: #fff;
+            border-left: 1px solid #e2e7ee;
+            border-top: 1px solid #e2e7ee;
+            transform: rotate(45deg);
+        }
+        /* Arrow positions (we flip these in JS) */
+        .file-context-menu.arrow-top::before {
+            top: -6px; left: 16px;
+        }
+        .file-context-menu.arrow-bottom::before {
+            bottom: -6px; left: 16px; transform: rotate(225deg);
+            border-left-color: #e2e7ee; border-top-color: #e2e7ee;
+        }
+
+        .file-context-menu-title {
+            font-weight: 600;
+            margin: .25rem .4rem .4rem;
+            max-width: 360px;
+            overflow: hidden; white-space: nowrap; text-overflow: ellipsis;
+        }
+
+        .menu-list { list-style: none; margin: 0; padding: .25rem; }
+        .menu-item {
+            display: flex; align-items: center; gap: .5rem;
+            padding: .45rem .5rem; border-radius: .4rem; cursor: pointer;
+            user-select: none;
+        }
+        .menu-item:hover { background: #f4f7fb; }
+        .menu-item .mi-icon { width: 1.1rem; text-align: center; }
+        .menu-item .mi-text { flex: 1 1 auto; }
+        .menu-item .mi-kbd {
+            margin-left: .5rem; font-size: .75rem; color: #6b7280;
+            border: 1px solid #e5e7eb; border-bottom-width: 2px; padding: 0 .25rem; border-radius: .3rem;
+        }
+        .menu-sep { height: 1px; background: #eef1f6; margin: .3rem .4rem; }
+
+        </style>
+        
+
+  <div class="d-flex align-items-center mb-3">
+    <h4 class="mb-0"></h4>
+  </div>
+
+  {% if error %}
+    <div class="alert alert-danger">{{ error }}</div>
+  {% endif %}
+
+  {% if tree %}
+  <div class="card shadow-sm">
+    <div class="card-body p-0">
+      {# expose job/panel so the JS can build download URL #}
+      <div id="treeContainer" class="tree"
+           data-job="{{ job_id or '' }}"
+           data-panel="{{ panel or '' }}"
+           data-root="{{ resolved_path or '' }}">
+        {# ---------- helpers ---------- #}
+        {% macro icon_for(n) -%}
+          {% set fmt = (n.format or '')|lower %}
+          {% if n.kind == 'dir' %}📁
+          {% elif 'fastq' in fmt or fmt == 'fasta' %}<i class="fa-regular fa-file-zipper" style="color:rgb(246, 194, 98)"></i>
+          {% elif fmt in ['html'] %}<i class="fa-regular fa-file-code"  style="color:rgb(143, 204, 242)"></i>
+          {% elif fmt in ['bam','cram','sam'] %}<i class="fa-regular fa-file-zipper" style="color:rgb(113, 178, 129)"></i>
+          {% elif fmt.startswith('vcf') or fmt in ['bcf','gvcf'] %}<i class="fa-regular fa-file-lines" style="color:grey"></i>
+          {% elif fmt in ['json','yaml','toml','ini'] %}<i class="fa-regular fa-file-lines" style="color:grey"></i>
+          {% elif fmt in ['xls', 'xlsx'] %}<i class="fa-solid fa-file-excel" style="color:rgb(42, 148, 42)"></i>
+          {% elif fmt in ['doc', 'docx'] %}<i class="fa-solid fa-file-word" style="color:rgb(103, 179, 246)"></i>
+          {% elif fmt in ['csv','tsv','parquet','feather'] %} <i class="fa-solid fa-file-csv"></i>
+          {% elif 'png' in fmt or fmt in ['png','jpg','tiff'] %}<i class="fa-solid fa-file-image"></i>
+          {% elif fmt in ['pdf'] %}<i class="fa-solid fa-file-pdf" style="color:rgb(245, 131, 131)"></i>
+          {% elif fmt == 'text' %}<i class="fa-regular fa-file-lines" style="color:grey"></i>
+          {% else %}<i class="fa-regular fa-file-lines" style="color:grey"></i>{% endif %}
+        {%- endmacro %}
+
+        {% macro badge_class(n) -%}
+          {% set fmt = (n.format or '')|lower %}
+          {% if 'fastq' in fmt or fmt == 'fasta' %}tag-fastq
+          {% elif fmt in ['pdf'] %}tag-pdf
+          {% elif fmt in ['html'] %}tag-html
+          {% elif fmt in ['xlsx'] %}tag-bam 
+          {% elif fmt in ['bam','cram','sam'] %}tag-bam
+          {% elif fmt.startswith('vcf') or fmt in ['bcf','gvcf'] %}tag-vcf
+          {% elif fmt in ['json','yaml','toml','ini'] %}tag-config
+          {% else %}chip-soft{% endif %}
+        {%- endmacro %}
+
+        {# prefix to compute rel paths from absolute (resolved_path) #}
+        {% set root_prefix = (resolved_path.rstrip('/') ~ '/') %}
+
+        {% macro render_node(n, depth=0) -%}
+          {% if n.kind == 'dir' %}
+            <li class="dir">
+              <details {% if depth < 1 %}open{% endif %}>
+                <summary class="row-line">
+                  <span class="icon"><i class="fas fa-folder" {% if depth < 1 %}style="color:#dfac69"{% else %}style="color:#F8D775"{% endif %} ></i></span>
+                  <span class="name" title="{{ n.path }}">{{ n.name }}</span>
+                  <span class="meta">
+                    <span class="chip chip-soft">{{ n.size_human }}</span>
+                    <span class="count text-muted">({{ (n.children or [])|length }} items)</span>
+                  </span>
+                </summary>
+                <ul>
+                  {% for c in n.children if c.kind == 'dir' %}
+                    {{ render_node(c, depth+1) }}
+                  {% endfor %}
+                  {% for c in n.children if c.kind != 'dir' %}
+                    {{ render_node(c, depth+1) }}
+                  {% endfor %}
+                </ul>
+              </details>
+            </li>
+          {% else %}
+            {# compute rel path (relative to resolved_path) #}
+            {% if n.path.startswith(root_prefix) %}
+              {% set rel = n.path[root_prefix|length:] %}
+            {% else %}
+              {% set rel = n.name %}
+            {% endif %}
+            {# inside the file case of render_node #}
+            <li class="file">
+              <div class="row-line file-row" data-rel="{{ rel }}">
+                <span class="chev-spacer"></span>
+                <span class="icon">{{ icon_for(n) }}</span>
+                <span class="name" name="file">{{ n.name }}</span>
+                <!-- {% if n.ext %}<span class="chip chip-soft mono">{{ n.ext }}</span>{% endif %} -->
+                {% if n.format and n.format != 'Unknown' %}
+                  <span class="chip {{ badge_class(n) }}">{{ n.format }}</span>
+                {% endif %}
+                {% if n.codec and n.codec != 'none' %}<span class="chip chip-soft">{{ n.codec }}</span>{% endif %}
+                {% if n.is_index %}<span class="chip chip-soft">index</span>{% endif %}
+                <span class="meta"><span class="chip chip-soft">{{ n.size_human }}</span></span>
+              </div>
+              {# Context menu for right-click #}
+              <div class="file-context-menu" style="display: none;">
+                <div class="file-context-menu-inner">
+                  <div class="file-context-menu-title">{{ n.name }}</div>
+                  <div class="file-context-menu-actions">
+                    <button class="btn-download" style="cursor: pointer; padding: 0.2rem 0.5rem; border: 1px solid #d9dee3; border-radius: 0.3rem; background: #f6f8fb;">Download</button>
+                  </div>
+                </div>
+              </div>
+            </li>
+          {% endif %}
+        {%- endmacro %}
+        
+        <ul class="root">
+          {{ render_node(tree, 0) }}
+        </ul>
+      </div>
+    </div>
+  </div>
+  {% endif %}
+</div>
+
+
+<script>
+    document.addEventListener('DOMContentLoaded', () => {
+      const treeRoot = document.getElementById('treeContainer');
+      const job_id = treeRoot?.dataset.job || '';
+      const panel  = treeRoot?.dataset.panel || '';
+    
+      // Build your backend download URL
+      function makeDownloadHref({ job_id, panel, rel }) {
+        const params = new URLSearchParams({ rel });
+        if (job_id) params.set('job_id', job_id);
+        if (panel)  params.set('panel', panel);
+        return `/workflows/download?${params.toString()}`;
+      }
+    
+      let openMenu = null;
+    
+      function closeMenu() {
+        if (openMenu) {
+          openMenu.classList.remove('show', 'arrow-top', 'arrow-bottom');
+          openMenu.style.display = 'none';
+          openMenu = null;
+        }
+      }
+    
+      // Position menu near a trigger element with smart flipping/clamping
+      function positionMenuNear(triggerEl, menuEl, prefer = 'bottom') {
+        // Make it measurable off-screen
+        menuEl.style.visibility = 'hidden';
+        menuEl.style.display = 'block';
+        menuEl.classList.add('show');
+    
+        const t = triggerEl.getBoundingClientRect();
+        const m = menuEl.getBoundingClientRect();
+        const vw = window.innerWidth;
+        const vh = window.innerHeight;
+        const margin = 10; // viewport padding
+        const arrowOffset = 16; // matches CSS ::before left value
+    
+        // Default position: below, left-aligned to trigger
+        let top = t.bottom + 6 + window.scrollY;
+        let left = t.left + window.scrollX;
+    
+        let arrowClass = 'arrow-top'; // arrow points up when menu is below
+    
+        // Flip vertically if overflowing bottom
+        const wouldBottomOverflow = (top + m.height - window.scrollY) > (vh - margin);
+        if (prefer === 'bottom' && wouldBottomOverflow) {
+          // Place above
+          top = t.top - m.height - 6 + window.scrollY;
+          arrowClass = 'arrow-bottom'; // arrow points down when menu is above
+        }
+    
+        // Clamp horizontally
+        if (left + m.width > window.scrollX + vw - margin) {
+          left = window.scrollX + vw - margin - m.width;
+        }
+        if (left < window.scrollX + margin) {
+          left = window.scrollX + margin;
+        }
+    
+        // Apply
+        menuEl.style.top = `${top}px`;
+        menuEl.style.left = `${left}px`;
+        menuEl.classList.add(arrowClass);
+    
+        // Restore visibility
+        menuEl.style.visibility = '';
+      }
+    
+      // Build the inner fancy list once (re-usable markup)
+      function ensureFancyMenu(menuEl) {
+        // If already upgraded, skip
+        if (menuEl.dataset.enhanced === '1') return;
+    
+        const title = menuEl.querySelector('.file-context-menu-title') || (() => {
+          const t = document.createElement('div');
+          t.className = 'file-context-menu-title';
+          menuEl.querySelector('.file-context-menu-inner')?.prepend(t);
+          return t;
+        })();
+    
+        // Clear actions area and replace with a menu list
+        const actionsHost = menuEl.querySelector('.file-context-menu-actions');
+        if (actionsHost) actionsHost.remove();
+    
+        const ul = document.createElement('ul');
+        ul.className = 'menu-list';
+        ul.innerHTML = `
+          <li class="menu-item" data-act="download">
+           <i class="fas fa-download"></i><span class="mi-text">Descarrega</span>
+          </li>
+        `;
+        menuEl.querySelector('.file-context-menu-inner')?.appendChild(ul);
+    
+        menuEl.dataset.enhanced = '1';
+      }
+    
+      // Wire menu actions each time before opening (so the rel/name are fresh)
+      function wireMenu(menuEl, { name, rel, href }) {
+        const titleEl = menuEl.querySelector('.file-context-menu-title');
+        if (titleEl) titleEl.textContent = name;
+    
+        // Delegate click on items
+        menuEl.onclick = async (e) => {
+          const item = e.target.closest('.menu-item');
+          if (!item) return;
+          e.stopPropagation();
+          const act = item.dataset.act;
+    
+          if (act === 'download') {
+            window.location.href = href;
+            closeMenu();
+          }
+          if (act === 'open-new') {
+            window.open(href, '_blank', 'noopener');
+            closeMenu();
+          }
+          if (act === 'copy-path') {
+            try {
+              await navigator.clipboard.writeText(rel);
+              item.querySelector('.mi-text').textContent = 'Copied!';
+              setTimeout(() => (item.querySelector('.mi-text').textContent = 'Copy relative path'), 900);
+            } catch {
+              alert(rel); // fallback
+            }
+          }
+        };
+      }
+    
+      // LEFT-CLICK on filename → fancy menu under the name
+      document.addEventListener('click', (e) => {
+        const nameEl = e.target.closest('.file .name');
+        if (nameEl) {
+          e.preventDefault();
+          e.stopPropagation();
+    
+          const row  = nameEl.closest('.file-row');
+          const rel  = row?.dataset.rel || '';
+          const menu = row?.parentElement.querySelector('.file-context-menu');
+          if (!menu) return;
+    
+          ensureFancyMenu(menu);
+          const href = makeDownloadHref({ job_id, panel, rel });
+          const fileName = nameEl.textContent.trim();
+          wireMenu(menu, { name: fileName, rel, href });
+    
+          // Show and position
+          closeMenu();
+          menu.style.display = 'block';
+          positionMenuNear(nameEl, menu, 'bottom');
+          menu.classList.add('show');
+          openMenu = menu;
+          return;
+        }
+    
+        // Clicked elsewhere
+        if (openMenu && !openMenu.contains(e.target)) closeMenu();
+      });
+    
+      // RIGHT-CLICK on row → same fancy menu at cursor
+      document.querySelectorAll('.file .file-row').forEach(row => {
+        row.addEventListener('contextmenu', (e) => {
+          e.preventDefault();
+    
+          const rel  = row.dataset.rel || '';
+          const name = row.querySelector('.name')?.textContent?.trim() || '';
+          const menu = row.parentElement.querySelector('.file-context-menu');
+          if (!menu) return;
+    
+          ensureFancyMenu(menu);
+          const href = makeDownloadHref({ job_id, panel, rel });
+          wireMenu(menu, { name, rel, href });
+    
+          closeMenu();
+    
+          // Show near cursor with clamping; choose top/bottom based on cursor space
+          menu.style.display = 'block';
+          menu.style.visibility = 'hidden';
+          menu.classList.add('show');
+    
+          const m = menu.getBoundingClientRect();
+          const vw = window.innerWidth, vh = window.innerHeight, margin = 10;
+    
+          let x = e.pageX, y = e.pageY;
+          // Flip above if not enough space below cursor
+          let arrowClass = 'arrow-top';
+          if ((y - window.scrollY) + m.height > vh - margin) {
+            y = e.pageY - m.height - 6;
+            arrowClass = 'arrow-bottom';
+          }
+          // Clamp
+          if ((x - window.scrollX) + m.width > vw - margin) x = window.scrollX + vw - margin - m.width;
+          if (x < window.scrollX + margin) x = window.scrollX + margin;
+    
+          menu.style.top = `${y}px`;
+          menu.style.left = `${x}px`;
+          menu.classList.add(arrowClass);
+          menu.style.visibility = '';
+          openMenu = menu;
+        });
+      });
+    
+      // Close on scroll, resize, or Esc
+      document.addEventListener('scroll', closeMenu, true);
+      window.addEventListener('resize', closeMenu);
+      document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeMenu(); });
+    });
+    </script>
+    
+
+
+
+{% endblock body %}

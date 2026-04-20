@@ -1,31 +1,388 @@
 # routes_pipeline.py
 import json, re, shlex
 from datetime import datetime
-from flask import Blueprint, request, jsonify, render_template, url_for
+from flask import Blueprint, request, jsonify, render_template, url_for, abort, send_file
 from werkzeug.routing import BuildError
+from werkzeug.utils import secure_filename
+
 import shutil
-
-
 from app import app, db
+from sqlalchemy.orm import joinedload
 from app.models import Pipeline, PipelineParam, PipelineConfig
 
+from config import api_gene_panels, Config
+import requests
 
+from typing import List, Dict, Tuple, Any
+import subprocess
+from pathlib import Path
+from typing import Optional
+COMPRESSED_EXTS = {".gz", ".bgz", ".bz2", ".xz", ".zip", ".zst"}
+
+BIO_MAP = {
+    "FASTQ":     {".fastq", ".fq"},
+    "FASTA":     {".fasta", ".fa", ".fna"},
+    "SAM":       {".sam"},
+    "BAM":       {".bam"},
+    "CRAM":      {".cram"},
+    "VCF":       {".vcf"},
+    "BCF":       {".bcf"},
+    "MAF":       {".maf"},
+    "GTF":       {".gtf"},
+    "GFF":       {".gff", ".gff3"},
+    "BED":       {".bed", ".bedgraph", ".bedpe"},
+    "WIG":       {".wig"},
+    "BigWig":    {".bw", ".bigwig"},
+    "BigBed":    {".bb", ".bigbed"},
+    "SEG":       {".seg"},
+    "CNVkit":    {".cnr", ".cns"},
+    "PAF":       {".paf"},
+    "PILEUP":    {".pileup"},
+    "HDF5":      {".h5", ".hdf5"},
+    "AnnData":   {".h5ad"},
+    "Loom":      {".loom"},
+    "MatrixMTX": {".mtx"},
+    "RDS":       {".rds", ".rdata"},
+    "CSV":       {".csv"},
+    "TSV":       {".tsv"},
+    "PARQUET":   {".parquet"},
+    "FEATHER":   {".feather"},
+    "NPZ":       {".npz"},
+    "PICKLE":    {".pkl"},
+    "JSON":      {".json"},
+    "YAML":      {".yaml", ".yml"},
+    "TOML":      {".toml"},
+    "INI":       {".ini", ".cfg"},
+    "MARKDOWN":  {".md"},
+    "HTML":      {".html", ".htm"},
+    "PDF":       {".pdf"},
+    "TEXT":      {".txt", ".log"},
+    "Notebook":  {".ipynb"},
+    "Python":    {".py"},
+    "R":         {".r"},
+    "Shell":     {".sh"},
+    "Nextflow":  {".nf"},
+    "Snakemake": {".smk"},
+    "WDL":       {".wdl"},
+    "CWL":       {".cwl"},
+    "Image":     {".png", ".jpg", ".jpeg", ".tif", ".tiff", ".svg"},
+}
+
+INDEX_EXTS = {
+    ".bai":  "BAM",
+    ".crai": "CRAM",
+    ".tbi":  "VCF",
+    ".csi":  "VCF/BCF",
+}
+
+
+
+def multi_extension(p: Path) -> str:
+    suffs = p.suffixes
+    if not suffs or p.is_dir():
+        return ""
+    s_low = [s.lower() for s in suffs]
+    if s_low[-1] in COMPRESSED_EXTS and len(suffs) >= 2:
+        return "".join(suffs[-2:])  # e.g. '.vcf.gz'
+    return suffs[-1]
+
+def detect_codec(p: Path) -> str:
+    last = p.suffix.lower() if p.suffix else ""
+    if last in (".gz", ".bgz"):
+        return "gzip/bgzip"
+    if last == ".bz2":
+        return "bzip2"
+    if last == ".xz":
+        return "xz"
+    if last == ".zip":
+        return "zip"
+    if last == ".zst":
+        return "zstd"
+    return "none"
+
+def human_size(n: int) -> str:
+    units = ["B","KB","MB","GB","TB","PB"]
+    i, f = 0, float(n)
+    while f >= 1024 and i < len(units)-1:
+        f /= 1024.0; i += 1
+    return f"{f:.0f}{units[i]}" if f >= 100 else (f"{f:.1f}{units[i]}" if f >= 10 else f"{f:.2f}{units[i]}")
+
+def classify_format(p: Path) -> Dict[str, Any]:
+    """Minimal, safe classifier. Replace with your bio-aware one if you have it."""
+    if p.is_dir():
+        return {"ext": "", "codec": "none", "format": "DIR", "is_index": False, "index_of": "", "role": "dir"}
+    suffs = "".join(p.suffixes).lower()
+    last  = p.suffix.lower() if p.suffix else ""
+    fmt = "Unknown"
+    if suffs.endswith(".fastq.gz") or last in (".fastq",".fq"): fmt = "FASTQ"
+    elif last in (".bam",".sam",".cram"): fmt = last[1:].upper()
+    elif suffs.endswith(".vcf.gz") or last in (".vcf",".bcf"): fmt = last[1:].upper() if last in (".vcf",".bcf") else "VCF"
+    elif last in (".json",".yaml",".yml",".toml",".ini",".cfg"): fmt = last[1:].upper()
+    elif last in (".csv",".tsv"): fmt = last[1:].upper()
+    elif suffs.endswith(".xlsx"): fmt = "XLSX"
+    elif suffs.endswith(".bed"): fmt = "BED"
+    elif suffs.endswith(".pdf"): fmt = "PDF"
+    elif suffs.endswith(".png"): fmt = "PNG"
+    elif suffs.endswith(".html"): fmt = "HTML"
+    codec = "gzip/bgzip" if suffs.endswith(".gz") else "none"
+    is_index = last in (".bai",".tbi",".csi",".crai")
+    index_of = ""
+    if last == ".bai":  index_of = re.sub(r"\.bai$", ".bam", p.name, flags=re.I)
+    if last == ".crai": index_of = re.sub(r"\.crai$", ".cram", p.name, flags=re.I)
+    if last in (".tbi",".csi"): index_of = re.sub(r"\.(tbi|csi)$", "", p.name, flags=re.I)
+    return {"ext": suffs or last, "codec": codec, "format": fmt, "is_index": is_index, "index_of": index_of, "role": "index" if is_index else "data"}
+
+
+def build_tree(
+    root: Path,
+    ignore_hidden: bool = True,
+    follow_symlinks: bool = False,
+    max_depth: Optional[int] = None,
+) -> Dict[str, Any]:
+    root = Path(root)
+    node: Dict[str, Any] = {
+        "name": root.name or str(root),
+        "path": str(root),
+        "kind": "dir" if root.is_dir() else "file",
+        "size_bytes": 0,
+        "size_human": "0B",
+    }
+
+    # File node
+    if root.is_file() and (follow_symlinks or not root.is_symlink()):
+        try:
+            sz = root.stat().st_size
+        except (OSError, PermissionError):
+            sz = 0
+        node["size_bytes"] = sz
+        node["size_human"] = human_size(sz)
+        node.update(classify_format(root))
+        return node
+
+    # Dir node
+    if root.is_dir():
+        node["children"] = []  # ensure present
+
+        # depth guard: when below 0, don't list children but return a dir stub
+        if max_depth is not None and max_depth < 0:
+            node.update({"ext": "", "codec": "none", "format": "DIR", "is_index": False, "index_of": "", "role": "dir"})
+            return node
+
+        total = 0
+        children: List[Dict[str, Any]] = []
+        try:
+            with os.scandir(root) as it:
+                for entry in it:
+                    if ignore_hidden and entry.name.startswith("."):
+                        continue
+                    try:
+                        p = Path(entry.path)
+                        if (not follow_symlinks) and entry.is_symlink():
+                            continue
+                        child = build_tree(
+                            p,
+                            ignore_hidden=ignore_hidden,
+                            follow_symlinks=follow_symlinks,
+                            max_depth=None if max_depth is None else max_depth - 1,
+                        )
+                        total += int(child.get("size_bytes", 0))
+                        children.append(child)
+                    except (OSError, PermissionError):
+                        children.append({
+                            "name": entry.name,
+                            "path": str(Path(entry.path)),
+                            "kind": "unknown",
+                            "size_bytes": 0,
+                            "size_human": "0B",
+                            "ext": "",
+                            "codec": "none",
+                            "format": "Unknown",
+                            "is_index": False,
+                            "index_of": "",
+                            "role": "unknown",
+                        })
+        except (OSError, PermissionError):
+            pass
+
+        node["children"] = children
+        node["size_bytes"] = total
+        node["size_human"] = human_size(total)
+        node.update({"ext": "", "codec": "none", "format": "DIR", "is_index": False, "index_of": "", "role": "dir"})
+    return node
+
+
+def safe_join_under_uploads(*parts: str) -> Path:
+    # simple, safe join under UPLOADS
+    candidate = (UPLOADS_ROOT / Path(*[secure_filename(p) for p in parts])).resolve()
+    if not str(candidate).startswith(str(UPLOADS_ROOT)):
+        raise ValueError("Path outside UPLOADS root")
+    return candidate
+
+@app.route("/workflows/tree", methods=["GET"])
+def workflows_tree():
+    job_id = (request.args.get("job_id") or "").strip()
+    panel  = (request.args.get("panel")  or "").strip()
+    path   = (request.args.get("path")   or "").strip()
+    max_depth = request.args.get("max_depth", type=int)  # may be None
+    follow_symlinks = (request.args.get("follow_symlinks","0") or "").lower() in ("1","true","yes")
+
+    try:
+        if path:
+            root = safe_join_under_uploads(path)
+        elif job_id and panel:
+            root = safe_join_under_uploads(job_id, panel)
+        elif job_id:
+            root = safe_join_under_uploads(job_id)
+        else:
+            root = UPLOADS_ROOT
+
+        if not root.exists():
+            return jsonify(error=f"Path not found: {root}"), 404
+
+        tree = build_tree(root, ignore_hidden=True, follow_symlinks=follow_symlinks, max_depth=max_depth if max_depth is not None else 5)
+        return jsonify(tree), 200
+    except ValueError as e:
+        return jsonify(error=str(e)), 400
+    except Exception as e:
+        return jsonify(error=f"Server error: {e}"), 500
+
+
+def _safe_join_under_uploads(*parts: str) -> Path:
+    """Prevent path traversal outside UPLOADS."""
+    p = (UPLOADS_ROOT / Path(*[secure_filename(x) for x in parts if x])).resolve()
+    if not str(p).startswith(str(UPLOADS_ROOT)):
+        raise ValueError("Path outside UPLOADS")
+    return p
+
+@app.route("/workflows/tree_view", methods=["GET"])
+def workflows_tree_view():
+    """
+    Server-side rendered directory tree.
+    Example: /workflows/tree_view?job_id=TEST_NEW_CMD&panel=GenOncology-Dx.v1&max_depth=5
+    """
+    job_id: str = (request.args.get("job_id") or "").strip()
+    panel:  str = (request.args.get("panel") or "").strip()
+    max_depth: Optional[int] = request.args.get("max_depth", type=int) or 5
+
+    try:
+        if job_id and panel:
+            root = _safe_join_under_uploads(job_id, panel)
+        elif job_id:
+            root = _safe_join_under_uploads(job_id)
+        else:
+            root = UPLOADS_ROOT
+
+        if not root.exists():
+            return render_template(
+                "tree_modal.html",
+                tree=None,
+                error=f"Path not found: {root}",
+                job_id=job_id,
+                panel=panel,
+                resolved_path=str(root),
+                max_depth=max_depth,
+                title=f"Directori {job_id}"
+            )
+
+        tree = build_tree(root, ignore_hidden=True, follow_symlinks=False, max_depth=max_depth)
+        return render_template(
+            "tree_modal.html",
+            tree=tree,
+            error=None,
+            job_id=job_id,
+            panel=panel,
+            resolved_path=str(root),
+            max_depth=max_depth,
+            title=f"Directori {job_id}"
+        )
+    except ValueError as e:
+        return render_template(
+            "tree_modal.html",
+            tree=None,
+            error=str(e),
+            job_id=job_id,
+            panel=panel,
+            resolved_path="",
+            max_depth=max_depth,
+            title=f"Directori {job_id}"
+        )
+
+
+@app.route("/workflows/download", methods=["GET"])
+def workflows_download():
+    """
+    Download a single file from UPLOADS, scoped by (job_id, panel) and a rel path.
+
+    Expected query:
+      ?job_id=RUN123&panel=GenOncology-Dx.v1&rel=reports/sample1/sample1.vcf.gz
+    If job_id/panel are omitted, rel is considered relative to UPLOADS root.
+    """
+    job_id = (request.args.get("job_id") or "").strip()
+    panel  = (request.args.get("panel")  or "").strip()
+    rel    = (request.args.get("rel")    or "").lstrip("/").strip()
+
+    if not rel:
+        abort(400, "Missing rel")
+
+    try:
+        # Build the base directory (UPLOADS[/job_id][/panel]) safely
+        base = _safe_join_under_uploads(*(p for p in [job_id, panel] if p))
+        target = (base / rel).resolve()
+        # Final containment check
+        if not str(target).startswith(str(UPLOADS_ROOT)):
+            abort(400, "Invalid path")
+        if not target.exists() or not target.is_file():
+            abort(404, "File not found")
+    except ValueError as e:
+        abort(400, str(e))
+    except Exception:
+        abort(500, "Server error resolving download")
+
+    # Send as attachment
+    return send_file(
+        str(target),
+        as_attachment=True,
+        download_name=target.name  # Flask >= 2.0
+    )
 
 # ---------- helpers to infer types ----------
 _num_int  = re.compile(r'^[+-]?\d+$')
 _num_float= re.compile(r'^[+-]?\d*\.\d+$')
 
+def get_gene_panels():
+    url = f"{app.config['GENE_PANEL_API']}/show_all"
+    response = requests.get(url)
+    gene_panels = []
+    if response:
+        r = response.json()
+        # r = json.loads(r)
+        for panel in r["panels"]:
+            panel_name = panel["Panel_id"]
+            if panel_name == "GenOncology-Dx":
+                panel_name = "GenOncology-Dx.v1"
+            gene_panels.append(panel_name)
+    return gene_panels
+
+UPLOADS_ROOT = Path(Config.UPLOADS).resolve()
+
+def safe_join_under_uploads(*parts: str) -> Path:
+    candidate = (UPLOADS_ROOT / Path(*[secure_filename(p) for p in parts])).resolve()
+    if not str(candidate).startswith(str(UPLOADS_ROOT)):
+        raise ValueError("Path outside UPLOADS root")
+    return candidate
 
 
 # routes_pipeline.py (add this)
-@app.route("/pipelines", endpoint="pipeline_list_page")
+@app.route("/workflows/config", endpoint="workflows_config")
 def pipeline_list_page():
     return render_template("pipeline_list.html", title="Pipelines")
 
 
 @app.route("/pipelines/new", endpoint="pipeline_new_page")
 def pipeline_new_page():
-    """Render the empty/new pipeline form. Optionally prefill from a CLI (?cmd=...)."""
+    """
+        Render the empty/new pipeline form. Optionally prefill from a CLI (?cmd=...).
+    """
     cmd = (request.args.get("cmd") or "").strip()
 
     # default empty seed
@@ -71,8 +428,112 @@ def pipeline_edit_page(pipeline_id):
         mode="edit",
     )
 
+@app.route("/workflows/analysis")
+def analyze_workflows():
+    pipelines = Pipeline.query.all()
 
-# routes_pipeline.py  (add this)
+    return render_template("analyze_workflow.html", workflows=pipelines)
+
+@app.route('/workflows/<int:pipeline_id>')
+def view_workflow(pipeline_id):
+    pipeline = (
+        Pipeline.query.options(
+            joinedload(Pipeline.params),
+            joinedload(Pipeline.configs)
+        ).get(pipeline_id)
+    )
+    if not pipeline:
+        abort(404)
+
+    def parse_json(s, default):
+        try:
+            return json.loads(s) if s else default
+        except Exception:
+            return default
+
+    def param_sort_key(p):
+        return (not bool(p.is_positional), p.position or 1_000_000, (p.name or '').lower())
+
+    PATH_HINT = re.compile(r"(path|dir|folder|file|fastq|fq|bam|vcf|outdir|output|input)s?$", re.I)
+
+    all_params = []
+    for p in sorted(pipeline.params, key=param_sort_key):
+        p_type = (p.type or "string").lower()
+        name = p.name or ""
+        is_pathlike = (p_type in {"file","dir"}) or bool(PATH_HINT.search(name))
+        choices = parse_json(p.choices_json, [])
+        norm_choices = []
+        for c in choices:
+            if isinstance(c, (list, tuple)) and len(c) >= 2:
+                norm_choices.append({"value": c[0], "label": c[1]})
+            else:
+                norm_choices.append({"value": c, "label": c})
+        all_params.append({
+            "id": p.id,
+            "name": name,
+            "type": p_type,
+            "default": p.default,
+            "required": bool(p.required),
+            "is_positional": bool(p.is_positional),
+            "position": p.position,
+            "description": p.description,
+            "choices": norm_choices,
+            "group_name": (p.group_name or "").strip() or "General",
+            "group_format": (p.group_format or "").strip(),   # e.g., 'multi' or 'radio'
+            "is_pathlike": is_pathlike,
+        })
+
+    workflow_command = {
+        "interpreter": pipeline.interpreter,
+        "entrypoint": pipeline.entrypoint,
+        "params": []
+    }
+    for item in pipeline.params:
+        param_dict = {}
+        param_dict["positional"] = item.is_positional
+        param_dict["id"] = item.id
+        if item.is_positional:
+            param_dict["name"] =  item.default
+        else:
+            param_dict["name"] =  item.name
+    
+        param_dict["default_value"] = item.default
+        workflow_command["params"].append(param_dict)
+
+    # Inputs shown at the top as real <input type="file"> controls
+    def is_input(x):
+        n = x["name"].lower(); g = x["group_name"].lower()
+        return g in {"io","input","inputs"} or n in {"input","inputs","r1","r2","fastq","fastqs","bam"}
+
+    inputs = [x for x in all_params if is_input(x)]
+
+    # Bottom panel params: everything except inputs (no Outputs section anymore)
+    others = [x for x in all_params if x not in inputs]
+
+    # Group for the collapsible panel
+    grouped = {}
+    for x in others:
+        if x["required"] == 1:
+            grouped.setdefault(x["group_name"], []).append(x)
+
+    grouped_params = []
+    for key, items in grouped.items():
+        items.sort(key=lambda z: ((z.get("position") or 1_000_000), z["name"].lower()))
+        grouped_params.append({"name": key, "params": items})
+    grouped_params.sort(key=lambda g: (g["name"] != "General", g["name"].lower()))
+
+    gene_panels = get_gene_panels()
+
+    return render_template(
+        "workflow_run.html",
+        gene_panels=gene_panels,
+        pipeline=pipeline,
+        workflow_command=workflow_command,
+        inputs=inputs,
+        grouped_params=grouped_params,
+        total_params=len(all_params),
+    )
+
 @app.put("/api/pipelines/<int:pipeline_id>")
 def api_update_pipeline(pipeline_id):
     p = Pipeline.query.get_or_404(pipeline_id)
@@ -88,6 +549,7 @@ def api_update_pipeline(pipeline_id):
     p.interpreter = (base.get("interpreter") or "").strip()
     p.env_vars_json = json.dumps(base.get("env_vars") or {}, ensure_ascii=False)
     p.meta_json     = json.dumps(base.get("meta") or {}, ensure_ascii=False)
+    p.is_set_default =(base.get("lockdefault") or "").strip()
     p.description = (base.get("description") or "").strip()
 
     # replace params
@@ -105,7 +567,8 @@ def api_update_pipeline(pipeline_id):
             description=pr.get("description"),
             choices_json=json.dumps(pr.get("choices") or [], ensure_ascii=False),
             group_name=pr.get("group_name"),
-            group_format=pr.get("group_format")
+            group_format=pr.get("group_format"),
+            is_set_default=pr.get("lockdefault")
         ))
 
     db.session.commit()
@@ -150,6 +613,269 @@ def _coerce(v, t):
         if isinstance(v, bool): return v
         return str(v).lower() in ("1","true","yes","y","on")
     return v
+
+
+HELP_SECT_RE = re.compile(r'^\s*([A-Za-z].*?):\s*$')             # e.g. "optional arguments:"
+USAGE_RE     = re.compile(r'^\s*usage:\s*(.+)$', re.I)
+# Lines like: "  -j N, --cores N    Number of cores [default: 1]"
+# or:         "  --genome GENOME    Reference genome {hg19,hg38}"
+OPT_SPLIT_RE = re.compile(r'^\s{0,8}(.+?)\s{2,}(.*)$')           # left  /  right (help text)
+IS_FLAG_RE   = re.compile(r'^\s*-\S')                            # starts with a dash (flag)
+CHOICES_RE   = re.compile(r'\{([^}]+)\}')                        # {a,b,c}
+DEFAULTS_RES = [
+    re.compile(r'\[default:\s*([^\]]+)\]', re.I),
+    re.compile(r'\(default:\s*([^)]+)\)', re.I),
+    re.compile(r'default\s*=\s*([^\s,;]+)', re.I),
+]
+REQUIRED_RE  = re.compile(r'\brequired\b', re.I)
+
+# Heuristic type inference from metavar / text
+def _infer_type_from_metavar(metavar: str) -> str:
+    mv = (metavar or '').strip().upper()
+    if not mv:
+        return 'bool'  # flags without metavar
+    if any(k in mv for k in ['INT', 'N', 'NUM', 'COUNT', 'THREAD', 'CORES']):
+        return 'int'
+    if any(k in mv for k in ['FLOAT', 'DOUBLE', 'FP', 'ALPHA', 'BETA']):
+        return 'float'
+    if any(k in mv for k in ['DIR', 'DIRECTORY']):
+        return 'dir'
+    if any(k in mv for k in ['FILE', 'PATH', 'FASTQ', 'BAM', 'VCF', 'BED', 'YAML', 'JSON', 'TSV', 'CSV']):
+        return 'file'
+    if CHOICES_RE.search(mv):
+        return 'choice'
+    return 'string'
+
+def _extract_default(text: str) -> str:
+    if not text: return ''
+    for rx in DEFAULTS_RES:
+        m = rx.search(text)
+        if m:
+            return m.group(1).strip()
+    return ''
+
+def _extract_choices(text_or_mv: str) -> List[str]:
+    m = CHOICES_RE.search(text_or_mv or '')
+    if not m: return []
+    return [c.strip() for c in m.group(1).split(',') if c.strip()]
+
+def _tokenize_flags(left: str) -> Tuple[List[str], str]:
+    """
+    Split left column: "-j N, --cores N" -> flags ["-j", "--cores"], metavar "N"
+    Also supports "--flag", "--flag VALUE", "--flag=VALUE"
+    """
+    # Normalize commas and multiple spaces
+    parts = [p.strip() for p in left.split(',')]
+    flags = []
+    metavar = ''
+    for part in parts:
+        toks = part.split()
+        if not toks: continue
+        # "--flag=VALUE" style
+        if '=' in toks[0] and toks[0].startswith('-'):
+            flag, mv = toks[0].split('=', 1)
+            flags.append(flag)
+            if mv and not metavar: metavar = mv
+            continue
+        # "--flag VALUE" or "--flag"
+        if toks[0].startswith('-'):
+            flags.append(toks[0])
+            # take last token as metavar if it is not a flag and is uppercase-like
+            if len(toks) >= 2 and not toks[-1].startswith('-'):
+                metavar = toks[-1]
+        else:
+            # positional (no leading dash)
+            pass
+    return flags, metavar
+
+def _clean_desc(s: str) -> str:
+    s = (s or '').strip()
+    # Common argparse filler
+    return re.sub(r'\s+', ' ', s)
+
+def parse_help_command(command: str) -> Dict:
+    """
+    Execute `<command> --help` (or -h) and parse argparse-like help into our schema.
+    Returns { "pipeline": {...}, "params": [...] } similar to parse_cli.
+    """
+    cmd = (command or '').strip()
+    if not cmd:
+        return {"pipeline": {}, "params": []}
+
+    # Ensure we try with help; if the user already included -h/--help, keep it.
+    toks = shlex.split(cmd)
+    has_help = any(t in ('-h', '--help') or t.endswith('help') for t in toks)
+    if not has_help:
+        # For nextflow, prefer inserting before params only if "run" present
+        if toks and toks[0] == 'nextflow':
+            # nextflow run PIPELINE --help  (works)
+            toks.append('--help')
+        else:
+            toks.append('--help')
+
+    # Run help safely
+    try:
+        proc = subprocess.run(
+            toks,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.STDOUT,
+            timeout=10,
+            check=False,
+            text=True,
+            env={**os.environ, 'PYTHONWARNINGS': 'ignore'}
+        )
+        help_text = proc.stdout or ''
+    except Exception as e:
+        # If execution fails, return empty but keep pipeline meta from CLI parse
+        base = parse_cli(command).get('pipeline', {})
+        return {"pipeline": base, "params": []}
+
+    # Parse meta via your existing CLI heuristics (interpreter/entrypoint/name)
+    base_meta = parse_cli(command).get('pipeline', {})
+
+    lines = help_text.splitlines()
+    # Join wrapped description lines: collect option blocks under current section
+    section = None
+    params: Dict[str, Dict] = {}
+    positionals: List[Dict] = []
+    buf_left, buf_right = None, None
+
+    def flush_option():
+        nonlocal buf_left, buf_right, section
+        if not buf_left: return
+        left = buf_left
+        desc = _clean_desc(buf_right or '')
+        buf_left, buf_right = None, None
+
+        if IS_FLAG_RE.match(left):
+            flags, metavar = _tokenize_flags(left)
+            long_name = None
+            short = None
+            for f in flags:
+                if f.startswith('--'):
+                    long_name = f
+                elif f.startswith('-') and len(f) == 2:
+                    short = f[1]
+            # Fallback: if no long flag, use first token as name (without dashes)
+            if not long_name:
+                long_name = flags[0] if flags else left.strip()
+            clean = long_name.lstrip('-')
+
+            default = _extract_default(desc)
+            choices = _extract_choices(desc) or _extract_choices(metavar)
+            typ = _infer_type_from_metavar(metavar)
+            if choices and typ != 'bool':
+                typ = 'choice'
+            required = bool(REQUIRED_RE.search(desc) or (section and 'required' in section.lower()))
+            is_bool = (typ == 'bool')
+
+            p = params.get(clean, {
+                "name": clean,
+                "short": short,
+                "type": None,
+                "default": "",
+                "required": False,
+                "is_positional": False,
+                "is_set_default": False,
+                "position": None,
+                "description": "",
+                "choices": [],
+                "group_name": section or None
+            })
+            # Prefer first discovered short if any
+            if short and not p.get('short'):
+                p['short'] = short
+
+            p['choices'] = p.get('choices') or choices
+            # Type & default
+            if not p['type']:
+                p['type'] = typ if typ else 'string'
+            if is_bool:
+                # boolean flags default to "", set True if "store_true"-like (no explicit default)
+                p['default'] = True if default in ('', None) else (default.lower() in ('1','true','yes','on'))
+                # normalize (UI expects True/"" pattern)
+                p['default'] = True if p['default'] else ""
+            else:
+                if default != '':
+                    p['default'] = default
+            # Description
+            if desc:
+                p['description'] = (p['description'] + ' ' + desc).strip()
+            params[clean] = p
+        else:
+            # positional
+            name = left.strip().split()[0]
+            pos = {
+                "name": name,
+                "short": None,
+                "type": _infer_type_from_metavar(name),
+                "default": "",
+                "required": True,
+                "is_positional": True,
+                "is_set_default":True,
+                "position": len(positionals)+1,
+                "description": _clean_desc(desc),
+                "choices": [],
+                "group_name": section or None
+            }
+            positionals.append(pos)
+
+    for raw in lines:
+        # Section headers
+        msect = HELP_SECT_RE.match(raw)
+        if msect:
+            # flush pending
+            flush_option()
+            section = msect.group(1).strip()
+            continue
+
+        # usage line? just flush and skip
+        if USAGE_RE.match(raw):
+            flush_option()
+            continue
+
+        m = OPT_SPLIT_RE.match(raw)
+        if m:
+            # new option/positional line begins
+            flush_option()
+            buf_left, buf_right = m.group(1), m.group(2)
+        else:
+            # continuation of previous description (wrapped)
+            if buf_left is not None:
+                if raw.strip():
+                    buf_right = (buf_right or '') + ' ' + raw.strip()
+
+    # flush tail
+    flush_option()
+
+    # Merge positionals into params dict (keep your schema)
+    for pos in positionals:
+        params[pos['name']] = pos
+
+    # Final normalization like parse_cli
+    # Fill missing types/default normalization for bools
+    for p in params.values():
+        if p['type'] in (None, ''):
+            p['type'] = 'bool' if isinstance(p.get('default'), bool) else 'string'
+        if p['type'] == 'bool':
+            p['default'] = True if p.get('default') else ""
+
+    # Sort: positionals first by position, then by name
+    sorted_params = sorted(
+        params.values(),
+        key=lambda x: (not x.get('is_positional'), x.get('position') or 0, x.get('name') or '')
+    )
+
+    return {
+        "pipeline": {
+            "interpreter": base_meta.get('interpreter', ''),
+            "entrypoint": base_meta.get('entrypoint', ''),
+            "workdir": base_meta.get('workdir', ''),
+            "suggested_name": base_meta.get('suggested_name') or base_meta.get('interpreter') or ''
+        },
+        "params": sorted_params
+    }
+
 
 # ---------- the CLI parser ----------
 def parse_cli(command:str):
@@ -353,6 +1079,19 @@ def api_parse_cli():
     return jsonify({"ok": True, **parsed})
 
 
+@app.post("/api/pipelines/parse-help")
+def api_parse_help():
+    payload = request.get_json(force=True)
+    command = (payload.get("command") or "").strip()
+    if not command:
+        return jsonify({"ok": False, "error": "Empty command"}), 400
+    try:
+        parsed = parse_help_command(command)
+        return jsonify({"ok": True, **parsed})
+    except Exception as e:
+        return jsonify({"ok": False, "error": str(e)}), 500
+
+
 # routes_pipeline.py (append these)
 import os
 from hashlib import md5
@@ -432,7 +1171,8 @@ def api_get_pipeline(pipeline_id):
             "description": prm.description,
             "choices": choices,
             "group_name": prm.group_name,
-            "group_format": prm.group_format
+            "group_format": prm.group_format,
+            "is_set_default": prm.is_set_default,
         })
 
     try:

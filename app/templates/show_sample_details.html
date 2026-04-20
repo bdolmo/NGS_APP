@@ -1,13 +1,634 @@
 {% extends "base.html" %}
 
 {% block body %}
+<style>
+  .consequence-wrap {
+    white-space: normal;
+    overflow-wrap: anywhere;
+    word-break: break-word;
+  }
+  #therapeutic_table {
+    font-size: 0.96rem;
+  }
+  #rare_table {
+    font-size: 0.96rem;
+  }
+  #therapeutic_table th,
+  #therapeutic_table td {
+    font-size: 0.96rem;
+  }
+  #rare_table th,
+  #rare_table td {
+    font-size: 0.96rem;
+  }
+  #therapeutic_table_wrapper {
+    margin-top: 0 !important;
+    padding-top: 0 !important;
+  }
+  #rare_table_wrapper {
+    margin-top: 0 !important;
+    padding-top: 0 !important;
+  }
+  #therapeutic_table_wrapper > .row:first-child {
+    display: none !important;
+  }
+  #rare_table_wrapper > .row:first-child {
+    display: none !important;
+  }
+  #therapeutic_table {
+    margin-top: 0 !important;
+  }
+  #rare_table {
+    margin-top: 0 !important;
+  }
+  .chart {
+    line-height: 1;
+  }
+  .chart svg {
+    display: block;
+  }
+  #variantFilters {
+    margin-top: 0 !important;
+    margin-bottom: 0 !important;
+    display: flex !important;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: .4rem .6rem;
+  }
+  #therapeutic_table_filter {
+    display: none !important;
+  }
+  #rareVariantFilters {
+    margin-top: 0 !important;
+    margin-bottom: 0 !important;
+    display: flex !important;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: .4rem .6rem;
+  }
+  #rare_table_filter {
+    display: none !important;
+  }
+  #therapeutic_custom_search {
+    width: 180px;
+    height: calc(1.4em + .3rem + 2px);
+    font-size: 0.88rem;
+    padding: .12rem .4rem;
+  }
+  #rare_custom_search,
+  #rare_filter_tag_input {
+    width: 180px;
+    height: calc(1.4em + .3rem + 2px);
+    font-size: 0.88rem;
+    padding: .12rem .4rem;
+  }
+  #filter_tag_select {
+    width: 170px;
+    height: calc(1.4em + .3rem + 2px);
+    font-size: 0.88rem;
+    padding: .12rem .35rem;
+  }
+  .pred-badges {
+    margin-top: .1rem;
+  }
+  .pred-badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 1.2rem;
+    height: 1.2rem;
+    border-radius: 999px;
+    font-weight: 700;
+    font-size: .72rem;
+    color: #fff;
+    margin-right: .15rem;
+    line-height: 1;
+  }
+  .pred-badge-d {
+    background-color: #e76f51;
+  }
+  .pred-badge-b {
+    background-color: #d3d3d3;
+    color: #343a40;
+  }
+  .pred-filter-tag {
+    display: inline-block;
+    margin-left: .2rem;
+    padding: .06rem .35rem;
+    border-radius: .45rem;
+    font-size: .68rem;
+    line-height: 1.15;
+    border: 1px solid transparent;
+    font-weight: 600;
+    vertical-align: middle;
+    max-width: 170px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .pred-filter-tag-pass {
+    background: #d4edda;
+    color: #155724;
+    border-color: #b9e2c6;
+  }
+  .pred-filter-tag-nonpass {
+    background: #fff3cd;
+    color: #7a5a00;
+    border-color: #ffe08a;
+  }
+  .pred-variant-link {
+    display: inline-flex;
+    align-items: center;
+    margin-left: .2rem;
+    padding: .06rem .35rem;
+    border-radius: .45rem;
+    font-size: .68rem;
+    line-height: 1.15;
+    border: 1px solid #b7d3ea;
+    font-weight: 600;
+    vertical-align: middle;
+    color: #2b6c9f;
+    background: #eef6fc;
+    text-decoration: none;
+  }
+  .pred-variant-link:hover,
+  .pred-variant-link:focus {
+    color: #1f547d;
+    background: #e2eff9;
+    text-decoration: none;
+  }
+  #lost_exons_table {
+    font-size: 0.92rem;
+  }
+  #lost_exons_table td {
+    font-size: 0.92rem;
+  }
+  #lost_exons_table th {
+    font-size: 0.9rem;
+  }
+  .report-generate-btn {
+    background: #c8e3ff;
+    border-color: #7fb2df;
+    color: #163f64;
+    font-weight: 600;
+    font-size: .82rem;
+    padding: .22rem .6rem;
+    border-radius: .35rem;
+    box-shadow: none;
+  }
+  .report-generate-btn:hover,
+  .report-generate-btn:focus {
+    background: #b6d8fb;
+    border-color: #6f9fca;
+    color: #102f4b;
+  }
+  .report-generate-btn:disabled {
+    background: #edf6ff;
+    color: #6e8fae;
+    border-color: #d6e8fa;
+    opacity: 1;
+    cursor: not-allowed;
+  }
+  .cgi-launch-btn {
+    background: #dcefe8;
+    border-color: #86bfae;
+    color: #184d40;
+    font-weight: 600;
+    font-size: .82rem;
+    padding: .22rem .6rem;
+    border-radius: .35rem;
+    box-shadow: none;
+  }
+  .cgi-launch-btn:hover,
+  .cgi-launch-btn:focus {
+    background: #cfe6dd;
+    border-color: #74ac9c;
+    color: #113a31;
+  }
+  .cgi-launch-btn:disabled {
+    background: #edf5f2;
+    color: #7d9b92;
+    border-color: #d4e4de;
+    opacity: 1;
+    cursor: not-allowed;
+  }
+  .report-actions-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: .45rem .8rem;
+  }
+  .report-primary-actions {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: .45rem;
+  }
+  .cgi-actions-inline {
+    display: inline-flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: .45rem;
+    color: #5c6b73;
+    font-size: .78rem;
+  }
+  .cgi-status-row {
+    display: inline-flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: .35rem .6rem;
+    font-size: .78rem;
+    color: #5c6b73;
+  }
+  .cgi-status-label {
+    display: inline-flex;
+    align-items: center;
+    gap: .3rem;
+  }
+  .cgi-status-label.is-sent {
+    color: #1f6b58;
+    font-weight: 500;
+  }
+  .cgi-status-link {
+    color: #2b6c9f;
+    text-decoration: none;
+    font-weight: 400;
+  }
+  .cgi-status-link:hover,
+  .cgi-status-link:focus {
+    color: #1f547d;
+    text-decoration: none;
+  }
+  .report-options-panel {
+    margin-top: .6rem;
+    padding-top: .6rem;
+    border-top: 1px solid #d7e7f3;
+  }
+  .report-options-panel label {
+    margin-bottom: .2rem;
+  }
+  #therapeutic_table .table-check {
+    padding-left: 1rem;
+    width: 1rem;
+    min-height: 1rem;
+    margin: 0 auto;
+  }
+  #therapeutic_table .table-check .custom-control-label {
+    display: block;
+    min-height: 1rem;
+    margin-bottom: 0;
+  }
+  #therapeutic_table .table-check .custom-control-label::before,
+  #therapeutic_table .table-check .custom-control-label::after {
+    left: 0;
+    top: .06rem;
+  }
+  #therapeutic_table th.actions-col,
+  #therapeutic_table td.actions-col {
+    width: 5% !important;
+    min-width: 5% !important;
+    max-width: 10% !important;
+    white-space: normal;
+  }
+  #rare_table th.actions-col,
+  #rare_table td.actions-col {
+    width: 5% !important;
+    min-width: 120px !important;
+    max-width: 140px !important;
+    white-space: normal;
+  }
+  #therapeutic_table th.variant-col,
+  #therapeutic_table td.variant-col {
+    width: 18% !important;
+    min-width: 300px !important;
+    max-width: 30% !important;
+    white-space: normal;
+  }
+  #rare_table th.variant-col,
+  #rare_table td.variant-col {
+    width: 30% !important;
+    min-width: 300px !important;
+    max-width: 30% !important;
+    white-space: normal;
+  }
+  #therapeutic_table td.actions-col .reason-text {
+    display: block;
+    max-width: 100%;
+    white-space: normal;
+    overflow-wrap: anywhere;
+    word-break: break-word;
+    line-height: 1.2;
+  }
 
 
-<!-- The Modal -->
-<!-- Button to Open the Modal -->
+  #therapeutic_table td.gene-col {
+    width: 5% !important;
+    min-width: 5% !important;
+    max-width: 5% !important;
+    white-space: normal;
+  }
+  #rare_table td.gene-col,
+  #rare_table th.gene-col {
+    width: 8.333333% !important;
+    min-width: 8.333333% !important;
+    max-width: 8.333333% !important;
+    white-space: normal;
+  }
+
+  #therapeutic_table th.col-1,
+  #therapeutic_table td.col-1 {
+    width: 8.333333%;
+    min-width: 8.333333%;
+    max-width: 8.333333%;
+    white-space: normal;
+  }
+  #therapeutic_table th.external-db-col,
+  #therapeutic_table td.external-db-col {
+    width: 25%;
+    min-width: 200px;
+    max-width: 300px;
+    white-space: normal;
+  }
+  #rare_table th.other-col,
+  #rare_table td.other-col {
+    width: 18%;
+    min-width: 190px;
+    max-width: 240px;
+    white-space: normal;
+  }
+  #rare_table th.tumor-col,
+  #rare_table td.tumor-col {
+    width: 10%;
+    min-width: 120px;
+    max-width: 180px;
+    white-space: normal;
+  }
+  .gene-main {
+    line-height: 1.1;
+  }
+  .gene-main a,
+  .gene-main .gene-label {
+    font-weight: 700;
+    font-style: italic;
+  }
+  .gene-isoform {
+    margin-top: .15rem;
+    color: #495057;
+    font-size: .82rem;
+    line-height: 1.1;
+    overflow-wrap: anywhere;
+  }
+  .gene-region {
+    margin-top: .15rem;
+    font-size: .86rem;
+    line-height: 1.1;
+  }
+  .variant-details-disabled {
+    display: inline-flex;
+    align-items: center;
+    border: 1px solid #adb5bd;
+    color: #6c757d !important;
+    background: #f8f9fa;
+    opacity: 1 !important;
+    pointer-events: none;
+  }
+  #sidebar-wrapper .recent-actions-list {
+    font-size: 0.95rem;
+    line-height: 1.25;
+  }
+  #sidebar-wrapper .recent-actions-list li {
+    padding-top: 0.2rem;
+    padding-bottom: 0.2rem;
+  }
+</style>
 
 
-<!-- The Modal -->
+<div class="modal fade" id="deleteVariantModal" tabindex="-1" aria-labelledby="deleteVariantLabel" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <form id="deleteVariantForm" method="POST" class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="deleteVariantLabel">
+          Eliminar variant <small class="text-muted" id="deleteVariantContext"></small>
+        </h5>
+        <button type="button" class="close" data-dismiss="modal" aria-label="Tanca">
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+      <div class="modal-body">
+        <label for="deleteVariantReason" class="form-label">Motiu de l'eliminació (obligatori)</label>
+        <textarea id="deleteVariantReason" name="reason" class="form-control" rows="4" maxlength="1000" required></textarea>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-outline-secondary" data-dismiss="modal">Cancel·la</button>
+        <button type="submit" class="btn btn-danger">Accepta</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+
+<div class="modal fade" id="commentModal" tabindex="-1" aria-labelledby="commentModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-lg modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="commentModalLabel">
+          Comentari <small class="text-muted" id="commentContext"></small>
+        </h5>
+        <button type="button" class="btn btn-secondary btn-sm" data-dismiss="modal">Tanca</button>
+      </div>
+      <div class="modal-body">
+        <label for="commentTextarea" class="form-label">Afegeix/edita el comentari</label>
+        <textarea id="commentTextarea" class="form-control" rows="6" maxlength="3000"
+                  placeholder="Escriu el teu comentari aquí..."></textarea>
+        <div class="form-text">Pots escriure fins a 3000 caràcters.</div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-outline-secondary" data-dismiss="modal">Cancel·la</button>
+        <button type="button" class="btn btn-primary" id="saveCommentBtn">Desa</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Add Entry Modal -->
+<div class="modal fade" id="addEntryModal" tabindex="-1" aria-labelledby="addEntryModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-lg">
+    <form id="addEntryForm">
+      <div class="modal-content">
+        <div class="modal-header" style="background-color:rgb(241, 252, 239);">
+          <h4 class="modal-title" id="modal_kb_title"></h4>
+          <button type="button" class="close" data-dismiss="modal" aria-label="Tanca">
+            <span aria-hidden="true">&times;</span>
+          </button>
+        </div>
+
+        <div class="modal-body">
+
+          <!-- Context you already have on the page -->
+          <input type="hidden" name="run_id"        value="{{ sample_info.run_id }}">
+          <input type="hidden" name="sample"        value="{{ sample_info.lab_id }}">
+          <input type="hidden" name="tumor_origin"  value="{{ petition_info.Tumour_origin }}">
+
+          <div class="form-row" style="background-color:rgb(226, 244, 251)">
+            <div class="form-group col-md-6">
+              <label><b>Gen</b></label>
+              <input class="form-control"  type="" name="kb_gene" id="kb_gene">
+              <label><b>HGVSg</b></label>
+              <input class="form-control" type="" name="kb_hgvsg" id="kb_hgvsg">
+            </div>
+            <div class="form-group col-md-6">
+              <label><b>HGVSc</b></label>
+              <input class="form-control" type="" name="kb_hgvsc" id="kb_hgvsc">
+              <label><b>HGVSp</b></label>
+              <input class="form-control" type="" name="kb_hgvsp" id="kb_hgvsp">
+            </div>
+          </div>
+          <hr>
+          <div class="form-row">
+            <hr>
+            <div class="form-group col-md-6">
+              <svg width="23" height="23" xmlns="http://www.w3.org/2000/svg">
+                <circle cx="12.3" cy="12.3" r="10" stroke="darkorange" stroke-width="0.5" fill="darkorange" />
+                <text x="10.5" y="15" font-size="9" text-anchor="middle" fill="white" font-family="Comic Sans MS, sans-serif">
+                  CGI 
+                </text>
+                <title>Cancer Genome Interpreter: Summary | CGI Prediction</title>
+              </svg>
+
+              <label><b>CGI Oncogenic summary</b></label>
+              <input class="form-control" id="cgi_summary_modal" name="oncogenic_summary">
+            </div>
+            <div class="form-group col-md-6">
+              <svg width="23" height="23" xmlns="http://www.w3.org/2000/svg">
+                <circle cx="12.3" cy="12.3" r="10" stroke="darkorange" stroke-width="0.5" fill="darkorange" />
+                <text x="10.5" y="15" font-size="9" text-anchor="middle" fill="white" font-family="Comic Sans MS, sans-serif">
+                  CGI 
+                </text>
+                <title>Cancer Genome Interpreter: Summary | CGI Prediction</title>
+              </svg>
+              <label><b>CGI Oncogenic prediction</b></label>
+              <input class="form-control" id="cgi_prediction_modal" name="oncogenic_prediction">
+            </div>
+          </div>
+
+          <div class="form-row">
+            <div class="form-group col-md-6">
+              <svg width="23" height="23" xmlns="http://www.w3.org/2000/svg">
+                <circle cx="12.3" cy="12.3" r="10" stroke="#a1a1ce" stroke-width="0.5" fill="#a1a1ce" />
+                <text x="10.5" y="15" font-size="9" text-anchor="middle" fill="white" font-family="Comic Sans MS, sans-serif">
+                  CVar
+                </text>
+                <title>ClinVar: Somatic</title>
+              </svg>
+
+              <label><b>ClinVar Germline</b></label>
+              <input class="form-control" id="clinvar_germline_modal" name="clinvar_germline" placeholder="e.g., Pathogenic / VUS">
+            </div>
+            <div class="form-group col-md-6">
+
+              <svg width="23" height="23" xmlns="http://www.w3.org/2000/svg">
+                <circle cx="12.3" cy="12.3" r="10" stroke="#a1a1ce" stroke-width="0.5" fill="#a1a1ce" />
+                <text x="10.5" y="15" font-size="9" text-anchor="middle" fill="white" font-family="Comic Sans MS, sans-serif">
+                  CVar
+                </text>
+                <title>ClinVar: Somatic</title>
+              </svg>
+
+              <label><b>ClinVar Somatic</b></label>
+              <input class="form-control" id="clinvar_somatic_modal" name="clinvar_somatic" placeholder="e.g., No info">
+            </div>
+          </div>
+
+          <div class="form-row">
+            <div class="form-group col-md-6">
+              <svg width="23" height="23" xmlns="http://www.w3.org/2000/svg">
+                <circle cx="10.5" cy="12.5" r="10" fill="none" stroke="#333c87" stroke-width="1.8" />
+                <circle cx="10.5" cy="12.5" r="6.5" fill="none" stroke="#333c87" stroke-width="1.8" />
+                <circle cx="10.5" cy="12.5" r="2.5" fill="#333c87" stroke="#333c87" stroke-width="1" />
+                <title>OncoKB</title>
+              </svg>
+
+              <label><b>OncoKB</b></label>
+              <input class="form-control" id="oncokb_modal" name="oncokb_class" placeholder="e.g., Oncogenic / GOF">
+            </div>
+
+            <div class="form-group col-md-6">
+              <svg width="23" height="23" xmlns="http://www.w3.org/2000/svg">
+                <circle cx="12.3" cy="12.3" r="10" stroke="orange" stroke-width="0.5" fill="orange" />
+                <text x="10.5" y="15" font-size="7" text-anchor="middle" fill="white" font-family="Comic Sans MS, sans-serif">
+                  MTBP
+                </text>
+                <title>Molecular Tumor Board Portal</title>
+              </svg>
+
+              <label><b>MTBP</b></label>
+              <input class="form-control" id="mtbp_modal" name="mtbp" placeholder="e.g., Evidence A - Curated">
+            </div>
+          </div>
+          <div class="form-row">
+
+            <div class="form-group col-md-6">
+              <svg width="23" height="23" xmlns="http://www.w3.org/2000/svg">
+                <circle cx="10.3" cy="10.3" r="10" stroke="#333c87" stroke-width="0.5" fill="#333c87" />
+                <text x="10.5" y="15" font-size="12" text-anchor="middle" fill="white" font-family="Comic Sans MS, sans-serif">
+                  F
+                </text>
+                <title>Franklink Germline</title>
+              </svg>
+
+              <label><b>Franklin ACMG</b></label>
+              <input class="form-control" id="franklin_acmg_modal" name="franklin_acmg" placeholder="e.g., Likely Pathogenic">
+            </div>
+            <div class="form-group col-md-6">
+              
+              <svg width="23" height="23" xmlns="http://www.w3.org/2000/svg">
+                <circle cx="12.3" cy="12.3" r="10" stroke="#333c87" stroke-width="0.5" fill="#333c87" />
+                <text x="12.5" y="15" font-size="12" text-anchor="middle" fill="white" font-family="Comic Sans MS, sans-serif">
+                  F
+                </text>
+                <title>Franklink Somatic</title>
+              </svg>
+
+              <label><b>Franklin Oncogenicity</b></label>
+              <input class="form-control" id="franklin_oncogenicity_modal" name="franklin_oncogenicity" placeholder="e.g., Likely Oncogenic">
+            </div>
+          </div>
+
+          <div class="form-row">
+
+            <div class="form-group col-md-4">
+              <label><b>Tipus de tumor</b></label>
+              <!-- seed from #modal_edit_tumor_origin via JS -->
+              <input class="form-control" name="modal_edit_tumor_origin" id="kb_tumor_type" placeholder="e.g., Pulmó">
+            </div>
+
+            <div class="form-group col-md-4">
+              <label><b>Biòleg M. Especialista</b></label>
+              <input class="form-control" id="especialista" name="especialista" value="{{session['username']}}" data-default="{{session['username']}}" >
+            </div>
+            <div class="form-group col-md-4">
+              <label><b>Data de classificació </b></label>
+              <!-- text so we can enforce DD-MM-YYYY -->
+              <input type="text" class="form-control" name="data_classificacio" id="kb_data_classificacio" placeholder="(YYYY-MM-DD)">
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label><b>Comentaris</b></label>
+            <textarea class="form-control" rows="2" name="comentaris" id="comentaris_modal"></textarea>
+          </div>
+        </div>
+
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary btn-sm" data-dismiss="modal">Cancel·la</button>
+          <button type="submit" class="btn btn-primary btn-sm">Desa</button>
+        </div>
+      </div>
+    </form>
+  </div>
+</div>
+
 <div class="modal fade" id="addVariantModal" tabindex="-1" aria-labelledby="addVariantModalLabel" aria-hidden="true">
   <div class="modal-dialog">
       <div class="modal-content">
@@ -37,7 +658,10 @@
                           <label for="hgvsg" class="form-label">HGVSg</label>
                           <input type="text" class="form-control" id="hgvsg" name="hgvsg">
                       </div>
-
+                      <div class="col">
+                        <label for="hgvsg" class="form-label">Localització/Efecte</label>
+                        <input type="text" class="form-control" id="consequence" name="consequence">
+                    </div>
                   </div>
                   <div class="row mb-3">
                     <div class="col">
@@ -53,7 +677,7 @@
                       <div class="col">
                           <label for="variant_type" class="form-label">Tipus de variant<label>
 
-                          <select class="form-control" id="variant_type" name="variant_type" required>
+                        <select class="form-control" id="variant_type" name="variant_type" required>
                             <option value="">Seleccioneu...</option>
                             <option value="SNV">SNV</option>
                             <option value="Indel">Indel</option>
@@ -198,18 +822,15 @@
                 {% endfor %}
               </select>
             </div>
-
-
             <div class="col-sm ">
               <h6><b>Servei sol·licitant</b></h6>
               <input id="modal_edit_service" type="text" name="modal_edit_service" class="form-control" >
             </div>
-
           </div>
 
           <div class="row mt-3">
             <div class="col-sm">
-              <h6><b>Data biòpsia original</b> <small>(MM/DD/YYYY)</small></h6>
+              <h6><b>Data biòpsia original</b> <small>(DD/MM/YYYY)</small></h6>
               <div class="form-group">
                 <div id="datepicker" data-provide="datepicker">
                   <input class="form-control" name="Date" type="date" value="" id="modal_edit_biopsy_date">
@@ -220,7 +841,7 @@
               </div>
             </div>
             <div class="col-sm">
-              <h6><b>Data de rebuda</b> <small>(MM/DD/YYYY)</small></h6>
+              <h6><b>Data de rebuda</b> <small>(DD/MM/YYYY)</small></h6>
               <div class="form-group">
                 <div id="datepicker" data-provide="datepicker">
                   <input class="form-control" name="Date" type="date" value="" id="modal_edit_recieved_date">
@@ -240,21 +861,29 @@
   <!-- </form> -->
 </div>
 
-<div class="modal fade bd-example-modal-xl" id="show_igv" tabindex="-1" aria-hidden="true">
-  <div class="modal-dialog modal-xl">
-    <div class="modal-content">
-      <div class="modal-header" style="background-color:rgb(248, 248, 248);">
-        <h4 class="modal-title" id=""><b>IGV</b> </h4>
+<div class="modal fade" id="show_igv" tabindex="-1" role="dialog" aria-hidden="true">
+  <div class="modal-dialog"
+       role="document"
+       style="max-width:95vw; width:95vw; margin:25px auto 0;">
+    <div class="modal-content"
+         style="height:calc(95vh - 25px);">
+      <div class="modal-header"
+           style="background-color:rgb(248,248,248);">
+        <h4 class="modal-title"><b>IGV</b></h4>
         <button type="button" class="close" data-dismiss="modal" aria-label="Close">
           <span aria-hidden="true">&times;</span>
         </button>
       </div>
-      <div class="modal-body" style="margin:0 auto;width:100%;height:100%">
-          <div id='igvDiv' style="width:100%;"></div>
+
+      <div class="modal-body"
+           style="padding:0; overflow:hidden;">
+        <div id="igvDiv"
+             style="width:100%; height:calc(95vh - 25px - 56px);"></div>
       </div>
     </div>
   </div>
 </div>
+
 
 <div class="modal fade" id="tier_modal" tabindex="-1" aria-hidden="true">
   <div class="modal-dialog modal-sm">
@@ -287,16 +916,16 @@
 <div id="main_flex" class="d-flex" >
 
 <!-- Sidebar -->
-<div class="bg-light border-right vh-100" id="sidebar-wrapper"style="position:fixed;width:15%;">
+<div class="bg-light border-right vh-100 " id="sidebar-wrapper"style="position:fixed;width:14%;">
   <div class="list-group list-group-flush">
     <div href="#" class="list-group-item list-group-item-action" style="background-color:#d9f7f7;">
       
-      <div style="font-size:24px;"><img class="card-img rounded-circle" style="width:32px;height:32px;font-size:28px;" src="{{ session['avatar'] }}">
+      <div style="font-size:22px;"><img class="card-img rounded-circle" style="width:32px;height:32px;font-size:28px;" src="{{ session['avatar'] }}">
     {{ session["username"] }} <i style="color:green;font-size:14px" class="fas fa-circle"></i><span style="font-size:13px;"> Online</span></div>
     
     <!-- <p style="font-size:13px;"><b>Últim accés:</b>  </p> -->
    </div>
-    <div href="#" class="list-group-item list-group-item-action bg-light">
+    <div href="#" class="list-group-item list-group-item-action bg-light " >
       <div class="row">
         <div class="col">
           <i class="fas fa-external-link-alt"> </i><b> Últims 5 runs</b>
@@ -313,15 +942,15 @@
      </div>
     </div>
 
-    <div href="#" class="list-group-item list-group-item-action bg-light">
+    <div href="#" class="list-group-item list-group-item-action bg-light ">
       <div class="row">
         <div class="col">
-          <i class="fas fa-list"> </i> <b>Últimes 10 accions</b>
+          <i class="fas fa-list"> </i> <b>Últimes 15 accions</b>
         </div>
       </div>
       <div class="row">
         <div class="col">
-          <ul>
+          <ul class="recent-actions-list">
           {% for change in All_changes_dict %}
             {% if All_changes_dict[change]['action_data']['action_json']['origin_action'] == "Create report" %}
               {% set colour = "" %}
@@ -336,7 +965,7 @@
               <li>
                 <a style="word-wrap:break-word;colour:{{colour}};">{{ All_changes_dict[change]['action_name'] }}
                   <a style="word-wrap:break-word;color:{{colour}};" href="{{ url_for('redo_action', action_id=change, run_id=sample_info.run_id, sample=sample_info.lab_id, sample_id=sample_info.id, active="General")}}" role="button">
-                    <span class="badge badge-secondary"><i class="fas fa-redo"></i></span>
+                    <span class="badge badge-secondary" style="background-color:rgb(185, 181, 181);"><i class="fas fa-redo"></i></span>
                   </a>
                 </a>
               </li>
@@ -351,7 +980,7 @@
               <li>
                 <a style="word-wrap:break-word;">{{ All_changes_dict[change]['action_name'] }}
                   <a href="{{ url_for('redo_action', action_id=change, run_id=sample_info.run_id, sample=sample_info.lab_id, sample_id=sample_info.id, active="General")}}" role="button">
-                    <span class="badge badge-secondary"><i class="fas fa-redo"></i></span>
+                    <span class="badge badge-secondary" style="background-color:rgb(185, 181, 181);"><i class="fas fa-redo"></i></span>
                   </a>
                 </a>
               </li>
@@ -364,10 +993,10 @@
   </div>
 </div>
 
-<div class="container-fluid rounded" style="margin-right:90px;background-color:white; width:80%">
+<div class="container-fluid rounded mt-2" style="margin-right:90px;background-color:white; width:81%">
 
-  <nav aria-label="breadcrumb ">
-    <ol class="breadcrumb mt-3 p-1">
+  <nav aria-label="breadcrumb">
+    <ol class="breadcrumb p-1">
       <li class="breadcrumb-item"><a href="{{ url_for('status') }}">Resultats</a></li>
       <li class="breadcrumb-item"><a href="{{ url_for('show_run_details', run_id=sample_info.run_id) }}" id="run_id_tag">{{ sample_info.run_id }}</a></li>
       <li class="breadcrumb-item active" aria-current="page"><h5 id="lab_id_tag">{{ sample_info.lab_id }}</h5></li>
@@ -422,13 +1051,11 @@
     <div class="card card-body border-0 " style="padding:4px;background-color:white;">
 
       <div class="row" style="font-size:16px;">
-        <div class="col-4">
-          <h5><i class="fas fa-id-card"></i> Pacient</h5>      
-          <a class="btn btn-sm btn-secondary" style="float:left;width:80px;padding:0px;color:white;" onclick="updatePatient()"><i class="fas fa-edit"></i>Modifica</a>
-
+        <div class="col-3">
+          <h6><i class="fas fa-id-card"></i> Pacient</h6>      
           <hr style="margin:0px;">
-          <div class="row">
-            <div class="col">
+          <div class="row" style="font-size:0.95rem;">
+            <div class="col-5" >
 
               <div style="margin:0px;">
                 <b style="display:inline-block;">Petició: </b>
@@ -446,7 +1073,7 @@
               </div>
 
             </div>
-            <div class="col">
+            <div class="col-6">
               <div style="margin:0px;">
                 <b style="display:inline-block;">CIP: </b>
                 <div style="display:inline-block;margin:0px;" id="edit_ext3_id"> {{ sample_info.ext3_id }}</div>
@@ -461,20 +1088,22 @@
               </div>
             </div>
           </div>
+        
+        <a class="btn btn-sm btn-secondary" style="float:left;width:80px;padding:0px;color:white;" onclick="updatePatient()"><i class="fas fa-edit"></i>Modifica</a>
+
+        
         </div>
 
-        <div class="col-4">
-          <h5><i class="fas fa-vials"></i> Mostra</h5>
+        <div class="col-4" style="font-size:0.95rem;">
+          <h6><i class="fas fa-vials"></i> Mostra</h6>
           <hr style="margin:0px;">
-
-
           <p style="display:none;" id="sample_num_id"> {{sample_info.id}}</p>
 
           <div class="row">
             <div class="col">
               <div style="display:inline-block;margin:0px;">
                 <b>Tipus de mostra: </b>
-                <div style="display:inline-block;" id="edit_sample_type">bloc de parafina</div>
+                <div style="display:inline-block;" id="edit_sample_type">Bloc de parafina</div>
               </div>
               <div style="margin:0px;">
                 <b>Data de rebuda: </b>
@@ -539,12 +1168,11 @@
 
                 <div style="display:inline-block;" id="edit_biopsy_date"> {{ biopsy_date }}</div>  
               </div>
-
             </div>
           </div>
         </div>
-        <div class="col">
-          <h5><i class="fas fa-hospital"></i> Centre sanitari</h5>
+        <div class="col" style="font-size:0.95rem;">
+          <h6><i class="fas fa-hospital"></i> Centre sanitari</h6>
           <hr style="margin:0px;">
           <div style="margin:0px;">
             <b>Hospital:</b>
@@ -554,15 +1182,14 @@
             <b>Sol·licitant:</b> 
             <div style="display:inline-block;" id="edit_physician_name">{{ petition_info.Medical_doctor }}</div>
           </div>
-
           <div style="display:inline-block;margin:0px;"> 
             <b>Servei: </b>
             <div style="display:inline-block;" id="edit_service"> {{ petition_info.Service }}</div>  
           </div>
 
         </div>
-        <div class="col">
-          <h5><i class="fas fa-server"></i> Anàlisi NGS</h5>
+        <div class="col" style="font-size:0.95rem;">
+          <h6><i class="fas fa-server"></i> Anàlisi NGS</h6>
           <hr style="margin:0px;">
           <div style="display:inline-block;margin:0px;">
             <div style="display:inline-block;margin:0px;"><b>Data d'anàlisi:</b>  {{ sample_info.analysis_date }}</div>
@@ -575,13 +1202,13 @@
        </div>
     </div>
         
-    <div class="card border-1 ">
+    <div class="card border-1 m-0 p-0">
       <h6 class="card-header" style="padding:4px;">Distribució de variants</h6>
-      <div class=" card-body " style="outline-bottom: 1px solid grey;background-color:white;">
-      <div class = "row">
+      <div class=" card-body m-0 p-0 " style="outline-bottom: 1px solid grey;background-color:white;">
+      <div class = "row mt-1 align-items-start">
 
         <div class = "col">
-          <h6>Freq. canvis</h6>
+          <h7 class="ml-4">Freq. canvis</h6>
           <div class="chart" id="bar">
           <script>
             var graphs = {{snv_plot | safe}};
@@ -590,7 +1217,7 @@
           </div>
         </div>
         <div class = "col">
-          <h6>VAF</h6>
+          <h6 class="ml-4">VAF</h6>
           <div class="chart" id="hist">
           <script>
             var graphs = {{vaf_plot | safe}};
@@ -600,7 +1227,7 @@
         </div>
 
         <div class = "col">
-          <h6>Localització Efecte</h6>
+          <h6 class="ml-4">Localització Efecte</h6>
           <div class="chart" id="pie">
           <script>
             var graphs = {{pie_plot | safe}};
@@ -780,7 +1407,7 @@
           <div class="col">
             <h5><b><i class="fas fa-angle-right" style="margin-bottom:15px;"></i> Exons no coberts</b></h5>
             <div class="table-responsive">
-              <table id="lost_exons_table" class="table table-striped table-bordered wrap" style="width:100%;background-color:white;">
+              <table id="lost_exons_table" class="table table-sm table-striped table-bordered wrap" style="width:100%;background-color:white;">
                 <thead>
                   <th>Coordenades</th>
                   <th>Probe Group</th>
@@ -792,8 +1419,7 @@
                   <th>100X</th>
                 </thead>
                 <tbody>
-                  {% for roi in summary_qc_dict['LOST_EXONS']['exons'] %}
-                  {% set roi_dict = summary_qc_dict['LOST_EXONS']['exons'][roi] %}
+                  {% for roi, roi_dict in lost_exons_100x %}
                   {% if roi_dict['COV_THRESHOLD']['20X']|float == 100 %}
                     {% set cov20_color = 'white' %}
                   {% else %}
@@ -850,73 +1476,136 @@
             <br>
         </div>
 
-        <div style="margin-top:15px;background-color:#e8f4f8;width:100%;padding:10px;font-size:14px;">
+        <div class="mt-2 mb-1" style="background-color:#eef7fb;width:100%;padding:6px 8px;font-size:13px;border:1px solid #d7e7f3;border-radius:4px;">
           <form id="report_form">
-            <div class="row">
-              <div class="col-4">
-                <input type="hidden" id="run_id" name="run_id" value="{{ sample_info.run_id }}">
-                <input type="hidden" id="sample" name="sample" value="{{ sample_info.lab_id }}">
-                <input type="hidden" id="sample_id" name="sample_id" value="{{ sample_info.lab_id }}">
-                <input type="hidden" id="tumor_origin" name="tumor_origin" value="{{ petition_info.Tumour_origin }}">
-                <input style="display:inline;" type="checkbox" id="substitute_report" name="substitute_report">
-                <label style="display:inline;" for="substitute_report"> Marcar com a informe de substitució</label>
-                <br>
-                <input style="display:inline;" type="checkbox" id="lowqual_sample" name="lowqual_sample">
-                <label style="display:inline;" for="lowqual_sample"> La mostra no compleix els criteris mínims de qualitat </label>
-                <br>
-                <input style="display:inline;" type="checkbox" id="no_enac" name="no_enac">
-                <label style="display:inline;" for="no_enac"> Procediment no acreditat per ENAC </label>
-                <br>
-                <button type="submit" id="report_button" class="btn btn-secondary btn-sm mt-2">
-                  <i class="fas fa-file-alt" style="color:white;"> </i> Generar informe
+            <input type="hidden" id="run_id" name="run_id" value="{{ sample_info.run_id }}">
+            <input type="hidden" id="sample" name="sample" value="{{ sample_info.lab_id }}">
+            <input type="hidden" id="sample_id" name="sample_id" value="{{ sample_info.lab_id }}">
+            <input type="hidden" id="tumor_origin" name="tumor_origin" value="{{ sample_info.tumor_origin}}">
+            <input type="hidden" id="gene_panel" name="gene_panel" value="{{ sample_info.panel }}">
+
+            {% set cgi_sent_flag = sample_info.cgi_sent == 'yes' %}
+            <div class="report-actions-row">
+              <div class="report-primary-actions">
+                <button type="submit" id="report_button" class="btn btn-sm report-generate-btn d-inline-flex align-items-center" aria-label="Generar informe">
+                  <i class="fas fa-file-medical mr-1"></i> Generar informe
+                </button>
+                <button class="btn btn-outline-secondary btn-sm d-inline-flex align-items-center" type="button" data-toggle="collapse" data-target="#report_options_panel" aria-expanded="false" aria-controls="report_options_panel">
+                  <i class="fas fa-sliders-h mr-1"></i> Opcions informe
                 </button>
               </div>
-              <div class="col-8">
-                <div class="row">
-                  <div class="col" id="modificacions_container" style="display: none;">
-                    <label for="repeat_notes">Llista de modificacions <small>(En cas de reemissió d'informe)</small>:</label>
-                    <textarea class="form-control" id="repeat_notes" name="repeat_notes" rows="2"></textarea>
-                  </div>
-                  <div class="col">
-                    <label for="comments">Altres comentaris de qualitat:</label>
-                    <textarea class="form-control" id="comments" name="comments" rows="2"></textarea>
-                  </div>
+              <div class="cgi-actions-inline">
+                <button type="button" id="cgi_button" class="btn btn-sm cgi-launch-btn d-inline-flex align-items-center" aria-label="Enviar a CGI Clinics">
+                  <i class="fas fa-paper-plane mr-1"></i> <span id="cgi_button_text">{% if cgi_sent_flag %}CGI {% else %}CGI{% endif %}</span>
+                </button>
+                <div class="cgi-status-row" id="cgi_status_row">
+                  <span id="cgi_status_text" class="cgi-status-label{% if cgi_sent_flag %} is-sent{% endif %}">
+                    {% if cgi_sent_flag %}
+                      <i class="fas fa-check-circle"></i> {% if sample_info.cgi_sent_on %} {{ sample_info.cgi_sent_on }}{% endif %}
+                    {% else %}
+                      <!-- <i class="fas fa-clock"></i> No enviada -->
+                    {% endif %}
+                  </span>
+                  <a
+                    id="cgi_analysis_link"
+                    class="cgi-status-link"
+                    href="{{ sample_info.cgi_analysis_url or '' }}"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    {% if not sample_info.cgi_analysis_url %}style="display:none;"{% endif %}
+                  >
+                    <i class="fas fa-external-link-alt mr-1"></i> CGI
+                  </a>
                 </div>
               </div>
             </div>
-            <div class="row">
-              <div class="col-5">
-              </div>
-              <div class="col-7">
 
-              </div>
+            <div class="collapse report-options-panel" id="report_options_panel">
+                <div class="row">
+                  <div class="col-md-5 mb-2 mb-md-0">
+                    <div class="custom-control custom-checkbox">
+                      <input class="custom-control-input" type="checkbox" id="substitute_report" name="substitute_report">
+                      <label class="custom-control-label" for="substitute_report">Marcar com a informe de substitució</label>
+                    </div>
+                    <div class="custom-control custom-checkbox mt-1">
+                      <input class="custom-control-input" type="checkbox" id="lowqual_sample" name="lowqual_sample">
+                      <label class="custom-control-label" for="lowqual_sample">La mostra no compleix els criteris mínims de qualitat</label>
+                    </div>
+                    <div class="custom-control custom-checkbox mt-1">
+                      <input class="custom-control-input" type="checkbox" id="no_enac" name="no_enac">
+                      <label class="custom-control-label" for="no_enac">Procediment no acreditat per ENAC</label>
+                    </div>
+                  </div>
+                  <div class="col-md-7">
+                    <div id="modificacions_container" style="display: none;" class="mb-2">
+                      <label for="repeat_notes">Llista de modificacions <small>(En cas de reemissió d'informe)</small>:</label>
+                      <textarea class="form-control form-control-sm" id="repeat_notes" name="repeat_notes" rows="2"></textarea>
+                    </div>
+                    <div>
+                      <label for="comments">Altres comentaris de qualitat:</label>
+                      <textarea class="form-control form-control-sm" id="comments" name="comments" rows="2"></textarea>
+                    </div>
+                  </div>
+                </div>
             </div>
-
           </form>
         </div>
-        <hr>
+        <!-- <hr style="margin:3px;"> -->
 
-        <div class="table-responsive-">
+        <div class="table-responsive">
+          <div class ="mt-3 mb-2">
+            <div class="d-flex align-items-center" id="variantFilters">
 
-          <button type="button" id="new_variant_button" class="btn btn-primary btn-sm mb-1" data-bs-toggle="modal" data-bs-target="#addEntryModal">
-            <i class="fas fa-plus-circle" ></i> Afegir variant
-          </button>
-          <button class="btn btn-secondary btn-sm mb-1" id="copyButton" onclick="copyVariantInfo()"> <i class="fas fa-copy" ></i>Copiar variants</button>
-
-          <table id="therapeutic_table" class="table table-sm table-striped table-bordered dt-responsive wrap" style="width:100%;background-color:white;">
-            <div id="delete_multiple_button" style="margin-bottom:15px;display:none;">
-              <hr>
-              <a type="button" type="submit" id="" class="btn btn-light btn-sm" style="background-color:#FFEBCD;">
-                <i class="fas fa-trash"></i> Elimina selecció
-              </a>
+            <button type="button" id="new_variant_button" class="btn btn-outline-primary btn-sm mb-1" data-bs-toggle="modal" data-bs-target="#addEntryModal" style="display:inline-block;padding:3px;font-size:13px">
+              <i class="fas fa-plus-circle" ></i> Afegir variant
+            </button>
+            <button id="copyButton" class="btn btn-outline-secondary btn-sm mt-0 mb-1"  onclick="copyVariantInfo()" style="display:inline-block;padding:3px;font-size:13px">
+              <i class="fas fa-copy" ></i> Copiar variants
+            </button>
+                  
+              <div class="custom-control custom-checkbox custom-control-inline ml-5 me-3 mr-3">
+                <input class="custom-control-input" type="checkbox" id="filter_removed">
+                <label class="custom-control-label" for="filter_removed"><small>Variants eliminades</small></label>
+              </div>
+              <div class="custom-control custom-checkbox custom-control-inline" style="display:inline-block;">
+                <input class="custom-control-input" type="checkbox" id="filter_blacklist">
+                <label class="custom-control-label" for="filter_blacklist"><small>Variants Blacklist</small></label>
+              </div>
+              <div class="form-check form-check-inline ml-2" style="display:inline-block;">
+                <select id="filter_tag_select" class="custom-select custom-select-sm" aria-label="Filtra per FILTER">
+                  <option value="">FILTER: Tots</option>
+                </select>
+              </div>
+              <div class="form-check form-check-inline ml-3" style="display:inline-block;">
+                <input id="therapeutic_custom_search" type="search" class="form-control form-control-sm" placeholder="Cerca gen o variant">
+              </div>
             </div>
+          </div>
+          <div id="delete_multiple_button" style="margin-top: 5px;display:none;">
+            <hr style="margin:0px;">
+            <a type="button" type="submit" id="to_report" class="btn btn-light btn-sm" style="background-color:#d0f5cc;">
+              <i class="fas fa-paper-plane"></i> Informe molecular
+            </a>
+            <a type="button" type="submit" id="move_to_vus" class="btn btn-light btn-sm" style="background-color:#f0eeee;">
+              <i class="fas fa-exchange"></i> Mou a VUS
+            </a>
+            <a type="button" type="submit" id="remove_selection" class="btn btn-light btn-sm" style="background-color:#ffcdcd;">
+              <i class="fas fa-trash"></i> Elimina selecció
+            </a>
+          </div>
+          <table id="therapeutic_table" class="table table-sm table-striped table-bordered wrap" style="width:100%;background-color:white;">
             <thead>
               <tr>
-                <th></th>
-                <th>Accions</th>
-                <th>Gen</th>
-                <th>Variant</th>
-                <th>Bases de dades</th>
+                <th class="all">
+                  <div class="custom-control custom-checkbox table-check m-0 p-0">
+                    <input class="custom-control-input" type="checkbox" id="select_all_variants">
+                    <label class="custom-control-label" for="select_all_variants"><span class="sr-only">Selecciona totes les variants</span></label>
+                  </div>
+                </th>
+                <th class="all actions-col">Accions</th>
+                <th class="all gene-1">Gen</th>
+                <th class="all variant-col">Variant</th>
+                <th class="all external-db-col">Evidències</th>
               </tr>
             </thead>
             <tbody>
@@ -924,75 +1613,100 @@
             {% set var_json = var.var_json  %}
 
             {% if var.blacklist == "yes" %}
-              <tr style="background-color:rgb(255, 222, 222)"
-              
+              <tr style="background-color:rgb(255, 222, 222);padding:0px;"
+              data-removed="{{ var.removed or 'no' }}"
+              data-blacklist="yes"
               data-gene="{{ var.gene }}" 
               data-exon="{{ var.exon }}" 
               data-intron="{{ var.intron }}"
               data-refseq="{{ var.refseq }}" 
-              data-isoform="{{ var.enst_id }}" 
+              data-isoform="{{ var.enst_id }}"
+              data-gcode="{{ var.hgvsg }}" 
               data-pcode="{{ var.hgvsp }}" 
               data-ccode="{{ var.hgvsc }}"
               data-read_support="{{ var.read_support }}"
               data-depth="{{ var.depth }}"
-              
-              >
-
+              data-filter-tag="{{ (var.filter_tag|string).strip() if var.filter_tag else '' }}"
+              data-tier="{{var.tier_catsalut}}">
             {% else %}
-              <tr
-              data-gene="{{ var.gene }}" 
+              <tr data-gene="{{ var.gene }}" style="padding:0px;" 
+              data-removed="{{ var.removed or 'no' }}"
+              data-blacklist="{{ 'yes' if var.blacklist == 'yes' else 'no' }}"
               data-exon="{{ var.exon }}" 
               data-intron="{{ var.intron }}"
               data-refseq="{{ var.refseq }}" 
-              data-isoform="{{ var.enst_id }}" 
+              data-isoform="{{ var.enst_id }}"
+              data-gcode="{{ var.hgvsg }}" 
               data-pcode="{{ var.hgvsp }}" 
               data-ccode="{{ var.hgvsc }}"
               data-read_support="{{ var.read_support }}"
               data-depth="{{ var.depth }}"
-          
-              
-              >
+              data-filter-tag="{{ (var.filter_tag|string).strip() if var.filter_tag else '' }}"
+              data-tier="{{var.tier_catsalut}}">
             {% endif %}
-
-            <td>
-              <input type="checkbox" id="check_var_{{ var.hgvsg }}" name="check_therapeutic_variant"/>
+            <td style="width:2%;">
+              <div class="custom-control custom-checkbox table-check m-0 p-0">
+                <input class="custom-control-input" type="checkbox" id="check_var_{{ var.hgvsg }}" name="check_therapeutic_variant"/>
+                <label class="custom-control-label" for="check_var_{{ var.hgvsg }}"><span class="sr-only">Selecciona variant {{ var.hgvsg }}</span></label>
+              </div>
             </td>
-            <td>
+            <td class="actions-col">
               <div class="row">
                 <div class="col">
                   {% if (var.variant_type == "Amplification" or var.variant_type == "Loss" or var.variant_type == "SV") %}
-                  <a class="btn btn-outline-primary btn-sm disabled" href="">
-                    <i class="fas fa-plus-circle fa"></i> Info
+                  <a class="btn btn-sm variant-details-disabled" href="javascript:void(0)" tabindex="-1" aria-disabled="true" title="Detalls no disponibles per aquest tipus de variant">
+                    <i class="fas fa-plus-circle fa"></i>  Detalls
                   </a>
                   {% else %}
-                  <a class="btn btn-outline-primary btn-sm" href="{{ url_for('show_therapeutic_details', run_id=sample_info.run_id, sample=sample_info.lab_id, entry_id=var.id, var_classification=var.classification) }} ">
-                    <i class="fas fa-plus-circle fa"></i> Info
+                  <a class="btn btn-outline-primary btn-sm d-inline-flex align-items-center" href="{{ url_for('show_therapeutic_details', run_id=sample_info.run_id, sample=sample_info.lab_id, entry_id=var.id, var_classification=var.classification) }} ">
+                    <i class="fas fa-plus-circle fa"></i>  Detalls
                   </a>
                   {% endif %}
                 </div>
-                <div class="col">
-                  <a data-toggle="modal" data-target="#edit_report_{{var.id}}" role="button">
+              </div>
+	              <div class="row">
+	                <div class="col">
+	                  {% if not (var.kb ) %}
+	                  <a class="btn btn-link btn-sm"
+	                     href="#"
+                     data-toggle="modal"
+                     data-target="#addEntryModal"
+                     onclick="openAddEntryModal(this)"
+                     title="Afegeix la variant a la bases de dades de coneixement">
+                     <i class="fa-solid fa-arrow-up-from-bracket"></i> UDMMP DB
+                  {% else %}
+                  <a class="btn btn-link btn-sm"
+                     href="#"
+                     data-toggle="modal"
+                     data-target="#addEntryModal"
+                     onclick="openAddEntryModal(this)"
+                     title="Aquesta variant ja té una classificació prèvia. En pots afegir una d'addicional">
+                     <i class="fa-solid fa-arrow-up-from-bracket"></i> UDMMP DB
+                  {% endif %}
+                  </a>
+                </div>
+              </div>
+
+              <div class="row mt-2">
+                <div class="col ml-2">
+                  <a onclick='showIgvVariant({{ var_json }});' role="button" style="display:inline-block;">
+                    <div style="border-radius:3px;padding:1px;border-color:2px solid #0d98ba;">
+                      <i class="fas fa-image fa" style="border-radius:3px;margin:0px;padding:2px;color:white;background-color:#0d98ba"></i>
+                      <small style="color:#0d98ba;"><b> IGV</b></small>
+                    </div>
+                  </a>
+                  <a data-toggle="modal" data-target="#edit_report_{{var.id}}" role="button" style="margin-left:10px;">
                     <i class="fas fa-edit" style="color:rgb(109, 106, 106)"></i><small></small>
                   </a>
-                  <!-- <a class="" href="{{ url_for('remove_variant', run_id=sample_info.run_id, sample=sample_info.lab_id, sample_id=sample_info.id, var_id=var.id, var_classification=var.classification) }}" onclick="return confirm('Segur que vols eliminar aquesta Variant?');" method="POST" enctype="multipart/form-data" id="update_therapeutic_variant"><i class="fas fa-trash" style="color: rgba(209, 20, 20, 0.938)"></i><small></small></a> -->
-
-
-
-                  <a href="#"
-                  class="delete-variant-btn text-danger"
-                  data-url="{{ url_for('remove_variant',
-                                        run_id=sample_info.run_id,
-                                        sample=sample_info.lab_id,
-                                        sample_id=sample_info.id,
-                                        var_id=var.id,
-                                        var_classification=var.classification) }}">
-                 <i class="fas fa-trash"></i>
-               </a>
-
-                  <a onclick='showIgvVariant({{ var_json }});' role="button">
-                    <div>
-                      <i class="fas fa-image fa" style="border-radius:3px;margin:0px;padding:2px;color:white;background-color:#0d98ba"></i> <small><b>IGV</b></small>
-                    </div>
+                  <a href="{{ url_for('remove_variant',
+                      run_id=sample_info.run_id,
+                      sample=sample_info.lab_id,
+                      sample_id=sample_info.id,
+                      var_id=var.id,
+                      var_classification=var.classification) }}"
+                    class="delete-variant-btn text-danger"
+                    title="Elimina la variant">
+                    <i class="fas fa-trash" style="color: rgba(209, 20, 20, 0.938)"></i>
                   </a>
                   {% if (var.blacklist == "yes") %}
                   <div class="row">
@@ -1003,10 +1717,26 @@
                     </div>
                   </div>
                   {% endif %}
-
-                </div>               
+                </div>                            
+                </div>
               </div>
-
+ 
+              <div class="row">
+                <div class="col" >
+                  {% if var.removed == "yes" %}
+                  <hr style="margin: 2px;">
+                      <div class="" style="background-color:rgb(222, 236, 248);">
+                          <div class="">
+                            <span class="badge badge-danger bg-danger mr-2" style="margin-right:.5rem;">ELIMINADA</span>
+                            <div class="reason-text p-1">
+                              {{ var.removal_reason or '—' }}
+                            </div>
+                          </div>
+                       </div>
+                  {% endif %}
+                </div>
+              </div>
+              
               <div class="modal fade bd-example-modal" id="edit_report_{{var.id}}" tabindex="-1" aria-labelledby="modal_edit_report_{{var.id}}" aria-hidden="true">
                 <form action="{{ url_for('update_therapeutic_variant', run_id=sample_info.run_id, sample=sample_info.lab_id, sample_id=sample_info.id, var_id=var.id, var_classification=var.classification) }}" method="POST" enctype="multipart/form-data" id="update_therapeutic_variant">
                   <div class="modal-dialog modal-lg">
@@ -1022,7 +1752,7 @@
                           <div class="col">
                             <h6><b>Mou a:</b></h6>
                             <div class="custom-control custom-radio custom-control-inline">
-                              <input type="radio" class="custom-control-input" name="variant_category" value="3" id="rare_variant_rare_{{var.id}}" checked>
+                              <input type="radio" class="custom-control-input" name="variant_category" value="3" id="rare_variant_rare_{{var.id}}">
                               <label class="custom-control-label" for="rare_variant_rare_{{var.id}}">
                                 VUS
                               </label>
@@ -1031,55 +1761,59 @@
                         </div>
                         <div class="row">
                           <div class="col-sm">
-                            <h6><b>Afegeix a la <i>Blacklist</i></b></h6>
+                            <h6><b>Blacklist</b></h6>
                           </div>
                         </div>
                         <div class="row">
                           <div class="col-sm">
-                            <div class="custom-control custom-checkbox">
+                            <div class="custom-control custom-checkbox mb-0">
                               {% if var.blacklist == "yes" %}
-                              <input type="checkbox" style="background-color:green;" name="blacklist_check" value="blacklist" class="custom-control-input" id="blacklist_check_therapeutic_{{var.id}}" checked>
+                              <input type="checkbox" name="blacklist_check" value="blacklist" class="custom-control-input" id="blacklist_check_therapeutic_{{var.id}}" checked>
                               {% else %}
-                              <input type="checkbox" style="background-color:green;" name="blacklist_check" value="blacklist" class="custom-control-input" id="blacklist_check_therapeutic_{{var.id}}">
+                              <input type="checkbox" name="blacklist_check" value="blacklist" class="custom-control-input" id="blacklist_check_therapeutic_{{var.id}}">
                               {% endif %}
-                              <label class="custom-control-label" for="blacklist_check_therapeutic_{{var.id}}">
+                              <label class="custom-control-label" for="blacklist_check_therapeutic_{{var.id}}">Afegir a blacklist</label>
                             </div>
                           </div>
                         </div>
 
                         </div>
                         <div class="d-flex justify-content-center align-items-center mt-2">
-                          <button class="btn btn-primary mt-2 mb-2" style="width:15%;" type="submit" id="edit_therapeutic">Desa canvis</button>
+                          <button class="btn btn-primary mt-2 mb-2" style="width:15%;" type="submit" id="edit_therapeutic">Accepta</button>
                         </div>
                       </div>
                   </div>
                 </form>
               </div>
             </td>
-            <td style="min-width:60px;max-width:60px;">
-                <div class="row">
-                  <div class="col">
-                    {% if (var.variant_type == "Amplification" or var.variant_type == "Loss" or var.variant_type == "SV") %}
-                     <a><b><i>{{ var.gene }}</i></b></a>
-                    {% else %}
-                      <a href="https://www.genecards.org/cgi-bin/carddisp.pl?gene={{var.gene}} "><b><i>{{ var.gene }}</i></b></a>
-                    {% endif %}
-                  </div>
-                </div>
-                <div class="row">
-                  <div class="col">
-                    <!-- <i>{{ var.enst_id }}</i> -->
-                    {{ var.refseq }}
-                  </div>
-                </div>
-                <br>
-                {% if var.exon != '.' %}
-                  <b>Exó: </b>{{ var.exon }}
+            <td style="width:5%;">
+              <div class="gene-main">
+                {% if (var.variant_type == "Amplification" or var.variant_type == "Loss" or var.variant_type == "SV") %}
+                  <span class="gene-label">{{ var.gene or '-' }}</span>
                 {% else %}
-                  <b>Intró: </b>{{ var.intron }}
+                  <a href="https://www.genecards.org/cgi-bin/carddisp.pl?gene={{var.gene}}">{{ var.gene or '-' }}</a>
+                  {% if gene_mech[var.gene] %}
+                    {% if gene_mech[var.gene] == "Oncogene" %}
+                      <span title="Oncogen" class="badge" style="font-size:10px;background: linear-gradient(135deg, #e8918f, #ea4f4f);color:white;">OG</span>
+                    {% endif %}
+                    {% if gene_mech[var.gene] == "Tumor Suppressor" %}
+                      <span title="Supressor Tumoral" class="badge" style="font-size:10px;background: linear-gradient(135deg, #8d98e4, #1d2adc);color:white;">TSG</span>
+                    {% endif %}
+                  {% endif %}
                 {% endif %}
-              </td>
-              <td style="min-width:220px;max-width:250px;">
+              </div>
+              <div class="gene-isoform">
+                {{ var.refseq or var.enst_id or '-' }}
+              </div>
+              <div class="gene-region">
+                {% if var.exon != '.' %}
+                  <b>Exó:</b> {{ var.exon }}
+                {% else %}
+                  <b>Intró:</b> {{ var.intron }}
+                {% endif %}
+              </div>
+            </td>
+              <td class="variant-col">
                 <div class="row">
                   <div class="col" id="{{ var.id }}" style="display:inline-block;" >
                     <span ><b>{{ var.hgvsp }}</b>
@@ -1133,7 +1867,7 @@
                     <b>Read support:</b> {{ var.read_support }}
                   </div>
                  </div>
-                <div class="row mb-2">
+                <div class="row mb">
                   <div class="col">
                     {{ var.hgvsc }}
                   </div>
@@ -1144,104 +1878,145 @@
                 <div class="row">
                   <div class="col">
                     <b> Tipus: </b> {{ var.variant_type }}
-                  </div>
-                  <!-- <div class="col">
-                    <b>Max Pop AF: </b>{{ var.max_pop_af }}
-                  </div> -->
-                </div>
-
-                <div class="row">
-                  <div class="col">
-                      <p class="text-truncate;word-wrap:break-word"><b> Localització/Efecte: </b> {{ var.consequence }}</p>
-                  </div>
-                  <div class="col">
-                    <!-- <b>Max AF: </b>{{ var.max_af }} <br> -->
                     {% set var_db_freq = (100*(var.db_detected_number/var.db_sample_count))|float| round(2) %}
-                    <b>Freq. DB: </b>{{ var_db_freq }}%  {{ var.db_detected_number }} de {{ var.db_sample_count }}
+                    <p class="consequence-wrap mb-0"><b>DB: </b>{{ var_db_freq }}% ({{ var.db_detected_number }}/{{ var.db_sample_count }})</p>
                   </div>
-                </div>
+                    <div class="col">
+                      {% set consequence_display = 'splice_variant' if (var.consequence and 'splice_' in var.consequence) else var.consequence %}
+                      <p class="consequence-wrap  mb-0"><b> Conseq: </b> {{ consequence_display }}</p>
+                      <div class="pred-badges">
+                        {% set revel_is_d = (var.revel_score is not none and var.revel_score > 0.7) %}
+                        {% set spliceai_is_d = (var.spliceai_score is not none and var.spliceai_score > 0.5) %}
+                        <span class="pred-badge {{ 'pred-badge-d' if revel_is_d else 'pred-badge-b' }}" title="REVEL: {{ '%.3f'|format(var.revel_score|float) if var.revel_score is not none else 'NA' }}"> {{ 'D' if revel_is_d else 'B' }} </span>
+                        <span class="pred-badge {{ 'pred-badge-d' if spliceai_is_d else 'pred-badge-b' }}" title="SpliceAI: {{ '%.3f'|format(var.spliceai_score|float) if var.spliceai_score is not none else 'NA' }}"> {{ 'D' if spliceai_is_d else 'B' }} </span>
+	                        {% if var.filter_tag %}
+	                          {% set filter_clean = (var.filter_tag|string).strip() %}
+	                          {% set is_pass_filter = (filter_clean|upper == 'PASS') %}
+	                          <span class="pred-filter-tag {{ 'pred-filter-tag-pass' if is_pass_filter else 'pred-filter-tag-nonpass' }}" title="FILTER: {{ filter_clean }}">
+	                            {{ 'PASS' if is_pass_filter else 'FILTER: ' ~ filter_clean }}
+	                          </span>
+	                        {% endif %}
+	                        {% if var.hgvsg %}
+	                          <a class="pred-variant-link"
+	                             href="https://www.oncokb.org/hgvsg/{{ var.hgvsg | replace('%', '%25') | replace('>', '%3E') | replace(' ', '%20') | replace('#', '%23') }}"
+	                             target="_blank"
+	                             rel="noopener noreferrer"
+	                             title="Obre aquesta variant a OncoKB">
+	                            <i class="fas fa-external-link-alt mr-1"></i>
+	                            OncoKB
+	                          </a>
+	                        {% endif %}
+	                      </div>
+	                  </div>
+	                </div>
 
                 </div>
               </td>
-              <td style="min-width:150px;max-width:250px;">
-                <div class="row">
-                  <div class="col">
-                    {% if var.kb %}
-                    <svg width="25" height="25" xmlns="http://www.w3.org/2000/svg">
-                      <circle cx="12.3" cy="12.3" r="10" stroke="darkorange" stroke-width="0.5" fill="darkorange" />
-                      <text x="12.5" y="15" font-size="9" text-anchor="middle" fill="white" font-family="Comic Sans MS, sans-serif">
-                        CGI 
-                      </text>
-                      <title>Cancer Genome Interpreter: Summary | CGI Prediction</title>
-                    </svg>
-                    {{ var.kb['Oncogenic summary'] }} | {{ var.kb['Oncogenic prediction'] }}
-                    {% endif %}
+              <td class="external-db-col">
+                {% set classification_date = '-' %}
+                {% if var.kb and var.kb.get('Data Classificació') %}
+                  {% set classification_date = (var.kb.get('Data Classificació') | string).split(' ')[0] %}
+                {% endif %}
+                <div class="row no-gutters">
+                  <div class="col-9 pr-2">
+                    <div class="row">
+                      <div class="col">
+                        {% if var.kb %}
+                        <svg width="25" height="25" xmlns="http://www.w3.org/2000/svg">
+                          <circle cx="12.3" cy="12.3" r="10" stroke="darkorange" stroke-width="0.5" fill="darkorange" />
+                          <text x="12.5" y="15" font-size="9" text-anchor="middle" fill="white" font-family="Comic Sans MS, sans-serif">
+                            CGI
+                          </text>
+                          <title>Cancer Genome Interpreter: Summary | CGI Prediction</title>
+                        </svg>
+                        <div id="cgi_summary" style="display:inline-block">{{ var.kb['Oncogenic summary'] }}</div>
+                        <div id="cgi_prediction" style="display:inline-block"> | {{ var.kb['Oncogenic prediction'] }}</div>
+                        {% else %}
+                          <div id="cgi_summary" style="display:inline-block"></div>
+                          <div id="cgi_prediction" style="display:inline-block"></div>
+                        {% endif %}
+                      </div>
+                    </div>
+                    <div class="row">
+                      <div class="col">
+                        {% if var.kb %}
+                        <svg width="25" height="25" xmlns="http://www.w3.org/2000/svg">
+                          <circle cx="12.3" cy="12.3" r="10" stroke="#a1a1ce" stroke-width="0.5" fill="#a1a1ce" />
+                          <text x="12.5" y="15" font-size="9" text-anchor="middle" fill="white" font-family="Comic Sans MS, sans-serif">
+                            CV
+                          </text>
+                          <title>ClinVar: Germline | Somatic</title>
+                        </svg>
+                        <div id="clinvar_germline" style="display:inline-block">{{ var.kb['ClinVar Germline']}}</div>
+                        <div id="clinvar_somatic" style="display:inline-block"> | {{ var.kb['ClinVar Somatic'] }}</div>
+                        {% else %}
+                          <div id="clinvar_germline" style="display:inline-block"></div>
+                          <div id="clinvar_somatic" style="display:inline-block"></div>
+                        {% endif %}
+                      </div>
+                    </div>
+                    <div class="row">
+                      <div class="col">
+                        {% if var.kb %}
+                          <svg width="25" height="25" xmlns="http://www.w3.org/2000/svg">
+                            <circle cx="12.5" cy="12.5" r="10" fill="none" stroke="#333c87" stroke-width="1.8" />
+                            <circle cx="12.5" cy="12.5" r="6.5" fill="none" stroke="#333c87" stroke-width="1.8" />
+                            <circle cx="12.5" cy="12.5" r="2.5" fill="#333c87" stroke="#333c87" stroke-width="1" />
+                            <title>OncoKB</title>
+                          </svg>
+                          <div id="oncokb" style="display:inline-block">{{var.kb['OncoKB'] }}</div>
+                        {% else %}
+                          <div id="oncokb" style="display:inline-block"></div>
+                        {% endif %}
+                      </div>
+                    </div>
+                    <div class="row">
+                      <div class="col">
+                        {% if var.kb %}
+                        <svg width="25" height="25" xmlns="http://www.w3.org/2000/svg">
+                          <circle cx="12.3" cy="12.3" r="10" stroke="#333c87" stroke-width="0.5" fill="#333c87" />
+                          <text x="12.5" y="15" font-size="12" text-anchor="middle" fill="white" font-family="Comic Sans MS, sans-serif">
+                            F
+                          </text>
+                          <title>Franklink Germline | Somatic</title>
+                        </svg>
+                        <div id="franklin_germline" style="display:inline-block">{{ var.kb['Franklin ACMG'] }}</div>
+                        <div id="franklin_somatic" style="display:inline-block"> | {{ var.kb['Franklin Oncogenicity'] }}</div>
+                        {% else %}
+                          <div id="franklin_germline" style="display:inline-block"></div>
+                          <div id="franklin_somatic" style="display:inline-block"></div>
+                        {% endif %}
+                      </div>
+                    </div>
+                    <div class="row">
+                      <div class="col">
+                        {% if var.kb %}
+                        <svg width="25" height="25" xmlns="http://www.w3.org/2000/svg">
+                          <circle cx="12.3" cy="12.3" r="10" stroke="orange" stroke-width="0.5" fill="orange" />
+                          <text x="12.5" y="15" font-size="7" text-anchor="middle" fill="white" font-family="Comic Sans MS, sans-serif">
+                            MTBP
+                          </text>
+                          <title>Molecular Tumor Board Portal</title>
+                        </svg>
+                        <div id="mtbp" style="display:inline-block">{{ var.kb['MTBP'] }}</div>
+                        {% else %}
+                          <div id="mtbp" style="display:inline-block"></div>
+                        {% endif %}
+                      </div>
+                    </div>
+                    <div class="d-none">
+                      <span id="kb_comment">{{ var.kb.get('Comentaris', '') if var.kb else '' }}</span>
+                      <span id="kb_especialista">{{ var.kb.get('Especialista', '') if var.kb else '' }}</span>
+                      <span id="kb_tumor_type">{{ var.kb.get('Càncer', '') if var.kb else '' }}</span>
+                    </div>
                   </div>
-                </div>
-                <div class="row">
-                  <div class="col">
-                    {% if var.kb %}
-                    <svg width="25" height="25" xmlns="http://www.w3.org/2000/svg">
-                      <circle cx="12.3" cy="12.3" r="10" stroke="#a1a1ce" stroke-width="0.5" fill="#a1a1ce" />
-                      <text x="12.5" y="15" font-size="9" text-anchor="middle" fill="white" font-family="Comic Sans MS, sans-serif">
-                        CV
-                      </text>
-                      <title>ClinVar: Germline | Somatic</title>
-                    </svg>
-                    {{ var.kb['ClinVar Germline']}} | {{ var.kb['ClinVar Somatic'] }}
-                    {% endif %}
-                  </div>
-                </div>
-                <div class="row">
-                  <div class="col">
-                    {% if var.kb %}
-                    <svg width="25" height="25" xmlns="http://www.w3.org/2000/svg">
-                      <circle cx="12.5" cy="12.5" r="10" fill="none" stroke="#333c87" stroke-width="1.8" />
-                      <circle cx="12.5" cy="12.5" r="6.5" fill="none" stroke="#333c87" stroke-width="1.8" />
-                      <circle cx="12.5" cy="12.5" r="2.5" fill="#333c87" stroke="#333c87" stroke-width="1" />
-                      <title>OncoKB</title>
-                    </svg>                   
-                    {{ var.kb['OncoKB'] }}
-                    {% endif %}
-                  </div>
-                 </div>
-                <div class="row">
-                  <div class="col">
-                    {% if var.kb %}
-                    <svg width="25" height="25" xmlns="http://www.w3.org/2000/svg">
-                      <circle cx="12.3" cy="12.3" r="10" stroke="#333c87" stroke-width="0.5" fill="#333c87" />
-                      <text x="12.5" y="15" font-size="12" text-anchor="middle" fill="white" font-family="Comic Sans MS, sans-serif">
-                        F
-                      </text>
-                      <title>Franklink Germline | Somatic</title>
-                    </svg>
-                    {{ var.kb['Franklin ACMG'] }} | {{ var.kb['Franklin Oncogenicity'] }}
-                    {% endif %}
-                  </div>
-                </div>
-                <div class="row">
-                  <div class="col">
-                    {% if var.kb %}
-                    <svg width="25" height="25" xmlns="http://www.w3.org/2000/svg">
-                      <circle cx="12.3" cy="12.3" r="10" stroke="orange" stroke-width="0.5" fill="orange" />
-                      <text x="12.5" y="15" font-size="7" text-anchor="middle" fill="white" font-family="Comic Sans MS, sans-serif">
-                        MTBP
-                      </text>
-                      <title>Molecular Tumor Board Portal</title>
-                    </svg>
-                    {{ var.kb['MTBP'] }}
-                    {% endif %}
-                  </div>
-                </div>
-                <div class="row">
-                  <div class="col">
-                    <small style="margin-left:0px;">                  
-                      {% if var.kb %}
-                      <b>Data de classificació: </b>  
-                        {{ var.kb['Data Classificació'] }}
-                      {% endif %}
-
-                    </small>
+                  <div class="col-3 pl-2 border-left">
+                    <div id="classification_date_block" {% if classification_date == "-" %}style="display:none;"{% endif %}>
+                      <small style="display:block;line-height:1.25;">
+                        <b>Data de classificació:</b>
+                        <div id="classification_date">{{ '' if classification_date == "-" else classification_date }}</div>
+                      </small>
+                    </div>
                   </div>
                 </div>
               </td>
@@ -1253,37 +2028,68 @@
     </div>
 
     <div class="tab-pane fade pt-5" id="Rare" role="tabpanel" aria-labelledby="Rare-tab">
+      <div class="table-responsive">
+        <div class="mt-3 mb-2">
+          <div class="d-flex align-items-center" id="rareVariantFilters">
+            <div class="form-check form-check-inline" style="display:inline-block;">
+              <input id="rare_filter_tag_input" list="rare_filter_tag_datalist" type="search" class="form-control form-control-sm" placeholder="Cerca FILTER">
+              <datalist id="rare_filter_tag_datalist"></datalist>
+            </div>
+            <div class="form-check form-check-inline ml-2" style="display:inline-block;">
+              <input id="rare_custom_search" type="search" class="form-control form-control-sm" placeholder="Cerca gen o variant">
+            </div>
+          </div>
+        </div>
 
-      <table id="rare_table" class="table table-sm table-striped table-bordered dt-responsive nowrap" style="width:100%;background-color:white;">
+      <table id="rare_table" class="table table-sm table-striped table-bordered wrap" style="width:100%;background-color:white;">
         <thead>
             <tr>
-                <th></th>
-                <th>Accions</th>
-                <th>Gen</th>
-                <th>Variant</th>
-                <th>Altres</th>
+                <th class="actions-col">Accions</th>
+                <th class="gene-col">Gen</th>
+                <th class="variant-col">Variant</th>
+                <th class="other-col">Altres</th>
             </tr>
         </thead>
         <tbody>
         {% for var in rare_variants %}
-        <tr>
-          <td>
+        <tr data-gene="{{ var.gene }}"
+            data-blacklist="{{ 'yes' if var.blacklist == 'yes' else 'no' }}"
+            data-exon="{{ var.exon }}"
+            data-intron="{{ var.intron }}"
+            data-refseq="{{ var.refseq }}"
+            data-isoform="{{ var.enst_id }}"
+            data-gcode="{{ var.hgvsg }}"
+            data-pcode="{{ var.hgvsp }}"
+            data-ccode="{{ var.hgvsc }}"
+            data-read_support="{{ var.read_support }}"
+            data-depth="{{ var.depth }}"
+            data-filter-tag="{{ (var.filter_tag|string).strip() if var.filter_tag else '' }}">
+          <td class="actions-col">
             <div class="row">
               <div class="col">
                 <a class="btn btn-outline-primary btn-sm" href="{{ url_for('show_therapeutic_details', sample=sample_info.lab_id, run_id=sample_info.run_id, entry_id=var.id, var_classification=var.classification) }} ">
-                  <i class="fas fa-plus-circle fa"></i> Info
+                  <i class="fas fa-plus-circle fa"></i> Detalls
                 </a>
               </div>
             </div>
 
-            <div class="row mt-3">
-              <div class="col">
-                <a data-toggle="modal" data-target="#edit_rare_report_{{var.id}}" role="button">
-                  <i class="fas fa-edit" style="color:rgb(109, 106, 106)"></i><small></small>
-                </a>
+	            <div class="row mt-3">
+	              <div class="col">
+	                <a data-toggle="modal" data-target="#edit_rare_report_{{var.id}}" role="button">
+	                  <i class="fas fa-edit" style="color:rgb(109, 106, 106)"></i><small></small>
+	                </a>
               </div>
               <div class="col">
-                <a class="" href="{{ url_for('remove_variant', run_id=sample_info.run_id, sample=sample_info.lab_id, sample_id=sample_info.id, var_id=var.id, var_classification=var.classification) }}" onclick="return confirm('Segur que vols eliminar aquesta variant?');" method="POST" enctype="multipart/form-data" id="update_therapeutic_variant"><i class="fas fa-trash" style="color: rgba(209, 20, 20, 0.938)"></i><small></small></a>
+                <a href="{{ url_for('remove_variant',
+                  run_id=sample_info.run_id,
+                  sample=sample_info.lab_id,
+                  sample_id=sample_info.id,
+                  var_id=var.id,
+                  var_classification=var.classification) }}"
+                  class="delete-variant-btn text-danger"
+                  title="Elimina la variant">
+                  <i class="fas fa-trash" style="color: rgba(209, 20, 20, 0.938)"></i>
+                </a>
               </div>
               <div class="col">
               </div>
@@ -1338,90 +2144,114 @@
                       </div>
                       <div class="row">
                         <div class="col-sm">
-                          <div class="custom-control custom-checkbox">
+                          <div class="custom-control custom-checkbox mb-0">
                             {% if var.blacklist == "yes" %}
-                            <input type="checkbox" style="background-color:green;" name="blacklist_check" value="blacklist" class="custom-control-input" id="bioinfo_check_rare_{{var.id}}" checked>
+                            <input type="checkbox" name="blacklist_check" value="blacklist" class="custom-control-input" id="bioinfo_check_rare_{{var.id}}" checked>
                             {% else %}
-                            <input type="checkbox" style="background-color:green;" name="blacklist_check" value="blacklist" class="custom-control-input" id="bioinfo_check_rare_{{var.id}}">
+                            <input type="checkbox" name="blacklist_check" value="blacklist" class="custom-control-input" id="bioinfo_check_rare_{{var.id}}">
                             {% endif %}
-                            <label class="custom-control-label" for="bioinfo_check_rare_{{var.id}}">
+                            <label class="custom-control-label" for="bioinfo_check_rare_{{var.id}}">Afegir a blacklist</label>
                           </div>
                         </div>
                       </div>
                       </div>
                       <div class="d-flex justify-content-center align-items-center mt-2">
-                        <button class="btn btn-primary mt-2 mb-2" style="width:15%;" type="submit" id="edit_therapeutic">Desa canvis</button>
+                        <button class="btn btn-primary mt-2 mb-2" style="width:15%;" type="submit" id="edit_therapeutic">Accepta</button>
                       </div>
                     </div>
                 </div>
               </form>
             </div>
           </td>
-        <td>
-            <div class="row">
-              <div class="col-2">
-                 <a href="https://www.genecards.org/cgi-bin/carddisp.pl?gene={{var.gene}} "><b><i>{{ var.gene }}</i></b></a>
-              </div>
-            </div>
-            <div class="row">
-              <div class="col">
-                <i>{{ var.enst_id }}</i>
-              </div>
-            </div>
-            <br>
+        <td class="gene-col col-1">
+          <div class="gene-main">
+            <a href="https://www.genecards.org/cgi-bin/carddisp.pl?gene={{var.gene}}">{{ var.gene or '-' }}</a>
+          </div>
+          <div class="gene-isoform">
+            {{ var.refseq or var.enst_id or '-' }}
+          </div>
+          <div class="gene-region">
             {% if var.exon != '.' %}
-              <b>Exó: </b>{{ var.exon }}
+              <b>Exó:</b> {{ var.exon }}
             {% else %}
-              <b>Intró: </b>{{ var.intron }}
+              <b>Intró:</b> {{ var.intron }}
             {% endif %}
-          </td>
-          <td>
+          </div>
+        </td>
+          <td class="variant-col">
+            {% set read_support = var.read_support|float %}
+            {% set depth = var.depth|float %}
+            {% set rare_vaf = (100*(read_support/depth)) if depth else 0 %}
+            {% set rare_hgvsp_display = (var.hgvsp or '-') | replace('%3D', '=') | replace('%3d', '=') %}
+            {% if var.db_sample_count %}
+              {% set rare_db_freq = (100*(var.db_detected_number/var.db_sample_count))|float|round(2) %}
+            {% else %}
+              {% set rare_db_freq = 0 %}
+            {% endif %}
             <div class="row">
+              <div class="col" id="{{ var.id }}" style="display:inline-block;">
+                <b>{{ rare_hgvsp_display }}</b>
+              </div>
               <div class="col">
-                <b>{{ var.hgvsp }}</b>
+                <b>VAF (%):</b> {{ '%0.3f'| format(rare_vaf|float) }}
               </div>
             </div>
             <div class="row">
               <div class="col">
                 {{ var.hgvsg }}
               </div>
+              <div class="col">
+                <b>Read support:</b> {{ var.read_support }}
+              </div>
             </div>
-            <div class="row mb-2">
+            <div class="row mb">
               <div class="col">
                 {{ var.hgvsc }}
+              </div>
+              <div class="col">
+                <b>Profunditat: </b>{{ var.depth }}
               </div>
             </div>
             <div class="row">
               <div class="col">
                 <b> Tipus: </b> {{ var.variant_type }}
+                <p class="consequence-wrap mb-0"><b>DB: </b>{{ rare_db_freq }}% ({{ var.db_detected_number }}/{{ var.db_sample_count }})</p>
+              </div>
+              <div class="col">
+                {% set consequence_display = 'splice_variant' if (var.consequence and 'splice_' in var.consequence) else var.consequence %}
+                <p class="consequence-wrap mb-0"><b> Conseq: </b> {{ consequence_display }}</p>
+                <div class="pred-badges">
+                  {% set revel_is_d = (var.revel_score is not none and var.revel_score > 0.7) %}
+                  {% set spliceai_is_d = (var.spliceai_score is not none and var.spliceai_score > 0.5) %}
+                  <span class="pred-badge {{ 'pred-badge-d' if revel_is_d else 'pred-badge-b' }}" title="REVEL: {{ '%.3f'|format(var.revel_score|float) if var.revel_score is not none else 'NA' }}"> {{ 'D' if revel_is_d else 'B' }} </span>
+                  <span class="pred-badge {{ 'pred-badge-d' if spliceai_is_d else 'pred-badge-b' }}" title="SpliceAI: {{ '%.3f'|format(var.spliceai_score|float) if var.spliceai_score is not none else 'NA' }}"> {{ 'D' if spliceai_is_d else 'B' }} </span>
+                  {% if var.filter_tag %}
+                    {% set filter_clean = (var.filter_tag|string).strip() %}
+                    {% set is_pass_filter = (filter_clean|upper == 'PASS') %}
+                    <span class="pred-filter-tag {{ 'pred-filter-tag-pass' if is_pass_filter else 'pred-filter-tag-nonpass' }}" title="FILTER: {{ filter_clean }}">
+                      {{ 'PASS' if is_pass_filter else 'FILTER: ' ~ filter_clean }}
+                    </span>
+                  {% endif %}
+                  {% if var.hgvsg %}
+                    <a class="pred-variant-link"
+                       href="https://www.oncokb.org/hgvsg/{{ var.hgvsg | replace('%', '%25') | replace('>', '%3E') | replace(' ', '%20') | replace('#', '%23') }}"
+                       target="_blank"
+                       rel="noopener noreferrer"
+                       title="Obre aquesta variant a OncoKB">
+                      <i class="fas fa-external-link-alt mr-1"></i>
+                      OncoKB
+                    </a>
+                  {% endif %}
+                </div>
               </div>
             </div>
-            <b> Localització/Efecte: <br></b> {{ var.consequence }}
             {% if (var.blacklist == "yes") %}
             <span class="badge badge-warning">
               BLACKLIST
             </span>
             {% endif %}
           </td>
-          <td>
-            <div class="row">
-              <div class="col">
-
-                {% set read_support = var.read_support|float %}
-                {% set depth = var.depth|float %}
-                <b>VAF (%):</b> {{ 100*(read_support/depth)|float|round(4)}}
-              </div>
-            </div>
-            <div class="row">
-              <div class="col">
-                <b>Read support:</b> {{ var.read_support }}
-              </div>
-            </div>
-            <div class="row">
-              <div class="col">
-                <b>Profunditat: </b>{{ var.depth }}
-              </div>
-            </div>
+          <td class="other-col">
             <div class="row">
               <div class="col">
                 <b>Max Pop AF: </b>{{ var.max_pop_af }}
@@ -1430,21 +2260,73 @@
                 <b>Max AF: </b>{{ var.max_af }}
               </div>
             </div>
-            <div class="row">
-              <div class="col">
-                <b>Freq. DB: </b>{{ var.db_detected_number }} / {{ var.db_sample_count }}  {{ var.db_detected_freq |float | round(3) }}
-              </div>
-            </div>
           </td>
           <!-- <td>{{ var.therapies }}</td> -->
-          <td>{{ var.tumor_type }}</td>
+        </tr>
+        {% endfor %}
+        </tbody>
+      </table>
+      </div>
+    </div>
+
+    <div class="tab-pane fade pt-5" id="CNA" role="tabpanel" aria-labelledby="CNA-tab">
+      <table id="cnas_table" class="table table-sm table-striped table-bordered dt-responsive nowrap" style="width:100%;background-color:white;">
+        <thead>
+            <tr>
+                <th>Chr</th>
+                <th>Pos</th>
+                <th>Alt</th>
+                <th>Gens</th>
+                <th>Tipus</th>
+                <th>Ratio (log2)</th>
+                <th>N Còpies</th>
+                <th>N de regions</th>
+                <th>Accions</th> <!-- NEW -->
+            </tr>
+        </thead>
+        <tbody>
+        {% for var in all_cnas %}
+        <tr data-id="{{ var.id }}"> <!-- NEW -->
+          <td data-field="chromosome">
+            <div class="row"><div class="col">{{ var.chromosome }}</div></div>
+          </td>
+          <td data-field="start">
+            <div class="row"><div class="col">{{ var.start }}</div></div>
+          </td>
+          <td data-field="end">
+            <div class="row"><div class="col">{{ var.end }}</div></div>
+          </td>
+          <td data-field="genes">
+            <div class="row"><div class="col">{{ var.genes }}</div></div>
+          </td>
+          <td data-field="svtype">
+            <div class="row"><div class="col">{{ var.svtype }}</div></div>
+          </td>
+          <td data-field="ratio">
+            <div class="row"><div class="col">{{ var.ratio }}</div></div>
+          </td>
+          <td data-field="cn">
+            <div class="row"><div class="col">{{ var.cn }}</div></div>
+          </td>
+          <td data-field="qual">
+            <div class="row"><div class="col">{{ var.qual }}</div></div>
+          </td>
+    
+          <!-- NEW Actions column -->
+          <td class="text-nowrap">
+            <button type="button" class="btn btn-sm btn-sm btn-outline-primary edit-btn">Edita</button>
+            <button type="button" class="btn btn-sm btn-sm btn-success save-btn d-none">Desa</button>
+            <button type="button" class="btn btn-sm btn-sm btn-secondary cancel-btn d-none">Cancela</button>
+            <button type="button" class="btn btn-sm btn-sm btn-outline-danger delete-btn">Elimina</button>
+          </td>
         </tr>
         {% endfor %}
         </tbody>
       </table>
     </div>
+    
 
-    <div class="tab-pane fade pt-5" id="CNA" role="tabpanel" aria-labelledby="CNA-tab">
+    <!-- <div class="tab-pane fade pt-5" id="CNA" role="tabpanel" aria-labelledby="CNA-tab">
       <table id="cnas_table" class="table table-sm table-striped table-bordered dt-responsive nowrap" style="width:100%;background-color:white;">
         <thead>
             <tr>
@@ -1513,7 +2395,7 @@
         {% endfor %}
         </tbody>
       </table>
-    </div>
+    </div> -->
 
     <div class="tab-pane fade pt-5" id="Fusions" role="tabpanel" aria-labelledby="Fusion-tab">
       <table id="fusions_table" class="table table-sm table-striped table-bordered dt-responsive nowrap" style="width:100%;background-color:white;">
@@ -1627,8 +2509,8 @@
  
  document.addEventListener('DOMContentLoaded', function(){
   // 1) Shared dimensions & margins
-  const WIDTH  = 300, HEIGHT = 240;
-  const M = { top:10, right:20, bottom:20, left:40 };
+  const WIDTH  = 300, HEIGHT = 200;
+  const M = { top:8, right:18, bottom:26, left:38 };
 
   // 2) Global tooltip div
   const tooltip = d3.select("body")
@@ -1637,48 +2519,106 @@
     .style("opacity",0);
 
   // ───────── SNV Bar Chart ─────────
-  ;(function(){
+// ───────── SNV Bar Chart ─────────
+;(function(){
   const data = Object.entries(snvData || {}).flatMap(([ref, alts]) =>
     Object.entries(alts || {}).map(([alt, cnt]) => ({ label:`${ref}>${alt}`, value:cnt }))
   );
-  const W = 300 - M.left - M.right,
-        H = 220 - M.top  - M.bottom;
+
+  const BAR_HEIGHT = 228;
+  const BAR_M = { top: 28, right: 18, bottom: 44, left: 38 };
+  const W = WIDTH - BAR_M.left - BAR_M.right,
+        H = BAR_HEIGHT - BAR_M.top - BAR_M.bottom;
 
   const svg = d3.select("#bar").append("svg")
-      .attr("width", 360).attr("height", HEIGHT)
+      .attr("width", 360).attr("height", BAR_HEIGHT)
     .append("g")
-      .attr("transform", `translate(${M.left},${M.top})`);
+      .attr("transform", `translate(${BAR_M.left},${BAR_M.top})`);
 
-  const x = d3.scaleBand().domain(data.map(d=>d.label)).range([0,W]).padding(0.1);
-  const y = d3.scaleLinear().domain([0, d3.max(data,d=>d.value)||1]).nice().range([H,0]);
+  // FFPE categories
+  const deam = new Set(["C>T","G>A"]); // deamination
+  const oxid = new Set(["G>T","C>A"]); // oxidation
 
-   const ffpe = new Set(["C>T","G>A"]);
+  // Group rank: deamination (0) → oxidation (1) → rest (2)
+  const labelRank = (label) => deam.has(label) ? 0 : oxid.has(label) ? 1 : 2;
+  const deamColor = "rgba(255,0,0,0.35)";
+  const oxidColor = "rgba(255,165,0,0.55)";
+  const otherColor = "rgba(35,203,167,0.55)";
+
+  // Build x-domain grouped, then alpha inside each group
+  const labelsOrder = [...new Set(data.map(d => d.label))]
+    .sort((a,b) => (labelRank(a) - labelRank(b)) || a.localeCompare(b));
+
+  const dataMax = d3.max(data, d => d.value) || 1;
+
+  const x = d3.scaleBand().domain(labelsOrder).range([0,W]).padding(0.1);
+
+  const y = d3.scaleLinear().domain([0, dataMax]).nice().range([H,0]);
+
+  const fillFor = label =>
+    deam.has(label) ? deamColor :
+    oxid.has(label) ? oxidColor :
+                      otherColor;
 
   svg.append("g")
    .attr("transform", `translate(0,${H})`)
    .call(d3.axisBottom(x))
    .call(g => g.selectAll("path, line").attr("stroke", "#555"))
    .call(g => g.selectAll("text")
-    .attr("transform", "rotate(60)")    // rotate 60°
-    .attr("dx", "0.8em")                // move label right
-    .attr("dy", "0.15em")               // move label down a bit
-    .style("text-anchor", "start")      // align text to the start of the tick
-    .attr("fill", "#333"));
+     .attr("transform", "rotate(45)")
+     .attr("dx", "0.5em")
+     .attr("dy", "0.3em")
+     .style("text-anchor", "start")
+     .attr("fill", "#333"));
 
   svg.append("g")
     .call(d3.axisLeft(y).ticks(5))
     .call(g => g.selectAll("path, line").attr("stroke", "#555"))
-    .call(g => g.selectAll("text").attr("fill",   "#333"));
+    .call(g => g.selectAll("text").attr("fill", "#333"));
 
-  svg.selectAll("rect")
-    .data(data).enter().append("rect")
+  const legendItems = [
+    { label: "Desaminacio", color: deamColor },
+    { label: "Oxidacio", color: oxidColor }
+  ];
+
+  const legend = svg.append("g")
+    .attr("class", "snv-change-legend")
+    .attr("transform", "translate(0, -18)");
+
+  legend.selectAll("g")
+    .data(legendItems)
+    .enter()
+    .append("g")
+      .attr("transform", (_, i) => `translate(${i * 108}, 0)`)
+      .each(function(d) {
+        const item = d3.select(this);
+        item.append("rect")
+          .attr("width", 12)
+          .attr("height", 12)
+          .attr("rx", 1)
+          .attr("ry", 1)
+          .attr("fill", d.color)
+          .attr("stroke", "");
+        item.append("text")
+          .attr("x", 18)
+          .attr("y", 10)
+          .attr("fill", "#555")
+          .style("font-size", "11px")
+          .text(d.label);
+      });
+
+  const barsLayer = svg.append("g").attr("class", "snv-bars");
+
+  barsLayer.selectAll("rect.snv-bar")
+    .data(data)
+    .enter()
+    .append("rect")
+      .attr("class", "snv-bar")
       .attr("x",   d=> x(d.label))
       .attr("y",   d=> y(d.value))
       .attr("width",  x.bandwidth())
       .attr("height", d=> H - y(d.value))
-      .attr("fill",  d=> ffpe.has(d.label)
-                          ? "rgba(255,0,0,0.35)"
-                          : "rgba(35,203,167,0.55)")
+      .attr("fill",  d=> fillFor(d.label))
     .on("mouseover", function(event,d){
       tooltip.html(`${d.label}: <b>${d.value}</b>`)
         .style("left", (event.pageX+10)+"px")
@@ -1708,7 +2648,7 @@
     .thresholds(50)(vafData || []);
 
   const W = WIDTH - M.left - M.right;
-  const H = 220 - M.top  - M.bottom;
+  const H = HEIGHT - M.top  - M.bottom;
 
   const svg = d3.select("#hist")
     .append("svg")
@@ -1719,9 +2659,14 @@
 
   // 2) scales
   const x = d3.scaleLinear().domain([0,1]).range([0, W]);
+  // const y = d3.scaleLinear()
+  //   .domain([0, d3.max(bins, d=>d.length) || 1]).nice()
+  //   .range([H, 0]);
+
   const y = d3.scaleLinear()
-    .domain([0, d3.max(bins, d=>d.length) || 1]).nice()
+    .domain([0, d3.max(bins, d => d.length) || 1]).nice()
     .range([H, 0]);
+
 
   // 3) axes — note the .ticks(5) on the left axis!
 
@@ -1729,7 +2674,9 @@
    .attr("transform", `translate(0,${H})`)
    .call(d3.axisBottom(x).ticks(5))
    .call(g => g.selectAll("path, line").attr("stroke", "#555"))
-   .call(g => g.selectAll("text").attr("fill",   "#333"));
+   .call(g => g.selectAll("text")
+     .attr("fill", "#333")
+     .attr("dy", "0.95em"));
 
   svg.append("g")
     .call(d3.axisLeft(y).ticks(5))
@@ -1776,7 +2723,7 @@
   ;(function(){
   // Shared dimensions
   const WIDTH  = 300,
-        HEIGHT = 220;
+        HEIGHT = 176;
 
   // 1) Prepare data
   const raw    = consData || {};
@@ -1788,7 +2735,8 @@
   const maxChars  = d3.max(data, d => d.label.length);
   const LEG_W     = maxChars * charWidth + 30; // extra padding
   const TOTAL_W   = WIDTH + LEG_W + 20;        // extra margin
-  const TOTAL_H   = HEIGHT;
+  const legendHeight = Math.max(0, data.length - 1) * 18 + 24;
+  const TOTAL_H   = Math.max(HEIGHT, legendHeight);
 
   // 3) Clear and create SVG
   d3.select('#pie').selectAll('*').remove();
@@ -1804,7 +2752,7 @@
     .attr('transform', `translate(${cx},${cy})`);
 
   // 5) Radii
-  const R      = 100,
+  const R      = 76,
         innerR = R * 0.35;
 
   // 6) Pie + Arc
@@ -1842,11 +2790,11 @@
 
   // 9) Legend
   const legend = svg.append('g')
-    .attr('transform', `translate(${WIDTH + 20}, 20)`);
+    .attr('transform', `translate(${WIDTH + 20}, 12)`);
 
   data.forEach((d,i) => {
     const row = legend.append('g')
-      .attr('transform', `translate(0,${i * 20})`);
+      .attr('transform', `translate(0,${i * 18})`);
     row.append('rect')
       .attr('width', 12)
       .attr('height',12)
@@ -1874,7 +2822,7 @@ function createCNVScatter(cnvData, config) {
     height = 300
   } = config;
 
-  const M = { top:20, right:20, bottom:40, left:50 };
+  const M = { top:20, right:20, bottom:60, left:50 };
   const W = width  - M.left - M.right;
   const H = height - M.top  - M.bottom;
 
@@ -1965,7 +2913,12 @@ function createCNVScatter(cnvData, config) {
           .tickFormat((_,i)=> chromOrder[i])
       )
       .call(g=>g.selectAll("path,line").attr("stroke","#555"))
-      .call(g=>g.selectAll("text").attr("fill","#333"));
+      .call(g=>g.selectAll("text")
+        .attr("fill","#333")
+        .attr("transform","rotate(-45)")
+        .style("text-anchor","end")
+        .attr("dx","-0.35em")
+        .attr("dy","0.55em"));
 
     // g) boundaries
     svg.selectAll("line.boundary")
@@ -2025,7 +2978,7 @@ function createCNVScatter(cnvData, config) {
 
     // k) axis titles
     svg.append("text")
-      .attr("x",W/2).attr("y",H+35)
+      .attr("x",W/2).attr("y",H+52)
       .attr("text-anchor","middle")
       .style("font-size","12px");
     svg.append("text")
@@ -2063,7 +3016,7 @@ createCNVScatter(cnvData, {
   maxInputId:    'regionMax',
   applyBtnId:    'applyFilter',
   width:         1300,
-  height:        270
+  height:        240
 });
 
 }); // end DOMContentLoaded
@@ -2073,55 +3026,53 @@ createCNVScatter(cnvData, {
 
 <script>
 
-document.addEventListener('DOMContentLoaded', () => {
-  // Attach a click‐handler to every delete button
-  document.querySelectorAll('.delete-variant-btn')
-    .forEach(btn => btn.addEventListener('click', handleDeleteVariant));
-});
+// document.addEventListener('DOMContentLoaded', () => {
+//   // Attach a click‐handler to every delete button
+//   document.querySelectorAll('.delete-variant-btn')
+//     .forEach(btn => btn.addEventListener('click', handleDeleteVariant));
+// });
 
-async function handleDeleteVariant(event) {
-  event.preventDefault();
-  const btn = event.currentTarget;
+// async function handleDeleteVariant(event) {
+//   event.preventDefault();
+//   const btn = event.currentTarget;
 
-  // 1) confirm
-  if (!confirm('Segur que vols eliminar aquesta variant?')) return;
+//   // 1) confirm
+//   if (!confirm('Segur que vols eliminar aquesta variant?')) return;
 
-  const url = btn.getAttribute('data-url');
+//   const url = btn.getAttribute('data-url');
 
-  try {
-    // 2) fire off AJAX POST
-    const resp = await fetch(url, {
-      method: 'POST',
-      headers: {
-        'X-Requested-With': 'XMLHttpRequest'
-      }
-    });
-    if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+//   try {
+//     // 2) fire off AJAX POST
+//     const resp = await fetch(url, {
+//       method: 'POST',
+//       headers: {
+//         'X-Requested-With': 'XMLHttpRequest'
+//       }
+//     });
+//     if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
 
-    // 3) parse JSON
-    const { status, message, deleted_var_id } = await resp.json();
-    if (status !== 'ok') throw new Error(message);
+//     // 3) parse JSON
+//     const { status, message, deleted_var_id } = await resp.json();
+//     if (status !== 'ok') throw new Error(message);
 
-    // 4) show flash message in your #message_div
-    const msgDiv  = document.getElementById('message_div');
-    const msgSpan = document.getElementById('message_span');
-    msgSpan.textContent = message;
-    msgDiv.style.display = 'block';
+//     // 4) show flash message in your #message_div
+//     const msgDiv  = document.getElementById('message_div');
+//     const msgSpan = document.getElementById('message_span');
+//     msgSpan.textContent = message;
+//     msgDiv.style.display = 'block';
 
-    // 5) remove the <tr> containing this button
-    const row = btn.closest('tr');
-    if (row) row.remove();
+//     // 5) remove the <tr> containing this button
+//     const row = btn.closest('tr');
+//     if (row) row.remove();
 
-  } catch (err) {
-    console.error('Deletion failed:', err);
-    alert('Error eliminant la variant. Torna-ho a provar.');
-  }
-}
-
+//   } catch (err) {
+//     console.error('Deletion failed:', err);
+//     alert('Error eliminant la variant. Torna-ho a provar.');
+//   }
+// }
 
 button_new_variant = document.getElementById("new_variant_button");
 button_new_variant.addEventListener("click", openNewVariantModal);
-
 
 function openNewVariantModal() {
     // document.getElementById('lab_id').value = document.getElementById('edit_lab_id').innerText;
@@ -2130,7 +3081,6 @@ function openNewVariantModal() {
     // document.getElementById('edit_ext3_id').value = document.getElementById('edit_ext3_id').innerText;
     $("#addVariantModal").modal('show');
 }
-
 
 // Handle form submission
 const addVariantForm = document.getElementById('addVariantForm');
@@ -2155,7 +3105,7 @@ addVariantForm.addEventListener('submit', async (event) => {
         read_support: document.getElementById('read_support').value || '.',
         tier_catsalut: document.getElementById('tier_catsalut').value || '.',
         classification: "Therapeutic",
-        consequence: document.getElementById('edit_ext2_id').value || '.',
+        consequence: document.getElementById('consequence').value || '.',
     };
 
     try {
@@ -2200,6 +3150,9 @@ function calculateAlleleFrequency() {
     var modificacionsContainer = document.getElementById('modificacions_container');
     if (this.checked) {
       modificacionsContainer.style.display = 'block';
+      if (window.jQuery && $('#report_options_panel').length) {
+        $('#report_options_panel').collapse('show');
+      }
     } else {
       modificacionsContainer.style.display = 'none';
     }
@@ -2445,27 +3398,93 @@ function calculateAlleleFrequency() {
     var start = parseInt(locus['POS']);
     var coordinates = locus['CHROM'] + ':' + start.toString();
 
+    let st = start-80;
+    let ed = start+79;
+    var newlocus = locus['CHROM'] + ':' + st.toString() + "-" + ed.toString();
+
     console.log(coordinates);
 
     var igvDiv = document.getElementById('igvDiv');
     igvDiv.innerHTML = "";
     igv.removeAllBrowsers();
-
+    igvDiv.style.height = "80vh";   // try 80vh, 85vh, 90vh
     $('#show_igv').modal('show');
 
-    igvDiv.innerHTML = `<div id="igv_lodader"><span  class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Carregant IGV...</div>`;
+    igvDiv.innerHTML = `<div id="igv_lodader"><span  class="spinner-border spinner-border-sm ml-3" role="status" aria-hidden="true"></span> Carregant IGV...</div>`;
     var options =
       {
-          locus: coordinates,
+          locus: newlocus,
           genome: "hg19",
           showCenterGuide: true,
           tracks:[
+
+             {
+                type: "variant",
+                format: "vcf",
+                name: "{{sample_info.lab_id}} VCF",
+                url : "{{ url_for('download_merged_vcf', run_id=sample_info.run_id, sample=sample_info.lab_id) }}",
+                indexURL: "{{ url_for('download_merged_vcf_tbi', run_id=sample_info.run_id, sample=sample_info.lab_id) }}",
+                squishedCallHeight: 1,
+                expandedCallHeight: 4,
+                displayMode: "collapsed",
+                visibilityWindow: -1,
+                color: function (variant) {
+                    const svtype = variant.info["SVTYPE"];
+                    switch (svtype) {
+                        case 'DEL':
+                            return "#ff2101";
+                        case 'INS':
+                            return "#001888";
+                        case 'DUP':
+                            return "#028401";
+                        case 'INV':
+                            return "#008688";
+                        case 'CNV':
+                            return "#8931ff";
+                        case 'BND':
+                            return "#891100";
+                        default:
+                            return "#002eff";
+                    }
+                },
+                height: 40,
+
+                // visibilityWindow: 1000
+              },
+
+              {
+                type: "seg",
+                format: "seg",
+                name: "{{sample_info.lab_id}} CNV",
+                url : "{{ url_for('download_cnv_seg', run_id=sample_info.run_id, sample=sample_info.lab_id) }}",
+                indexURL: false,
+                isLog: true,
+                squishedCallHeight: 1,
+                expandedCallHeight: 4,
+                displayMode: "collapsed",
+                height: 40,
+              },
+
+
             {
               type:'alignment',
               format: 'bam',
+              name: "{{sample_info.lab_id}} BAM",
               url : "{{ url_for('download_sample_bam', run_id=sample_info.run_id, sample=sample_info.lab_id) }}" ,
-              indexURL: "{{ url_for('download_sample_bai', run_id=sample_info.run_id, sample=sample_info.lab_id) }}"
-            }
+              indexURL: "{{ url_for('download_sample_bai', run_id=sample_info.run_id, sample=sample_info.lab_id) }}",
+              height: 500,
+              showSoftClips: true,
+              showDeletionText: true,
+              showInsertionText: true,
+                    // sort reads by base at the current position
+              sort: {
+                chr: locus["CHROM"],
+                position: start.toString(),   // 1-based
+                option: "BASE",
+                direction: "ASC"
+              }
+            },
+
           ]
       };
       setTimeout(function(){
@@ -2481,11 +3500,41 @@ function calculateAlleleFrequency() {
 
 
   var report_form = document.forms.namedItem("report_form");
+  const cgiButton = document.getElementById('cgi_button');
+
+  function showStatusMessage(message, level) {
+     const messageDiv = document.getElementById("message_div");
+     const messageSpan = document.getElementById("message_span");
+     if (!messageDiv || !messageSpan) {
+       return;
+     }
+     messageDiv.classList.remove("alert-success", "alert-danger", "alert-warning", "alert-info");
+     if (level === "danger") {
+       messageDiv.classList.add("alert-danger");
+     }
+     else if (level === "warning") {
+       messageDiv.classList.add("alert-warning");
+     }
+     else if (level === "info") {
+       messageDiv.classList.add("alert-info");
+     }
+     else {
+       messageDiv.classList.add("alert-success");
+     }
+     messageSpan.textContent = message || "";
+     messageDiv.style.display = "block";
+  }
+
   report_form.addEventListener('submit', generateReport, false);
+  if (cgiButton) {
+    cgiButton.addEventListener('click', launchCgiAnalysis, false);
+  }
 
   function generateReport(event) {
-     report_button = document.getElementById('report_button');
-     report_button.innerHTML = `<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Generant informe...`;
+     const report_button = document.getElementById('report_button');
+     const defaultReportButtonHtml = `<i class="fas fa-file-medical mr-1"></i> Generar informe`;
+     report_button.disabled = true;
+     report_button.innerHTML = `<span class="spinner-border spinner-border-sm mr-1" role="status" aria-hidden="true"></span> Generant informe...`;
 
      let formData = new FormData(document.forms.namedItem("report_form"));
 
@@ -2500,36 +3549,87 @@ function calculateAlleleFrequency() {
        if (request.status == 200) {
          var response_json = JSON.parse(request.responseText);
          var display_message = response_json.message_text;
-         report_button.innerHTML = `<i class="fas fa-file-alt" style="color:white;"> </i> Generar informe`;
-
-         document.getElementById("message_div").style.display = "block";
-         document.getElementById("message_span").innerHTML = "Nou informe generat correctament!";
+         report_button.innerHTML = defaultReportButtonHtml;
+         report_button.disabled = false;
+         showStatusMessage(display_message || "Nou informe generat correctament!", "success");
 
        }
        else {
-         console.log("error")
+         report_button.innerHTML = defaultReportButtonHtml;
+         report_button.disabled = false;
+         showStatusMessage("No s'ha pogut generar l'informe", "danger");
        }
+     };
+     request.onerror = function() {
+       report_button.innerHTML = defaultReportButtonHtml;
+       report_button.disabled = false;
+       showStatusMessage("No s'ha pogut generar l'informe", "danger");
      };
      request.send(formData);
      event.preventDefault();
-   }
+  }
 
-  function selectAllVariants() {
+  async function launchCgiAnalysis() {
+     if (!cgiButton) {
+       return;
+     }
+     const currentCgiButtonText = document.getElementById("cgi_button_text");
+     const defaultCgiButtonLabel = currentCgiButtonText ? currentCgiButtonText.textContent : "Envia a CGI";
+     let nextCgiButtonLabel = defaultCgiButtonLabel;
+     cgiButton.disabled = true;
+     cgiButton.innerHTML = `<span class="spinner-border spinner-border-sm mr-1" role="status" aria-hidden="true"></span> Enviant...`;
 
-     var check_all_therapeutic = $('#check_all_therapeutic').prop('checked');
-     if (check_all_therapeutic == true) {
-       $('input[name="check_therapeutic_variant"]').each(function() {
-     			this.checked = true;
-     		});
-        $('#delete_multiple_button').show();
+     const formData = new FormData();
+     formData.append("run_id", document.getElementById("run_id").value || "");
+     formData.append("sample", document.getElementById("sample").value || "");
+
+     try {
+       const response = await fetch("/send_sample_to_cgi", {
+         method: "POST",
+         headers: {
+           "X-Requested-With": "XMLHttpRequest"
+         },
+         body: formData
+       });
+       let payload = {};
+       try {
+         payload = await response.json();
+       }
+       catch (err) {
+         payload = {};
+       }
+       if (!response.ok) {
+         throw new Error(payload.message_text || "No s'ha pogut enviar la mostra a CGI");
+       }
+
+       let successMessage = payload.message_text || "Mostra enviada correctament a CGI Clinics";
+       if (payload.analysis_uuid && payload.analysis_uuid !== ".") {
+         successMessage += ` (UUID: ${payload.analysis_uuid})`;
+       }
+       const cgiStatusText = document.getElementById("cgi_status_text");
+       const cgiAnalysisLink = document.getElementById("cgi_analysis_link");
+       if (cgiStatusText) {
+         const sentOn = payload.cgi_sent_on ? ` el ${payload.cgi_sent_on}` : "";
+         cgiStatusText.classList.add("is-sent");
+         cgiStatusText.innerHTML = `<i class="fas fa-check-circle"></i> Enviada a CGI${sentOn}`;
+       }
+       if (cgiAnalysisLink) {
+         if (payload.analysis_url) {
+           cgiAnalysisLink.href = payload.analysis_url;
+           cgiAnalysisLink.style.display = "";
+         }
+       }
+       nextCgiButtonLabel = "Reenvia a CGI";
+       showStatusMessage(successMessage, "success");
      }
-     else {
-       $('input[name="check_therapeutic_variant"]').each(function() {
-     			this.checked = false;
-     		});
-       $('#delete_multiple_button').hide();
+     catch (err) {
+       showStatusMessage(err.message || "No s'ha pogut enviar la mostra a CGI", "danger");
      }
-   }
+     finally {
+       cgiButton.innerHTML = `<i class="fas fa-paper-plane mr-1"></i> <span id="cgi_button_text">${nextCgiButtonLabel}</span>`;
+       cgiButton.disabled = false;
+     }
+  }
 
 // Diccionari per convertir codis d'aminoàcids de tres lletres a una lletra
 var aminoDict = {
@@ -2638,6 +3738,16 @@ function convertLongToShort(longChange) {
 }
 
 
+function isRemovedRow(row) {
+  const removed = (row.getAttribute('data-removed') || '').toString().toLowerCase();
+  return removed === 'yes' || removed === 'true' || removed === '1';
+}
+
+function isBlacklistedRow(row) {
+  const blacklist = (row.getAttribute('data-blacklist') || '').toString().toLowerCase();
+  return blacklist === 'yes' || blacklist === 'true' || blacklist === '1';
+}
+
 // Funció principal per copiar la informació de totes les files de la taula
 function copyVariantInfo() {
   const tableElement = document.getElementById("therapeutic_table");
@@ -2655,12 +3765,17 @@ function copyVariantInfo() {
       let infoList = [];
       
       rows.forEach(row => {
+        if (isRemovedRow(row) || isBlacklistedRow(row)) {
+          return;
+        }
         const gene = row.getAttribute('data-gene');
         const exon = row.getAttribute('data-exon');
         const intron = row.getAttribute('data-intron');
         const isoform = row.getAttribute('data-isoform');
         const refseq = row.getAttribute('data-refseq');
         const pcode = row.getAttribute('data-pcode'); // canvi llarg, per exemple "Val560Glu"
+        const gcode = row.getAttribute('data-gcode');
+
         const ccode = row.getAttribute('data-ccode');
         const readSupport = parseFloat(row.getAttribute('data-read_support'));
         const depth = parseFloat(row.getAttribute('data-depth'));
@@ -2737,6 +3852,9 @@ function copyVariantInfo() {
     let infoList = [];
     
     rows.forEach(row => {
+      if (isRemovedRow(row) || isBlacklistedRow(row)) {
+        return;
+      }
       const gene = row.getAttribute('data-gene');
       const exon = row.getAttribute('data-exon');
       const intron = row.getAttribute('data-intron');
@@ -2844,6 +3962,1149 @@ function updateButtonTick(button) {
   }
 }
  </script>
+
+
+<script>
+  function formatTodayES() {
+    // Europe/Madrid, DD-MM-YYYY
+    const now = new Date();
+    // force timezone via Intl; build components manually
+    const fmt = new Intl.DateTimeFormat('es-ES', {
+      timeZone: 'Europe/Madrid',
+      day: '2-digit', month: '2-digit', year: 'numeric'
+    });
+    const parts = fmt.formatToParts(now).reduce((acc, p) => (acc[p.type]=p.value, acc), {});
+    return `${parts.year}-${parts.month}-${parts.day}`;
+  }
+  
+  function openAddEntryModal(btn) {
+    const tr = btn.closest('tr');
+  
+    // Existing fields
+    const gene  = tr.dataset.gene || '';
+    const hgvsg = tr.dataset.gcode || '';
+    const hgvsc = tr.dataset.ccode || '';
+    const hgvsp = tr.dataset.pcode || '';
+
+
+    console.log(gene, hgvsg, hgvsc, hgvsp)
+  
+    document.getElementById('kb_gene').value  = gene;
+    document.getElementById('kb_hgvsg').value = hgvsg;
+    document.getElementById('kb_hgvsc').value = hgvsc;
+    document.getElementById('kb_hgvsp').value = hgvsp;
+
+    let title = "  ";
+    if (hgvsp != ".") {
+      title += gene + " (" + hgvsp + ")";
+    }
+    else {
+      if (hgvsc != ".") {
+        title += gene + " (" + hgvsc + ")";
+      }
+      else {
+        title += gene + " (" + hgvsg + ")";
+      }
+    }
+
+    document.getElementById('modal_kb_title').innerText = title;
+  
+    let cgi_summary = tr.querySelector('#cgi_summary').innerText.replace('| ', '');
+    let cgi_prediction = tr.querySelector('#cgi_prediction').innerText.replace('| ', '');
+    let oncokb = tr.querySelector('#oncokb').innerText;
+    let franklin_germline = tr.querySelector('#franklin_germline').innerText.replace('| ', '');
+    let franklin_somatic = tr.querySelector('#franklin_somatic').innerText.replace('| ', '');
+    let clinvar_germline = tr.querySelector('#clinvar_germline').innerText.replace('| ', '');
+    let clinvar_somatic = tr.querySelector('#clinvar_somatic').innerText.replace('| ', '');
+    let mtbp = tr.querySelector('#mtbp').innerText.replace('| ', '');
+    let kb_comment = (tr.querySelector('#kb_comment') || {}).innerText || '';
+    let kb_especialista = (tr.querySelector('#kb_especialista') || {}).innerText || '';
+    let kb_tumor_type = (tr.querySelector('#kb_tumor_type') || {}).innerText || '';
+    let kb_classification_date = (tr.querySelector('#classification_date') || {}).innerText || '';
+
+    document.getElementById('oncokb_modal').value  = oncokb;
+    document.getElementById('franklin_acmg_modal').value  = franklin_germline.replace('| ', '');
+    document.getElementById('franklin_oncogenicity_modal').value  = franklin_somatic.replace('| ', '');
+    document.getElementById('clinvar_germline_modal').value  = clinvar_germline;
+    document.getElementById('clinvar_somatic_modal').value  = clinvar_somatic;
+    document.getElementById('cgi_summary_modal').value  = cgi_summary;
+    document.getElementById('cgi_prediction_modal').value  = cgi_prediction;
+    document.getElementById('mtbp_modal').value  = mtbp;
+    document.getElementById('comentaris_modal').value = kb_comment.trim();
+    const especialistaInput = document.getElementById('especialista');
+    if (especialistaInput) {
+      if (kb_especialista.trim()) {
+        especialistaInput.value = kb_especialista.trim();
+      } else {
+        especialistaInput.value = especialistaInput.getAttribute('data-default') || '';
+      }
+    }
+    // document.getElementById('kb_hgvsg').value = hgvsg;
+    // document.getElementById('kb_hgvsc').value = hgvsc;
+    // document.getElementById('kb_hgvsp').value = hgvsp;
+    // NEW: tumor type from existing input on the page
+    const tumorSrc = document.getElementById('edit_tumor_origin'); // fallback from page-level tumor
+    if (kb_tumor_type.trim()) {
+      document.getElementById('kb_tumor_type').value = kb_tumor_type.trim();
+    } else {
+      document.getElementById('kb_tumor_type').value = tumorSrc ? (tumorSrc.innerText || '') : '';
+    }
+  
+    // Load row-specific date if available; otherwise default to today
+    const dateEl = document.getElementById('kb_data_classificacio');
+    if (dateEl) {
+      if (kb_classification_date.trim()) {
+        dateEl.value = kb_classification_date.trim();
+      } else {
+        dateEl.value = formatTodayES();
+      }
+    }
+  
+    // Keep handle to row
+    document.getElementById('addEntryForm')._targetRow = tr;
+  }
+  
+  document.getElementById('addEntryForm').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const form = e.target;
+    const formData = new FormData(form);
+  
+    try {
+      const res = await fetch('{{ url_for("create_or_update_variant_summary") }}', {
+        method: 'POST',
+        body: formData
+      });
+      if (!res.ok) throw new Error('HTTP ' + res.status);
+      const payload = await res.json();
+  
+      $('#addEntryModal').modal('hide');
+  
+      const tr = form._targetRow;
+      if (tr) {
+        const kb = payload.kb || {};
+        const tds = tr.querySelectorAll('td');
+        const kbTd = tds[tds.length - 1];
+        if (kbTd) {
+          const cgiSummaryEl = kbTd.querySelector('#cgi_summary');
+          const cgiPredictionEl = kbTd.querySelector('#cgi_prediction');
+          const clinvarGermlineEl = kbTd.querySelector('#clinvar_germline');
+          const clinvarSomaticEl = kbTd.querySelector('#clinvar_somatic');
+          const oncokbEl = kbTd.querySelector('#oncokb');
+          const franklinGermlineEl = kbTd.querySelector('#franklin_germline');
+          const franklinSomaticEl = kbTd.querySelector('#franklin_somatic');
+          const mtbpEl = kbTd.querySelector('#mtbp');
+          const kbCommentEl = kbTd.querySelector('#kb_comment');
+          const kbEspecialistaEl = kbTd.querySelector('#kb_especialista');
+          const kbTumorTypeEl = kbTd.querySelector('#kb_tumor_type');
+          const classificationDateBlockEl = kbTd.querySelector('#classification_date_block');
+          const classificationDateEl = kbTd.querySelector('#classification_date');
+
+          if (cgiSummaryEl) cgiSummaryEl.textContent = kb['Oncogenic summary'] || '';
+          if (cgiPredictionEl) cgiPredictionEl.textContent = kb['Oncogenic prediction'] ? ` | ${kb['Oncogenic prediction']}` : '';
+          if (clinvarGermlineEl) clinvarGermlineEl.textContent = kb['ClinVar Germline'] || '';
+          if (clinvarSomaticEl) clinvarSomaticEl.textContent = kb['ClinVar Somatic'] ? ` | ${kb['ClinVar Somatic']}` : '';
+          if (oncokbEl) oncokbEl.textContent = kb['OncoKB'] || '';
+          if (franklinGermlineEl) franklinGermlineEl.textContent = kb['Franklin ACMG'] || '';
+          if (franklinSomaticEl) franklinSomaticEl.textContent = kb['Franklin Oncogenicity'] ? ` | ${kb['Franklin Oncogenicity']}` : '';
+          if (mtbpEl) mtbpEl.textContent = kb['MTBP'] || '';
+          if (kbCommentEl) kbCommentEl.textContent = kb['Comentaris'] || '';
+          if (kbEspecialistaEl) kbEspecialistaEl.textContent = kb['Especialista'] || '';
+          if (kbTumorTypeEl) {
+            const tumorTypeInput = document.getElementById('kb_tumor_type');
+            kbTumorTypeEl.textContent = (tumorTypeInput && tumorTypeInput.value) ? tumorTypeInput.value : (kb['Càncer'] || '');
+          }
+
+          const rawDate = kb['Data Classificació'] || '';
+          const dateOnly = rawDate ? String(rawDate).split(' ')[0] : '';
+          if (classificationDateEl) classificationDateEl.textContent = dateOnly;
+          if (classificationDateBlockEl) classificationDateBlockEl.style.display = dateOnly ? 'block' : 'none';
+        }
+      }
+        const msgDiv = document.getElementById('message_div');
+      const msgSpan = document.getElementById('message_span');
+      if (msgDiv && msgSpan) {
+        msgSpan.textContent = (payload.status === 'created') ? 'Entrada creada' : 'Entrada actualitzada';
+        msgDiv.style.display = 'block';
+      }
+    } catch (err) {
+      alert('Error guardant la informació: ' + err.message);
+    }
+  });
+  </script>
+  
+
+  <script>
+    function getTumorOrigin() {
+      const el = document.getElementById("tumor_origin");
+      if (!el) return "not available";
+      // support <select> or <input>
+      if (el.tagName === "SELECT") {
+        const opt = el.options[el.selectedIndex];
+        return (opt && (opt.text || opt.value)) || "not available";
+      }
+      return el.value?.trim() || "not available";
+    }
+    function classifyVariantType(ccode = "", gcode = "") {
+      const s = (ccode + " " + gcode).toLowerCase();
+      if (/\b(delins|ins|del|dup|insertion|deletion|indel)\b/.test(s)) return "INDEL";
+      return "SNV";
+    }
+    function classifyEffect(v) {
+      const p = (v.hgvs_p_long || v.hgvs_p_short || "").toUpperCase();
+      const c = (v.hgvs_c || "").toLowerCase();
+      const type = (v.variant_type || "").toUpperCase();
+
+      if (p.includes("TER") || p.includes("*")) return "a nonsense (stop-gain) variant";
+      if (/\bFS\b|FRAME/i.test(p)) return "a frameshift variant";
+      if (c.includes("del") && !c.includes("ins")) return "a deletion";
+      if (c.includes("ins") && !c.includes("del")) return "an insertion";
+      if (c.includes("delins") || (c.includes(">") && c.includes("ins"))) return "an indel";
+      if (type === "SNV" || /^[A-Z][a-z]{2}\d+[A-Z][a-z]{2}$/.test(p)) return "a missense variant";
+      return "a sequence variant";
+    }
+    function formatRegion(v) {
+      const kind = (v.region_kind || "").toLowerCase();
+      const idx = v.region_index != null ? String(v.region_index) : "";
+      if (kind && idx) return `${kind} ${idx}`;
+      if (kind) return kind;
+      return "an unknown region";
+    }
+    function formatProtein(v) {
+      return v.hgvs_p_long || v.hgvs_p_short || v.hgvs_c || v.genomic || "unknown protein change";
+    }
+    function formatEvidence(v) {
+      const bits = [];
+      if (v.vaf_percent) bits.push(`VAF ${String(v.vaf_percent).replace("%","")} %`);
+      if (v.depth != null) bits.push(`depth ${v.depth}`);
+      if (v.read_support != null) bits.push(`${v.read_support} supporting reads`);
+      return bits.length ? ` (${bits.join(", ")})` : "";
+    }
+    function formatTier(v) {
+      const t = Number(v.tier);
+      if (!Number.isFinite(t) || !TIER_INFO[t]) return null;
+      return TIER_INFO[t];
+    }
+
+    
+
+    function generateMutationReport(variants, { sortByTier = true, includeLegend = true } = {}) {
+        if (!Array.isArray(variants) || variants.length === 0) {
+          return "No mutations were detected.";
+        }
+
+        let items = [...variants];
+        if (sortByTier) {
+          items.sort((a, b) => {
+            const ta = Number(a.tier) || 999;
+            const tb = Number(b.tier) || 999;
+            if (ta !== tb) return ta - tb;
+            return String(a.gene || "").localeCompare(String(b.gene || ""));
+          });
+        }
+
+        const lines = items.map((v, i) => {
+          const gene = v.gene || "Unknown gene";
+          const protein = formatProtein(v);
+          const region = formatRegion(v);
+          const effect = classifyEffect(v);
+          const evidence = formatEvidence(v);
+          const tier = formatTier(v);
+
+          const tierText = tier ? ` — ${tier.label}: ${tier.short}` : "";
+          const actionClause = tier ? `, and ${tier.sentence}` : "";
+          // Example: "1. A TP53 mutation (Leu43Ter) located at exon 4, a nonsense..., and eligible for a targeted therapy... — Tier 1: targeted therapy available in Catalonia (VAF..., depth...)"
+          return `${i + 1}. A ${gene} mutation (${protein}) located at ${region}, ${effect}${actionClause}.`;
+        });
+
+        const legend = includeLegend
+          ? "\nTier legend — 1: therapy available in Catalonia; 2: therapy exists but not available in Catalonia; 3: available within clinical trial; 4: evidence exists, not available yet."
+          : "";
+
+        return ["We have detected the following mutations:", ...lines].join("\n") + legend;
+      }
+
+
+
+    // Dictionary mapping Catalan tumor types to English
+    const CANCER_TRANSLATIONS = {
+      "PULMÓ": "Non-small cell lung cancer",
+      "PULMÓ PETITA CÈL·LULA": "Small cell lung cancer",
+      "PÀNCREES": "Pancreatic cancer",
+      "CÒLON": "Colon cancer",
+      "RECTE": "Rectal cancer",
+      "MAMA": "Breast cancer",
+      "PRÒSTATA": "Prostate cancer",
+      "RONYÓ": "Kidney cancer",
+      "FETGE": "Liver cancer",
+      "OVARI": "Ovarian cancer",
+      "ÚTER": "Endometrial cancer",
+      "ENDOMETRI": "Endometrial cancer",
+      "CÈRVIX": "Cervical cancer",
+      "ESTÓMAC": "Stomach (gastric) cancer",
+      "ESÒFAG": "Esophageal cancer",
+      "MELANOMA": "Melanoma",
+      "BUFETA": "Bladder cancer",
+      "CAP I COLL": "Head and neck cancer",
+      "TIROIDES": "Thyroid cancer",
+      "CEREBRAL": "Brain cancer",
+      "CERVELL": "Brain cancer",
+      "LEUCÈMIA": "Leukemia",
+      "LIMFOMA": "Lymphoma",
+      "MIELOMA": "Multiple myeloma"
+    };
+
+    const TIER_INFO = {
+      1: {
+        label: "Tier 1",
+        short: "targeted therapy available in Catalonia",
+        sentence: "eligible for a targeted therapy that is available in Catalonia"
+      },
+      2: {
+        label: "Tier 2",
+        short: "targeted therapy not available in Catalonia",
+        sentence: "has a targeted therapy, but it is not available in Catalonia"
+      },
+      3: {
+        label: "Tier 3",
+        short: "available within a clinical trial",
+        sentence: "is actionable within a clinical trial"
+      },
+      4: {
+        label: "Tier 4",
+        short: "evidence exists, not available yet",
+        sentence: "has treatment evidence, but it is not available yet"
+      }
+    };
+
+    /**
+     * Translate a tumor type from Catalan to English
+     * @param {string} catalan - Tumor type in Catalan
+     * @returns {string} English translation, or original if not found
+     */
+    function translateTumorType(catalan) {
+      if (!catalan) return catalan;
+      const key = catalan.trim().toUpperCase();
+      return CANCER_TRANSLATIONS[key] || catalan;
+    }
+
+
+
+    // --- Build a structured, formal question for the model ---
+    async function buildStructuredVariantQuestion(language = "ca") {
+      const tumorOrigin = getTumorOrigin();
+      const age = document.getElementById("edit_age").innerText;
+      const tableElement = document.getElementById("therapeutic_table");
+      const usingDT = window.jQuery && $.fn && $.fn.DataTable && $.fn.DataTable.isDataTable(tableElement);
+    
+      function formatRowObject(row) {
+        const gene   = row.getAttribute('data-gene') || ".";
+        const exon   = row.getAttribute('data-exon') || ".";
+        const intron = row.getAttribute('data-intron') || ".";
+        const iso    = row.getAttribute('data-isoform') || ".";
+        const refseq = row.getAttribute('data-refseq') || iso;
+        const pcode  = row.getAttribute('data-pcode') || ".";
+        const gcode  = row.getAttribute('data-gcode') || ".";
+        const ccode  = row.getAttribute('data-ccode') || ".";
+        const rsup   = parseFloat(row.getAttribute('data-read_support') || "0");
+        const depth  = parseFloat(row.getAttribute('data-depth') || "0");
+        const tier   = row.getAttribute('data-tier') || ".";
+    
+        const vafPct = (depth && rsup) ? (100 * (rsup / depth)) : null;
+    
+        let regionKind = ".";
+        if (exon   !== ".") regionKind = "exon";
+        if (intron !== ".") regionKind = "intron";
+    
+        let regionIndex = "";
+        if (regionKind === "exon" && exon && exon !== ".") {
+          regionIndex = (exon.split('/')[0] || "").trim();
+        } else if (regionKind === "intron" && intron && intron !== ".") {
+          regionIndex = (intron.split('/')[0] || "").trim();
+        }
+    
+        const longRaw    = pcode.startsWith("p.") ? pcode.substring(2) : pcode;
+        const shortPcode = (typeof convertLongToShort === "function") ? convertLongToShort(pcode) : pcode;
+        const varType    = classifyVariantType(ccode, gcode);
+    
+        return {
+          gene,
+          transcript: refseq || ".",
+          hgvs_c: ccode || ".",
+          hgvs_p_long: longRaw || ".",
+          hgvs_p_short: shortPcode || ".",
+          genomic: gcode || ".",
+          region_kind: regionKind,         // exon | intron | .
+          region_index: regionIndex,       // e.g., "7"
+          variant_type: varType,           // SNV | INDEL
+          read_support: Number.isFinite(rsup) ? rsup : null,
+          depth: Number.isFinite(depth) ? depth : null,
+          tier: tier,
+          vaf_percent: (vafPct !== null && isFinite(vafPct)) ? vafPct.toFixed(2) : null
+        };
+      }
+    
+      // Collect variants from table (supports DataTables pagination)
+      let variants = [];
+      if (usingDT) {
+        const table = $('#therapeutic_table').DataTable();
+        const origLen = table.page.len();
+        variants = await new Promise((resolve) => {
+          table.one('draw', function () {
+            const rows = Array.from(table.rows().nodes());
+            const objs = rows.map(formatRowObject);
+            table.page.len(origLen).draw(false);
+            resolve(objs);
+          });
+          table.page.len(-1).draw(false);
+        });
+      } else {
+        const rows = Array.from(document.querySelectorAll('tr[data-gene]'));
+        variants = rows.map(formatRowObject);
+      }
+
+      let tumor_type_english = translateTumorType(tumorOrigin);
+
+      
+      reportVariants = generateMutationReport(variants)
+      // console.log("VARIANTS", reportVariants);
+      let prompt = "You are professional genetic analysis and you are analyzing a single patient that has recieved and sequencing test."
+      prompt+= "Follow this STRICT order:"
+      prompt = "Introduce the patient case: age and cancer type.";
+      prompt += "Then, create a summary of the identified mutations.";
+      // prompt += "For each mutation JUST describe its pathogenicity STRICTLY if it is relevant for the tumor type.";
+      // prompt += "Next, check for the presence of co-mutations (such as KRAS-STK11) that may be relevant for the tumor type. Just include PROVEN co-mutation interactions, DO NOT INVENT.";
+      // prompt +=" DO NOT make assumptions of the patient from its clinical history.";
+      prompt += "Here we have the following clinical case:";
+      prompt += `A ${age} years old ${tumor_type_english} patient.`;
+      prompt += reportVariants;
+      console.log(prompt);
+
+      // Build a compact, machine-friendly block the model can rely on
+      // (JSON is clearer than free text; the model can read it easily)
+      const payload = {
+        cancer_type: tumorOrigin,
+        variants
+      };
+      const variantsJSON = JSON.stringify(payload, null, 2);
+    
+      // Strong, formal instruction template (Catalan default; switchable)
+      const header_ca = [
+        "Ets un assistent per a informes de genètica oncològica.",
+        "Genera un resum ESTRICTAMENT basat en les dades proporcionades (no inventis evidència externa).",
+        "Estructura de la resposta (formal):",
+        "1) Resum executiu: 2–4 frases amb la visió global.",
+        "2) Detall de variants (una línia per variant):",
+        "   - GENE (transcrit): HGVS.c ; HGVS.p (llarga i curta); Tipus: SNV/INDEL;",
+        "     Localització: exon/intró + índex; VAF %; Lectures de suport/Profunditat.",
+        "3) Observacions de qualitat i limitacions: comenta VAF baix, baixa profunditat o altres anomalies si s’escauen.",
+        "4) Recomanacions/Accions a validar (opcional): només si es desprenen de les dades; si no, indica 'no disponible'.",
+        "Si alguna dada manca, escriu 'no disponible'. No afegeixis referències externes.",
+        "Redacció tècnica i concisa en català."
+      ].join("\n");
+    
+      const header_en = [
+        "You are an assistant for oncology genetics reporting.",
+        "Generate a summary STRICTLY from the provided data (do not invent external evidence).",
+        "Response structure (formal):",
+        "1. For each variant, a brief description of its impact in cancer",
+        "2. Use concise, formal scientific English."
+      ].join("\n");
+    
+      // const header = language === "ca" ? header_ca : header_en;
+      let header = header_en;
+    
+      // Final question string for /llm/ask
+      const question = `${prompt}`;
+      return question;
+    }
+    
+    // --- Wire to the single "Resum IA" button ---
+    function setStatus(kind, text) {
+      const el = document.getElementById("status");
+      el.className = "alert alert-" + kind;
+      el.textContent = text;
+      el.classList.remove("d-none");
+    }
+    function clearStatus() {
+      const el = document.getElementById("status");
+      el.className = "alert d-none";
+      el.textContent = "";
+    }
+    
+    document.getElementById("btn-resum-ia").addEventListener("click", async () => {
+      const btn    = document.getElementById("btn-resum-ia");
+      const answer = document.getElementById("answer");
+      const meta   = document.getElementById("meta");
+    
+      clearStatus();
+      answer.textContent = "";
+      meta.textContent   = "";
+    
+      btn.disabled = true;
+      const original = btn.textContent;
+      btn.textContent = "Generant…";
+    
+      try {
+        // Choose "ca" (Catalan) or "en" for English output
+        const question = await buildStructuredVariantQuestion("ca");
+    
+        const res = await fetch("/llm/ask", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ question })
+        });
+    
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || res.statusText);
+    
+        // Put the final, structured answer into the "Resposta" div
+        answer.textContent = data.answer || "";
+    
+        const m = data.meta || {};
+        meta.textContent =
+          `model=${m.model || "?"} · tokens: prompt=${m.prompt_eval_count ?? "?"}, gen=${m.eval_count ?? "?"} · ` +
+          `load=${m.load_duration ?? "?"}ns · total=${m.total_duration ?? "?"}ns`;
+      } catch (e) {
+        setStatus("danger", "Error: " + e.message);
+      } finally {
+        btn.disabled = false;
+        btn.textContent = original;
+      }
+    });
+    </script>
+
+
+<script>
+
+
+  function setAction() {
+    var selectedRows = table.querySelectorAll('tbody input[name="check_therapeutic_variant"]');
+    if (selectedRows.length > 0) {
+      const deleteBlock = document.getElementById('delete_multiple_button');
+      let numVariants = 0;
+      selectedRows.forEach(function (checkbox) {
+        if (checkbox.checked) {
+          numVariants += 1;
+        }
+      });
+      if (numVariants > 0) {
+        deleteBlock.style.display = 'block';
+        let toReportBtn = document.getElementById("to_report");
+        toReportBtn.innerHTML = 'Afegeix <b>' +  numVariants + "</b> variants a l'informe";
+
+        let changeVusBtn = document.getElementById("move_to_vus");
+        changeVusBtn.innerHTML = 'Mou <b>' +  numVariants + '</b> variants a VUS';
+
+        let removeSelection = document.getElementById("remove_selection");
+        removeSelection.innerHTML = 'Elimina <b>' +  numVariants + '</b> variants';
+      }
+      else {
+        deleteBlock.style.display = 'none';
+      }
+    }
+  }
+
+ 
+
+  function selectAllVariants() {
+    const table = document.getElementById('therapeutic_table');
+    const master = document.getElementById('select_all_variants');
+    const deleteBlock = document.getElementById('delete_multiple_button');
+    var selectedRows = table.querySelectorAll('tbody input[name="check_therapeutic_variant"]');
+    if (selectedRows.length === 0) {
+      deleteBlock.style.display = 'none';
+    }
+    if (master.checked) {
+      selectedRows.forEach(function (checkbox) {
+        checkbox.checked = true;
+      });
+      deleteBlock.style.display = 'block';
+      let numVariants = selectedRows.length;
+      let toReportBtn = document.getElementById("to_report");
+      toReportBtn.innerHTML = 'Afegeix <b>' +  numVariants + "</b> variants a l'informe";
+
+      let changeVusBtn = document.getElementById("move_to_vus");
+      changeVusBtn.innerHTML = 'Mou <b>' +  numVariants + '</b> variants a VUS';
+
+      let removeSelection = document.getElementById("remove_selection");
+      removeSelection.innerHTML = 'Elimina <b>' +  numVariants + '</b> variants';
+    }
+    else {
+      selectedRows.forEach(function (checkbox) {
+        checkbox.checked = false;
+      });
+      deleteBlock.style.display = 'none'; 
+    }
+  }
+  selectAllButton = document.getElementById('select_all_variants');
+  selectAllButton.addEventListener('change', selectAllVariants);
+
+
+
+  var table = document.getElementById('therapeutic_table');
+  table.addEventListener('change', function(event) {
+    // get all checked checkboxes
+    if (event.target.name === 'check_therapeutic_variant') {
+      setAction();
+    }
+    if (event.target.name === 'select_all_variants') {
+      selectAllVariants();
+    } 
+
+
+  });
+
+  </script>
+  
+  <script>
+    (function () {
+      const table = document.getElementById('cnas_table');
+    
+      const editableFields = ['chromosome','start','end','genes','svtype','ratio','cn','qual'];
+    
+      function getCellValue(td) {
+        return (td.textContent || '').trim();
+      }
+      function setCellText(td, value) {
+        td.innerHTML = '';
+        const wrap = document.createElement('div');
+        wrap.className = 'row';
+        const col = document.createElement('div');
+        col.className = 'col';
+        col.textContent = value;
+        wrap.appendChild(col);
+        td.appendChild(wrap);
+      }
+      function toInputs(tr) {
+        editableFields.forEach(f => {
+          const td = tr.querySelector(`td[data-field="${f}"]`);
+          if (!td) return;
+          const val = getCellValue(td);
+          td.dataset.original = val;
+          td.innerHTML = `<input type="text" class="form-control form-control-sm" name="${f}" value="${val}">`;
+        });
+        toggleActions(tr, true);
+      }
+      function fromInputs(tr, useOriginal = false) {
+        editableFields.forEach(f => {
+          const td = tr.querySelector(`td[data-field="${f}"]`);
+          if (!td) return;
+          const val = useOriginal ? (td.dataset.original || '') : (td.querySelector('input')?.value || '');
+          setCellText(td, val);
+          delete td.dataset.original;
+        });
+        toggleActions(tr, false);
+      }
+      function toggleActions(tr, editing) {
+        tr.querySelector('.edit-btn')?.classList.toggle('d-none', editing);
+        tr.querySelector('.delete-btn')?.classList.toggle('d-none', editing);
+        tr.querySelector('.save-btn')?.classList.toggle('d-none', !editing);
+        tr.querySelector('.cancel-btn')?.classList.toggle('d-none', !editing);
+      }
+    
+      table.addEventListener('click', async (e) => {
+        const btn = e.target.closest('button');
+        if (!btn) return;
+    
+        const tr = btn.closest('tr');
+        const id = tr?.dataset?.id;
+        if (!tr || !id) return;
+    
+        if (btn.classList.contains('edit-btn')) {
+          toInputs(tr);
+          return;
+        }
+        if (btn.classList.contains('cancel-btn')) {
+          fromInputs(tr, true);
+          return;
+        }
+    
+        const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
+    
+        if (btn.classList.contains('save-btn')) {
+          const payload = { id: Number(id) };
+          editableFields.forEach(f => {
+            const input = tr.querySelector(`td[data-field="${f}"] input`);
+            if (input) payload[f] = input.value;
+          });
+          try {
+            const res = await fetch(`/edit_cnas`, {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+                ...(csrfToken ? { 'X-CSRFToken': csrfToken } : {})
+              },
+              body: JSON.stringify(payload)
+            });
+            if (!res.ok) throw new Error(`HTTP ${res.status}`);
+            const data = await res.json();
+    
+            editableFields.forEach(f => {
+              const newVal = (data && (f in data)) ? data[f] : payload[f] || '';
+              const td = tr.querySelector(`td[data-field="${f}"]`);
+              setCellText(td, newVal);
+            });
+            toggleActions(tr, false);
+          } catch (err) {
+            alert('Failed to save: ' + err.message);
+          }
+          return;
+        }
+    
+        if (btn.classList.contains('delete-btn')) {
+          if (!confirm("Estàs a punt d'eliminar aquesta variant. Vols continuar?")) return;
+          try {
+            const res = await fetch(`/remove_cnas`, {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+                ...(csrfToken ? { 'X-CSRFToken': csrfToken } : {})
+              },
+              body: JSON.stringify({ id: Number(id) })
+            });
+            if (!res.ok) throw new Error(`HTTP ${res.status}`);
+            tr.remove();
+          } catch (err) {
+            alert('Failed to delete: ' + err.message);
+          }
+        }
+      });
+    })();
+    </script>
+    
+    <script>
+      document.addEventListener('DOMContentLoaded', function () {
+        const btn = document.getElementById('report_button');
+        if (!btn) return;
+      
+        btn.addEventListener('click', function () {
+          // restart the animation reliably
+          this.classList.remove('is-shining');
+          void this.offsetWidth; // reflow
+          this.classList.add('is-shining');
+      
+          // If you want to delay submission so the shine is visible:
+          // event.preventDefault();
+          // setTimeout(() => this.closest('form')?.submit(), 450);
+        });
+      });
+      </script>
+      
+
+      <script>
+        document.addEventListener('DOMContentLoaded', function(){
+          const hidden   = document.getElementById('commentInput');
+          const textarea = document.getElementById('commentTextarea');
+          const saveBtn  = document.getElementById('saveCommentBtn');
+          const label    = document.getElementById('commentLinkLabel');
+          const modalEl  = document.getElementById('commentModal');
+        
+          // Prefill textarea each time the modal opens
+          modalEl.addEventListener('show.bs.modal', function(){
+            textarea.value = hidden.value || '';
+            setTimeout(() => { textarea.selectionStart = textarea.selectionEnd = textarea.value.length; }, 0);
+          });
+        
+          // Save comment and close modal
+          saveBtn.addEventListener('click', function(){
+            hidden.value = textarea.value.trim();
+            label.textContent = hidden.value ? 'Editar comentari' : 'Afegir comentari';
+        
+            // Close modal
+            const modal = bootstrap.Modal.getInstance(modalEl);
+            modal.hide();
+        
+            // Update or create the small preview under the link
+            const col = document.getElementById('openCommentModalLink').closest('.col');
+            let preview = col.querySelector('small.text-muted');
+            if (!preview && hidden.value){
+              preview = document.createElement('small');
+              preview.className = 'text-muted d-block mt-1 text-truncate';
+              preview.style.maxWidth = '100%';
+              col.appendChild(preview);
+            }
+            if (preview) {
+              if (hidden.value) preview.textContent = hidden.value;
+              else preview.remove();
+            }
+          });
+        });
+        </script>
+
+<script>
+  $(function () {
+    var activeVarId = null; // which row we're editing
+  
+    // OPEN: capture row context, preload textarea, and show() the modal
+    $(document).on('click', '.open-comment-modal', function (e) {
+      e.preventDefault();
+      activeVarId = $(this).data('var-id');
+  
+      var $row = $(this).closest('tr');
+      var gene = $row.data('gene') || '';
+      var gcode = $row.data('gcode') || '';
+      var current = $('#commentInput_' + activeVarId).val() || '';
+  
+      $('#commentTextarea').val(current);
+      $('#commentContext').text(gene && gcode ? ('· ' + gene + ' · ' + gcode) : '');
+  
+      $('#commentModal').modal('show'); // <-- just show()
+    });
+  
+    // SAVE: write back to the hidden input + update UI, then hide()
+    $('#saveCommentBtn').on('click', function () {
+      if (activeVarId == null) return;
+  
+      var text = ($('#commentTextarea').val() || '').trim();
+      $('#commentInput_' + activeVarId).val(text);
+  
+      // Update label
+      $('#commentLinkLabel_' + activeVarId).text(text ? 'Editar comentari' : 'Afegir comentari');
+  
+      // Update preview
+      var $prev = $('#commentPreview_' + activeVarId);
+      if (text) {
+        $prev.text(text).show();
+      } else {
+        $prev.text('').hide();
+      }
+  
+      // Close modal
+      $('#commentModal').modal('hide'); // <-- just hide()
+  
+      // clear active id
+      activeVarId = null;
+    });
+  });
+  </script>
+  
+
+  <script>
+    $(function(){
+      var $deleteTargetRow = null;
+
+      $(document).on('click', '.delete-variant-btn', function(e){
+        e.preventDefault();
+    
+        // 1) Point the form at the link’s URL
+        $('#deleteVariantForm').attr('action', this.href);
+        $deleteTargetRow = $(this).closest('tr');
+    
+        // 2) Optional context in the modal title
+        const $row  = $deleteTargetRow;
+        const gene  = $row.data('gene')  || '';
+        const gcode = $row.data('gcode') || '';
+        $('#deleteVariantContext').text((gene || gcode) ? ' · ' + [gene, gcode].filter(Boolean).join(' · ') : '');
+    
+        // 3) Reset textarea and show modal
+        $('#deleteVariantReason').val('');
+        $('#deleteVariantModal').modal('show');   // <- here we open it
+      });
+
+      $('#deleteVariantForm').on('submit', async function(e){
+        e.preventDefault();
+
+        const form = this;
+        const action = form.getAttribute('action');
+        if (!action) return;
+
+        const submitBtn = form.querySelector('button[type="submit"]');
+        const formData = new FormData(form);
+
+        if (submitBtn) submitBtn.disabled = true;
+
+        try {
+          const res = await fetch(action, {
+            method: 'POST',
+            headers: { 'X-Requested-With': 'XMLHttpRequest' },
+            body: formData
+          });
+
+          let payload = {};
+          try {
+            payload = await res.json();
+          } catch (_) {
+            payload = { status: 'error', message: `HTTP ${res.status}` };
+          }
+
+          if (!res.ok || payload.status !== 'ok') {
+            alert(payload.message || "No s'ha pogut eliminar la variant.");
+            return;
+          }
+
+          $('#deleteVariantModal').modal('hide');
+
+          if ($deleteTargetRow && $deleteTargetRow.length) {
+            const reasonText = (payload.reason || '').trim() || '—';
+            const tableId = $deleteTargetRow.closest('table').attr('id');
+
+            if (tableId === 'therapeutic_table') {
+              // Therapeutic table: mark row as removed and let existing filter logic hide it by default.
+              $deleteTargetRow.attr('data-removed', 'yes');
+              const $actionsTd = $deleteTargetRow.find('td.actions-col');
+              const $existingReason = $actionsTd.find('.reason-text');
+
+              if ($existingReason.length) {
+                $existingReason.text(reasonText);
+              } else {
+                const escapedReason = $('<div/>').text(reasonText).html();
+                const reasonHtml = `
+                  <div class="row">
+                    <div class="col">
+                      <hr style="margin: 2px;">
+                      <div style="background-color:rgb(222, 236, 248);">
+                        <div>
+                          <span class="badge badge-danger bg-danger mr-2" style="margin-right:.5rem;">ELIMINADA</span>
+                          <div class="reason-text p-1">${escapedReason}</div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>`;
+                $actionsTd.append(reasonHtml);
+              }
+
+              if ($.fn.dataTable.isDataTable('#therapeutic_table')) {
+                $('#therapeutic_table').DataTable().draw(false);
+              }
+            } else {
+              // Rare/VUS table: remove row visually and keep DataTables state in sync.
+              if (tableId === 'rare_table' && $.fn.dataTable.isDataTable('#rare_table')) {
+                $('#rare_table').DataTable().row($deleteTargetRow).remove().draw(false);
+              } else {
+                $deleteTargetRow.remove();
+              }
+            }
+          }
+        } catch (err) {
+          alert("Error de xarxa eliminant la variant.");
+        } finally {
+          if (submitBtn) submitBtn.disabled = false;
+          $deleteTargetRow = null;
+          form.reset();
+        }
+      });
+    });
+    </script>
+    
+    <script>
+      $(function(){
+        // Init (or get) your DataTable
+        var table = $.fn.dataTable.isDataTable('#therapeutic_table')
+          ? $('#therapeutic_table').DataTable()
+          : $('#therapeutic_table').DataTable({ responsive: false, autoWidth: false });
+
+        function normalizeFilterTag(value) {
+          return ((value || '') + '').trim().toUpperCase();
+        }
+
+        function parseFilterTags(value) {
+          var raw = ((value || '') + '').trim();
+          if (!raw) return [];
+          return raw
+            .split(/[;,|]/)
+            .map(function(item){ return normalizeFilterTag(item); })
+            .filter(function(item){ return item.length > 0; });
+        }
+
+        function populateFilterTagSelect() {
+          var current = normalizeFilterTag($('#filter_tag_select').val());
+          var tagsMap = {};
+
+          table.rows().every(function(){
+            var node = this.node();
+            if (!node) return;
+            var rowTags = parseFilterTags(node.getAttribute('data-filter-tag'));
+            for (var i = 0; i < rowTags.length; i++) {
+              tagsMap[rowTags[i]] = true;
+            }
+          });
+
+          var tags = Object.keys(tagsMap).sort(function(a, b){
+            return a.localeCompare(b);
+          });
+
+          var $select = $('#filter_tag_select');
+          $select.find('option:not([value=""])').remove();
+
+          for (var i = 0; i < tags.length; i++) {
+            $select.append($('<option>', { value: tags[i], text: tags[i] }));
+          }
+
+          if (current && tags.indexOf(current) !== -1) {
+            $select.val(current);
+          } else {
+            $select.val('');
+          }
+        }
+
+        populateFilterTagSelect();
+
+        function adjustTherapeuticColumns() {
+          if ($.fn.dataTable.isDataTable('#therapeutic_table')) {
+            $('#therapeutic_table').DataTable().columns.adjust();
+          }
+        }
+        setTimeout(adjustTherapeuticColumns, 0);
+        setTimeout(adjustTherapeuticColumns, 150);
+        $(window).on('resize', adjustTherapeuticColumns);
+      
+        // Add only once
+        if (!window._theraFilterAddedInc) {
+          $.fn.dataTable.ext.search.push(function(settings, data, dataIndex){
+            if (settings.nTable.id !== 'therapeutic_table') return true;
+      
+            var node = table.row(dataIndex).node();
+            var isRemoved   = (node.getAttribute('data-removed')   || 'no') === 'yes';
+            var isBlacklist = (node.getAttribute('data-blacklist') || 'no') === 'yes';
+      
+            var includeRemoved   = $('#filter_removed').prop('checked');
+            var includeBlacklist = $('#filter_blacklist').prop('checked');
+            var selectedFilterTag = normalizeFilterTag($('#filter_tag_select').val());
+            var rowFilterTags = parseFilterTags(node.getAttribute('data-filter-tag'));
+      
+            // Additive logic: always show normal rows.
+            // Show removed only if includeRemoved; show blacklist only if includeBlacklist.
+            var passesRemoved   = (!isRemoved)   || (isRemoved && includeRemoved);
+            var passesBlacklist = (!isBlacklist) || (isBlacklist && includeBlacklist);
+            var passesFilterTag = (!selectedFilterTag) || (rowFilterTags.indexOf(selectedFilterTag) !== -1);
+      
+            return passesRemoved && passesBlacklist && passesFilterTag;
+          });
+          window._theraFilterAddedInc = true;
+        }
+      
+        // Redraw on toggle
+        $('#filter_removed, #filter_blacklist, #filter_tag_select').on('change', function(){
+          table.draw();
+        });
+
+        // Custom search input (replaces default DataTables search box)
+        $('#therapeutic_custom_search').on('input', function(){
+          table.search(this.value).draw();
+      });
+
+      // Initial draw
+      table.draw();
+    });
+      </script>
+
+      <script>
+      $(function(){
+        if (!$('#rare_table').length) return;
+
+        if ($.fn.dataTable.isDataTable('#rare_table')) {
+          $('#rare_table').DataTable().destroy();
+        }
+
+        var rareTable = $('#rare_table').DataTable({
+          responsive: false,
+          autoWidth: false,
+          lengthChange: false,
+          pageLength: 5,
+          order: [[1, 'asc']],
+          dom: "t<'row mt-2'<'col-sm-6'i><'col-sm-6'p>>",
+          language: {
+            zeroRecords: "No hi ha variants",
+            emptyTable: "No hi ha variants",
+            info: "Pàgina _PAGE_ de _PAGES_",
+            infoEmpty: "No hi ha entrades",
+            paginate: {
+              previous: "Previ",
+              next: "Seqüent"
+            }
+          }
+        });
+
+        function normalizeRareFilterTag(value) {
+          return ((value || '') + '').trim().toUpperCase();
+        }
+
+        function parseRareFilterTags(value) {
+          var raw = ((value || '') + '').trim();
+          if (!raw) return [];
+          return raw
+            .split(/[;,|]/)
+            .map(function(item){ return normalizeRareFilterTag(item); })
+            .filter(function(item){ return item.length > 0; });
+        }
+
+        function populateRareFilterDatalist() {
+          var tagsMap = {};
+
+          rareTable.rows().every(function(){
+            var node = this.node();
+            if (!node) return;
+            var rowTags = parseRareFilterTags(node.getAttribute('data-filter-tag'));
+            for (var i = 0; i < rowTags.length; i++) {
+              tagsMap[rowTags[i]] = true;
+            }
+          });
+
+          var tags = Object.keys(tagsMap).sort(function(a, b){
+            return a.localeCompare(b);
+          });
+
+          var $list = $('#rare_filter_tag_datalist');
+          $list.empty();
+
+          for (var i = 0; i < tags.length; i++) {
+            $list.append($('<option>', { value: tags[i] }));
+          }
+        }
+
+        function adjustRareColumns() {
+          if ($.fn.dataTable.isDataTable('#rare_table')) {
+            $('#rare_table').DataTable().columns.adjust();
+          }
+        }
+
+        populateRareFilterDatalist();
+        setTimeout(adjustRareColumns, 0);
+        setTimeout(adjustRareColumns, 150);
+        $(window).on('resize', adjustRareColumns);
+
+        if (!window._rareFilterAddedInc) {
+          $.fn.dataTable.ext.search.push(function(settings, data, dataIndex){
+            if (settings.nTable.id !== 'rare_table') return true;
+
+            var api = new $.fn.dataTable.Api(settings);
+            var node = api.row(dataIndex).node();
+            if (!node) return true;
+
+            var filterQuery = normalizeRareFilterTag($('#rare_filter_tag_input').val());
+            if (!filterQuery) return true;
+
+            var rowFilterTagRaw = normalizeRareFilterTag(node.getAttribute('data-filter-tag'));
+            if (!rowFilterTagRaw) return false;
+            if (rowFilterTagRaw.indexOf(filterQuery) !== -1) return true;
+
+            var rowFilterTags = parseRareFilterTags(node.getAttribute('data-filter-tag'));
+            for (var i = 0; i < rowFilterTags.length; i++) {
+              if (rowFilterTags[i].indexOf(filterQuery) !== -1) {
+                return true;
+              }
+            }
+            return false;
+          });
+          window._rareFilterAddedInc = true;
+        }
+
+        $('#rare_filter_tag_input').on('input', function(){
+          rareTable.draw();
+        });
+
+        $('#rare_custom_search').on('input', function(){
+          rareTable.search(this.value).draw();
+        });
+
+        rareTable.draw();
+      });
+      </script>
+      
+      
+
+
+
 {% endblock %}
 
 {% endblock body %}
