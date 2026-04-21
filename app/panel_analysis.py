@@ -43,6 +43,7 @@ from app.models import (
     LostExonsTable
 )
 from app.models import Job as DBJob
+from app.software_versions import upsert_software_version_for_job
 # from app.server_info import _server_stats
 
 import requests
@@ -221,6 +222,15 @@ def execute_worfklow_job():
             Job_cmd       = cmd,                                    # store the exact cmd
         )
         db.session.add(row)
+        upsert_software_version_for_job(
+            row,
+            preferred_paths={
+                "annotation": cmd_object.get("ann_yaml") or cmd_object.get("ANN_YAML"),
+                "binary": cmd_object.get("bin_yaml") or cmd_object.get("BIN_YAML"),
+                "reference": cmd_object.get("ref_yaml") or cmd_object.get("REF_YAML"),
+                "docker": cmd_object.get("docker_yaml") or cmd_object.get("DOCKER_YAML"),
+            },
+        )
         db.session.commit()
     except Exception as e:
         # If DB write fails, still return task info so the UI isn't blocked
@@ -1015,6 +1025,7 @@ def api_rerun_job(queue_id):
 
         db_job.Status = "running"
         db_job.Date = datetime.now().isoformat(sep=" ", timespec="seconds")
+        upsert_software_version_for_job(db_job)
         db.session.commit()
 
         return jsonify({
@@ -1714,6 +1725,15 @@ def submit_ngs_job():
             Job_cmd=cmd_str,
         )
         db.session.add(row)
+        upsert_software_version_for_job(
+            row,
+            preferred_paths={
+                "annotation": params["ANN_YAML"],
+                "binary": params["BIN_YAML"],
+                "reference": params["REF_YAML"],
+                "docker": params["DOCKER_YAML"],
+            },
+        )
         db.session.commit()
     except Exception as e:
         flash(f"Error desant el job a base de dades: {e}", "danger")

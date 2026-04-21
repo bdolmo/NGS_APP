@@ -1,5 +1,5 @@
 # routes_pipeline.py
-import json, re, shlex
+import json, os, re, shlex, tempfile, zipfile
 from datetime import datetime
 from flask import Blueprint, request, jsonify, render_template, url_for, abort, send_file
 from werkzeug.routing import BuildError
@@ -114,7 +114,7 @@ def classify_format(p: Path) -> Dict[str, Any]:
     suffs = "".join(p.suffixes).lower()
     last  = p.suffix.lower() if p.suffix else ""
     fmt = "Unknown"
-    if suffs.endswith(".fastq.gz") or last in (".fastq",".fq"): fmt = "FASTQ"
+    if suffs.endswith((".fastq.gz", ".fq.gz")) or last in (".fastq",".fq"): fmt = "FASTQ"
     elif last in (".bam",".sam",".cram"): fmt = last[1:].upper()
     elif suffs.endswith(".vcf.gz") or last in (".vcf",".bcf"): fmt = last[1:].upper() if last in (".vcf",".bcf") else "VCF"
     elif last in (".json",".yaml",".yml",".toml",".ini",".cfg"): fmt = last[1:].upper()
@@ -131,6 +131,57 @@ def classify_format(p: Path) -> Dict[str, Any]:
     if last == ".crai": index_of = re.sub(r"\.crai$", ".cram", p.name, flags=re.I)
     if last in (".tbi",".csi"): index_of = re.sub(r"\.(tbi|csi)$", "", p.name, flags=re.I)
     return {"ext": suffs or last, "codec": codec, "format": fmt, "is_index": is_index, "index_of": index_of, "role": "index" if is_index else "data"}
+
+
+def is_fastq_gz_name(name: str) -> bool:
+    return name.lower().endswith((".fastq.gz", ".fq.gz"))
+
+
+def list_fastq_gz_files(base: Path) -> List[Path]:
+    base = Path(base).resolve()
+    files: List[Path] = []
+
+    for dirpath, dirnames, filenames in os.walk(base, followlinks=False):
+        safe_dirnames = []
+        for dirname in dirnames:
+            if dirname.startswith("."):
+                continue
+            dir_path = Path(dirpath) / dirname
+            if dir_path.is_symlink():
+                continue
+            safe_dirnames.append(dirname)
+        dirnames[:] = safe_dirnames
+
+        for filename in filenames:
+            if filename.startswith(".") or not is_fastq_gz_name(filename):
+                continue
+            file_path = Path(dirpath) / filename
+            try:
+                if file_path.is_symlink():
+                    continue
+                resolved = file_path.resolve()
+                resolved.relative_to(base)
+            except (OSError, PermissionError, ValueError):
+                continue
+            if resolved.is_file():
+                files.append(resolved)
+
+    return sorted(files, key=lambda p: p.relative_to(base).as_posix().casefold())
+
+
+def fastq_gz_summary(base: Path) -> Dict[str, Any]:
+    files = list_fastq_gz_files(base)
+    total = 0
+    for file_path in files:
+        try:
+            total += file_path.stat().st_size
+        except (OSError, PermissionError):
+            pass
+    return {
+        "count": len(files),
+        "size_bytes": total,
+        "size_human": human_size(total),
+    }
 
 
 def build_tree(
@@ -204,6 +255,12 @@ def build_tree(
         except (OSError, PermissionError):
             pass
 
+        children.sort(
+            key=lambda child: (
+                child.get("kind") != "dir",
+                str(child.get("name", "")).casefold(),
+            )
+        )
         node["children"] = children
         node["size_bytes"] = total
         node["size_human"] = human_size(total)
@@ -281,10 +338,13 @@ def workflows_tree_view():
                 panel=panel,
                 resolved_path=str(root),
                 max_depth=max_depth,
+                fastq_count=0,
+                fastq_total_human="0B",
                 title=f"Directori {job_id}"
             )
 
         tree = build_tree(root, ignore_hidden=True, follow_symlinks=False, max_depth=max_depth)
+        fastq_summary = fastq_gz_summary(root)
         return render_template(
             "tree_modal.html",
             tree=tree,
@@ -293,6 +353,8 @@ def workflows_tree_view():
             panel=panel,
             resolved_path=str(root),
             max_depth=max_depth,
+            fastq_count=fastq_summary["count"],
+            fastq_total_human=fastq_summary["size_human"],
             title=f"Directori {job_id}"
         )
     except ValueError as e:
@@ -304,6 +366,8 @@ def workflows_tree_view():
             panel=panel,
             resolved_path="",
             max_depth=max_depth,
+            fastq_count=0,
+            fastq_total_human="0B",
             title=f"Directori {job_id}"
         )
 
@@ -344,6 +408,57 @@ def workflows_download():
         as_attachment=True,
         download_name=target.name  # Flask >= 2.0
     )
+
+
+@app.route("/workflows/download_fastq_gz", methods=["GET"])
+def workflows_download_fastq_gz():
+    """Download all FASTQ.GZ files under UPLOADS[/job_id][/panel] as one ZIP."""
+    job_id = (request.args.get("job_id") or "").strip()
+    panel = (request.args.get("panel") or "").strip()
+
+    try:
+        base = _safe_join_under_uploads(*(p for p in [job_id, panel] if p))
+        if not base.exists() or not base.is_dir():
+            abort(404, "Directory not found")
+        fastq_files = list_fastq_gz_files(base)
+        if not fastq_files:
+            abort(404, "No FASTQ.GZ files found")
+    except ValueError as e:
+        abort(400, str(e))
+
+    archive_stem = secure_filename("_".join(p for p in [job_id, panel, "fastq_gz"] if p)) or "fastq_gz"
+    download_name = f"{archive_stem}.zip"
+
+    tmp = tempfile.NamedTemporaryFile(delete=False, suffix=".zip")
+    zip_path = tmp.name
+    tmp.close()
+
+    try:
+        with zipfile.ZipFile(zip_path, "w", compression=zipfile.ZIP_STORED, allowZip64=True) as zip_file:
+            for fastq_file in fastq_files:
+                arcname = fastq_file.relative_to(base).as_posix()
+                zip_file.write(fastq_file, arcname)
+    except Exception:
+        try:
+            os.remove(zip_path)
+        except OSError:
+            pass
+        raise
+
+    response = send_file(
+        zip_path,
+        mimetype="application/zip",
+        as_attachment=True,
+        download_name=download_name,
+    )
+    def cleanup_zip():
+        try:
+            os.remove(zip_path)
+        except OSError:
+            pass
+
+    response.call_on_close(cleanup_zip)
+    return response
 
 # ---------- helpers to infer types ----------
 _num_int  = re.compile(r'^[+-]?\d+$')
@@ -1093,7 +1208,6 @@ def api_parse_help():
 
 
 # routes_pipeline.py (append these)
-import os
 from hashlib import md5
 
 # CREATE pipeline

@@ -5,7 +5,13 @@ import os
 import yaml
 from flask import request, jsonify, abort
 from app import app, db  # noqa: F401  (db is imported as per your base)
-from app.models import TherapeuticTable, OtherVariantsTable, RareVariantsTable, Petition
+from app.software_versions import get_pipeline_version_info
+from app.models import (
+    TherapeuticTable,
+    OtherVariantsTable,
+    RareVariantsTable,
+    Petition,
+)
 
 ANNOTATION_FILE = "annotation_resources_hg19.yaml"
 BINARIES_FILE   = "binary_resources.yaml"
@@ -91,6 +97,7 @@ def analysis_software_versions():
     try:
         analysis_folder = _resolve_analysis_folder(run_name, panel_name)
         annotations, binaries, docker = get_versions(analysis_folder)
+        pipeline_version, pipeline_version_source = get_pipeline_version_info(run_name)
     except ValueError as e:
         abort(400, description=str(e))
     except FileNotFoundError as e:
@@ -102,6 +109,8 @@ def analysis_software_versions():
         "run_name": run_name,
         "panel_name": analysis_folder.name,
         "folder": str(analysis_folder),
+        "pipeline_version": pipeline_version,
+        "pipeline_version_source": pipeline_version_source,
         "annotations": annotations,
         "binaries":    binaries,
         "docker":      docker,

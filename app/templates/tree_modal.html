@@ -69,6 +69,7 @@
             opacity: 0;
             transform: translateY(-4px) scale(0.98);
             transition: opacity .12s ease, transform .12s ease;
+            --menu-arrow-left: 16px;
         }
         .file-context-menu.show {
             display: block;
@@ -81,6 +82,7 @@
             border-radius: .6rem;
             box-shadow: 0 12px 28px rgba(16,24,40,.14), 0 2px 6px rgba(16,24,40,.08);
             min-width: 220px;
+            max-width: min(360px, calc(100vw - 20px));
             backdrop-filter: saturate(1.1) blur(6px);
         }
         .file-context-menu::before {
@@ -94,10 +96,10 @@
         }
         /* Arrow positions (we flip these in JS) */
         .file-context-menu.arrow-top::before {
-            top: -6px; left: 16px;
+            top: -6px; left: var(--menu-arrow-left);
         }
         .file-context-menu.arrow-bottom::before {
-            bottom: -6px; left: 16px; transform: rotate(225deg);
+            bottom: -6px; left: var(--menu-arrow-left); transform: rotate(225deg);
             border-left-color: #e2e7ee; border-top-color: #e2e7ee;
         }
 
@@ -132,6 +134,18 @@
 
   {% if error %}
     <div class="alert alert-danger">{{ error }}</div>
+  {% endif %}
+
+  {% if tree and fastq_count %}
+  <div class="d-flex justify-content-end align-items-center mb-3">
+    <a class="btn btn-outline-warning btn-sm"
+       href="{{ url_for('workflows_download_fastq_gz', job_id=job_id, panel=panel) }}"
+       title="Descarrega {{ fastq_count }} fitxers FASTQ.GZ ({{ fastq_total_human }})">
+      <i class="fas fa-file-archive mr-1"></i>
+      FASTQ.GZ
+      <span class="badge badge-light ml-1">{{ fastq_count }}</span>
+    </a>
+  </div>
   {% endif %}
 
   {% if tree %}
@@ -188,10 +202,7 @@
                   </span>
                 </summary>
                 <ul>
-                  {% for c in n.children if c.kind == 'dir' %}
-                    {{ render_node(c, depth+1) }}
-                  {% endfor %}
-                  {% for c in n.children if c.kind != 'dir' %}
+                  {% for c in n.children or [] %}
                     {{ render_node(c, depth+1) }}
                   {% endfor %}
                 </ul>
@@ -246,6 +257,8 @@
       const treeRoot = document.getElementById('treeContainer');
       const job_id = treeRoot?.dataset.job || '';
       const panel  = treeRoot?.dataset.panel || '';
+      const MENU_MARGIN = 10;
+      const MENU_OFFSET = 8;
     
       // Build your backend download URL
       function makeDownloadHref({ job_id, panel, rel }) {
@@ -261,52 +274,49 @@
         if (openMenu) {
           openMenu.classList.remove('show', 'arrow-top', 'arrow-bottom');
           openMenu.style.display = 'none';
+          openMenu.style.visibility = '';
+          openMenu.style.removeProperty('--menu-arrow-left');
           openMenu = null;
         }
       }
-    
-      // Position menu near a trigger element with smart flipping/clamping
-      function positionMenuNear(triggerEl, menuEl, prefer = 'bottom') {
-        // Make it measurable off-screen
+
+      function clamp(value, min, max) {
+        return Math.min(Math.max(value, min), max);
+      }
+
+      function showMenuForMeasurement(menuEl) {
+        menuEl.classList.remove('arrow-top', 'arrow-bottom');
         menuEl.style.visibility = 'hidden';
         menuEl.style.display = 'block';
         menuEl.classList.add('show');
-    
-        const t = triggerEl.getBoundingClientRect();
-        const m = menuEl.getBoundingClientRect();
+        return menuEl.getBoundingClientRect();
+      }
+
+      // Position fixed menus with viewport coordinates, then clamp into view.
+      function positionMenuAtPoint(menuEl, clientX, clientY) {
+        const m = showMenuForMeasurement(menuEl);
         const vw = window.innerWidth;
         const vh = window.innerHeight;
-        const margin = 10; // viewport padding
-        const arrowOffset = 16; // matches CSS ::before left value
-    
-        // Default position: below, left-aligned to trigger
-        let top = t.bottom + 6 + window.scrollY;
-        let left = t.left + window.scrollX;
-    
-        let arrowClass = 'arrow-top'; // arrow points up when menu is below
-    
-        // Flip vertically if overflowing bottom
-        const wouldBottomOverflow = (top + m.height - window.scrollY) > (vh - margin);
-        if (prefer === 'bottom' && wouldBottomOverflow) {
-          // Place above
-          top = t.top - m.height - 6 + window.scrollY;
-          arrowClass = 'arrow-bottom'; // arrow points down when menu is above
+
+        let left = clientX;
+        let top = clientY + MENU_OFFSET;
+        let arrowClass = 'arrow-top';
+
+        if (top + m.height > vh - MENU_MARGIN && clientY - m.height - MENU_OFFSET >= MENU_MARGIN) {
+          top = clientY - m.height - MENU_OFFSET;
+          arrowClass = 'arrow-bottom';
         }
-    
-        // Clamp horizontally
-        if (left + m.width > window.scrollX + vw - margin) {
-          left = window.scrollX + vw - margin - m.width;
-        }
-        if (left < window.scrollX + margin) {
-          left = window.scrollX + margin;
-        }
-    
-        // Apply
+
+        const maxLeft = Math.max(MENU_MARGIN, vw - m.width - MENU_MARGIN);
+        const maxTop = Math.max(MENU_MARGIN, vh - m.height - MENU_MARGIN);
+        left = clamp(left, MENU_MARGIN, maxLeft);
+        top = clamp(top, MENU_MARGIN, maxTop);
+
         menuEl.style.top = `${top}px`;
         menuEl.style.left = `${left}px`;
+        const arrowLeft = clamp(clientX - left - 6, 12, Math.max(12, m.width - 24));
+        menuEl.style.setProperty('--menu-arrow-left', `${arrowLeft}px`);
         menuEl.classList.add(arrowClass);
-    
-        // Restore visibility
         menuEl.style.visibility = '';
       }
     
@@ -370,7 +380,7 @@
         };
       }
     
-      // LEFT-CLICK on filename → fancy menu under the name
+      // LEFT-CLICK on filename -> menu at the pointer
       document.addEventListener('click', (e) => {
         const nameEl = e.target.closest('.file .name');
         if (nameEl) {
@@ -387,11 +397,8 @@
           const fileName = nameEl.textContent.trim();
           wireMenu(menu, { name: fileName, rel, href });
     
-          // Show and position
           closeMenu();
-          menu.style.display = 'block';
-          positionMenuNear(nameEl, menu, 'bottom');
-          menu.classList.add('show');
+          positionMenuAtPoint(menu, e.clientX, e.clientY);
           openMenu = menu;
           return;
         }
@@ -415,30 +422,7 @@
           wireMenu(menu, { name, rel, href });
     
           closeMenu();
-    
-          // Show near cursor with clamping; choose top/bottom based on cursor space
-          menu.style.display = 'block';
-          menu.style.visibility = 'hidden';
-          menu.classList.add('show');
-    
-          const m = menu.getBoundingClientRect();
-          const vw = window.innerWidth, vh = window.innerHeight, margin = 10;
-    
-          let x = e.pageX, y = e.pageY;
-          // Flip above if not enough space below cursor
-          let arrowClass = 'arrow-top';
-          if ((y - window.scrollY) + m.height > vh - margin) {
-            y = e.pageY - m.height - 6;
-            arrowClass = 'arrow-bottom';
-          }
-          // Clamp
-          if ((x - window.scrollX) + m.width > vw - margin) x = window.scrollX + vw - margin - m.width;
-          if (x < window.scrollX + margin) x = window.scrollX + margin;
-    
-          menu.style.top = `${y}px`;
-          menu.style.left = `${x}px`;
-          menu.classList.add(arrowClass);
-          menu.style.visibility = '';
+          positionMenuAtPoint(menu, e.clientX, e.clientY);
           openMenu = menu;
         });
       });
